@@ -28,4 +28,6 @@ executable eselsohr
         time -any,
         uuid -any,
         text -any,
-        blaze-html -any
+        blaze-html -any,
+        scalpel -any,
+        http-types -any
