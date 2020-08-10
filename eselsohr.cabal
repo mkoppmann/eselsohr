@@ -28,6 +28,7 @@ library
         time -any,
         uuid -any,
         text -any,
+        directory -any,
         blaze-html -any,
         scalpel -any,
         http-types -any

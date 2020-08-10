@@ -1,3 +1,6 @@
+### Eselsohr ###
+data/
+
 # Created by https://www.toptal.com/developers/gitignore/api/haskell,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=haskell,visualstudiocode
 
@@ -28,7 +31,6 @@ cabal.project.local~
 
 ### VisualStudioCode ###
 .vscode/*
-!.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json

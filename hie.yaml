@@ -11,5 +11,8 @@ cradle:
       config:
         cradle:
           cabal:
+            - path: "src"
+              component: "lib:eselsohr"
+
             - path: "app/Main.hs"
-              component: "eselsohr:exe:eselsohr"
+              component: "eselsohr:exe:eselsohr-exe"
