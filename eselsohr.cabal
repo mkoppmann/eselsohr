@@ -9,7 +9,14 @@ category:           Web
 extra-source-files: CHANGELOG.md
 
 library
-    exposed-modules:    Lib
+    exposed-modules:
+        Db
+        Lib
+        Model
+        View
+        Routes
+        Controller
+
     hs-source-dirs:     src
     default-language:   Haskell2010
     default-extensions:
@@ -19,7 +26,9 @@ library
 
     ghc-options:
         -Wall -Wcompat -Wincomplete-record-updates
-        -Wincomplete-uni-patterns -Wredundant-constraints
+        -Wincomplete-uni-patterns -Wredundant-constraints -Widentities
+        -Wincomplete-record-updates -fhide-source-paths -Wpartial-fields
+        -Wmissing-deriving-strategies
 
     build-depends:
         base ^>=4.14.0.0,
@@ -33,7 +42,7 @@ library
         scalpel -any,
         http-types -any
 
-executable eselsohr-exe
+executable eselsohr
     main-is:          Main.hs
     hs-source-dirs:   app
     default-language: Haskell2010
