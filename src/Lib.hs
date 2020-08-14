@@ -12,7 +12,8 @@ startApp = do
   withConnection "data/collections.db" createCollectionsTable
   withConnection "db.db" createArticlesTable
   scotty 8080 $
-    getArticlesController
+    cssController
+      >> getArticlesController
       >> showArticleController
       >> editArticleController
       >> createArticleController

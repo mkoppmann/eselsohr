@@ -1,7 +1,10 @@
 module Db where
 
-import Database.SQLite.Simple (Connection, NamedParam ((:=)), execute, executeNamed, execute_, queryNamed, query_)
+import Database.SQLite.Simple (Connection, NamedParam ((:=)), execute, executeNamed, execute_, queryNamed, query_, withConnection)
 import Model
+
+dbAction :: String -> (Connection -> IO a) -> IO a
+dbAction db q = withConnection db q
 
 createCollectionsTable :: Connection -> IO ()
 createCollectionsTable conn = execute_ conn "CREATE TABLE IF NOT EXISTS collections (id UUID PRIMARY KEY NOT NULL, accesstoken UUID NOT NULL)"
@@ -31,12 +34,10 @@ patchArticle :: SqliteUUID -> LText -> Connection -> IO ()
 patchArticle aId title conn = executeNamed conn "UPDATE articles SET title = :title WHERE id = :id" [":title" := title, ":id" := aId]
 
 insertArticle :: Article -> Connection -> IO ()
-insertArticle article conn = do
-  execute conn "INSERT INTO articles (id, title, href, created_at) VALUES (?,?,?,?)" article
+insertArticle article conn = execute conn "INSERT INTO articles (id, title, href, created_at) VALUES (?,?,?,?)" article
 
 getArticles :: Connection -> IO [Article]
-getArticles conn = do
-  query_ conn "SELECT * FROM articles"
+getArticles conn = query_ conn "SELECT * FROM articles"
 
 getArticle :: SqliteUUID -> Connection -> IO [Article]
 getArticle aId conn = queryNamed conn "SELECT * FROM articles WHERE id = :id" [":id" := aId]

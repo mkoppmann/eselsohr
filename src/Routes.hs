@@ -2,6 +2,12 @@ module Routes where
 
 import Web.Scotty (RoutePattern)
 
+cssRoute :: LText
+cssRoute = "/static/style.css"
+
+cssRoutePattern :: RoutePattern
+cssRoutePattern = "/static/style.css"
+
 capabilitiesRoute :: (Semigroup a, IsString a) => a -> a
 capabilitiesRoute cap = "/api/" <> cap
 

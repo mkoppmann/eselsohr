@@ -3,16 +3,14 @@ module Controller where
 import Data.Time (getCurrentTime)
 import Data.UUID (fromText)
 import Data.UUID.V4 (nextRandom)
-import Database.SQLite.Simple (withConnection)
 import Db
 import Model
 import Network.HTTP.Types (status400)
 import Routes
 import System.Directory (removeFile)
-import Text.Blaze.Html.Renderer.Text (renderHtml)
 import qualified Text.HTML.Scalpel as SC
 import View
-import Web.Scotty (ActionM, ScottyM, get, html, param, post, raiseStatus, redirect)
+import Web.Scotty (ActionM, ScottyM, get, html, param, post, raiseStatus, raw, redirect, setHeader)
 import Prelude hiding (get)
 
 mappingDb :: String
@@ -28,6 +26,12 @@ fetchTitle url = SC.scrapeURL (toString url) title
 
 -- ACTIONS
 
+cssAction :: ActionM ()
+cssAction = do
+  let css = encodeUtf8 $ renderAppStylesheet
+  setHeader "content-type" "text/css; charset=utf-8"
+  raw css
+
 createNewCollection :: ActionM ()
 createNewCollection = do
   collectionId <- liftIO $ coerce nextRandom
@@ -35,14 +39,14 @@ createNewCollection = do
   let uCollectionId = getSqliteUUID $ getCollectionId collectionId
   let collectionDb = "data/" <> show uCollectionId <> ".db"
   let collMap = CollectionMapping collectionId accesstoken
-  liftIO $ withConnection collectionDb createArticlesTable
-  liftIO $ withConnection mappingDb $ persistNewCollection collMap
+  liftIO $ dbAction collectionDb createArticlesTable
+  liftIO $ dbAction mappingDb $ persistNewCollection collMap
   redirect collectionRoute
 
 getCollectionsAction :: ActionM ()
 getCollectionsAction = do
-  collMaps <- liftIO $ withConnection mappingDb getCollectionMappings
-  html $ renderHtml $ collectionMappingList collMaps
+  collMaps <- liftIO $ dbAction mappingDb getCollectionMappings
+  html $ renderApp $ collectionMappingList collMaps
 
 getCollectionAction :: ActionM ()
 getCollectionAction = do
@@ -50,15 +54,15 @@ getCollectionAction = do
   maybe invalidUUID (getAndRender . coerce) $ fromText accId
   where
     getAndRender acc = do
-      collMap <- liftIO $ withConnection mappingDb $ getCollection acc
+      collMap <- liftIO $ dbAction mappingDb $ getCollection acc
       let mCollId = viaNonEmpty head collMap
       case mCollId of
         Nothing -> redirect collectionRoute
         Just cId -> do
           let collId = getSqliteUUID $ getCollectionId $ collectionMappingId cId
           let collectionDb = "data/" <> show collId <> ".db"
-          articles <- liftIO $ withConnection collectionDb getArticles
-          html $ renderHtml $ articleList articles
+          articles <- liftIO $ dbAction collectionDb getArticles
+          html $ renderApp $ articleList articles
 
 deleteCollectionAction :: ActionM ()
 deleteCollectionAction = do
@@ -66,7 +70,7 @@ deleteCollectionAction = do
   maybe invalidUUID (delAndRedir . coerce) $ fromText accId
   where
     delAndRedir acc = do
-      collMap <- liftIO $ withConnection mappingDb $ getCollection acc
+      collMap <- liftIO $ dbAction mappingDb $ getCollection acc
       let mCollId = viaNonEmpty head collMap
       case mCollId of
         Nothing -> redirect collectionRoute
@@ -74,14 +78,14 @@ deleteCollectionAction = do
           let collId = collectionMappingId cId
           let sCollId = show $ getSqliteUUID $ getCollectionId collId
           let collectionDb = "data/" <> sCollId <> ".db"
-          liftIO $ withConnection mappingDb $ deleteCollection collId
+          liftIO $ dbAction mappingDb $ deleteCollection collId
           liftIO $ removeFile collectionDb
           redirect collectionRoute
 
 getArticlesAction :: ActionM ()
 getArticlesAction = do
-  articles <- liftIO $ withConnection "db.db" getArticles
-  html $ renderHtml $ articleList articles
+  articles <- liftIO $ dbAction "db.db" getArticles
+  html $ renderApp $ articleList articles
 
 getArticleAction :: ActionM ()
 getArticleAction = do
@@ -89,11 +93,11 @@ getArticleAction = do
   maybe invalidUUID (getAndRender . coerce) $ fromText pId
   where
     getAndRender aId = do
-      article <- liftIO $ withConnection "db.db" $ getArticle aId
+      article <- liftIO $ dbAction "db.db" $ getArticle aId
       let mArticle = viaNonEmpty head article
       case mArticle of
         Nothing -> redirect articlesRoute
-        Just jArticle -> html $ renderHtml $ articleDetails jArticle
+        Just jArticle -> html $ renderApp $ articleDetails jArticle
 
 createArticleAction :: ActionM ()
 createArticleAction = do
@@ -103,7 +107,7 @@ createArticleAction = do
   aId <- liftIO nextRandom
   let mTitle = fromMaybe "Empty Title" aTitle
   let article = Article (SqliteUUID aId) mTitle aHref aTime
-  liftIO $ withConnection "db.db" $ insertArticle article
+  liftIO $ dbAction "db.db" $ insertArticle article
   redirect articlesRoute
 
 editArticleAction :: ActionM ()
@@ -112,11 +116,11 @@ editArticleAction = do
   maybe invalidUUID (getAndRender . coerce) $ fromText pId
   where
     getAndRender aId = do
-      article <- liftIO $ withConnection "db.db" $ getArticle aId
+      article <- liftIO $ dbAction "db.db" $ getArticle aId
       let mArticle = viaNonEmpty head article
       case mArticle of
         Nothing -> redirect articlesRoute
-        Just jArticle -> html $ renderHtml $ editArticleDetails jArticle
+        Just jArticle -> html $ renderApp $ editArticleDetails jArticle
 
 patchArticleAction :: ActionM ()
 patchArticleAction = do
@@ -125,7 +129,7 @@ patchArticleAction = do
   maybe invalidUUID (patchAndRedir nTitle . coerce) $ fromText pId
   where
     patchAndRedir nTitle aId = do
-      liftIO $ withConnection "db.db" $ patchArticle aId nTitle
+      liftIO $ dbAction "db.db" $ patchArticle aId nTitle
       redirect articlesRoute
 
 deleteArticleAction :: ActionM ()
@@ -134,13 +138,16 @@ deleteArticleAction = do
   maybe invalidUUID (delAndRedir . coerce) $ fromText pId
   where
     delAndRedir aId = do
-      liftIO $ withConnection "db.db" $ deleteArticle aId
+      liftIO $ dbAction "db.db" $ deleteArticle aId
       redirect articlesRoute
 
 invalidUUID :: ActionM ()
 invalidUUID = raiseStatus status400 "Not a valid UUID"
 
 -- CONTROLLER
+
+cssController :: ScottyM ()
+cssController = get cssRoutePattern cssAction
 
 createCollectionController :: ScottyM ()
 createCollectionController = post collectionCreationRoutePattern createNewCollection
