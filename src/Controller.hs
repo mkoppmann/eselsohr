@@ -1,9 +1,5 @@
 module Controller where
 
-import Control.Monad.IO.Class (MonadIO (liftIO))
-import Data.Coerce (coerce)
-import Data.Maybe (fromMaybe)
-import Data.Text.Lazy (Text, unpack)
 import Data.Time (getCurrentTime)
 import Data.UUID (fromText)
 import Data.UUID.V4 (nextRandom)
@@ -15,19 +11,19 @@ import Routes
 import System.Directory (removeFile)
 import Text.Blaze.Html.Renderer.Text (renderHtml)
 import qualified Text.HTML.Scalpel as SC
-import Text.Read (readMaybe)
 import View
 import Web.Scotty (ActionM, ScottyM, get, html, param, post, raiseStatus, redirect)
+import Prelude hiding (get)
 
 mappingDb :: String
 mappingDb = "data/collections.db"
 
 -- SCRAPER
 
-fetchTitle :: Text -> IO (Maybe Text)
-fetchTitle url = SC.scrapeURL (unpack url) title
+fetchTitle :: LText -> IO (Maybe LText)
+fetchTitle url = SC.scrapeURL (toString url) title
   where
-    title :: SC.Scraper Text Text
+    title :: SC.Scraper LText LText
     title = SC.text "h1"
 
 -- ACTIONS
@@ -55,10 +51,14 @@ getCollectionAction = do
   where
     getAndRender acc = do
       collMap <- liftIO $ withConnection mappingDb $ getCollection acc
-      let collId = getSqliteUUID $ getCollectionId $ collectionMappingId $ Prelude.head collMap
-      let collectionDb = "data/" <> show collId <> ".db"
-      articles <- liftIO $ withConnection collectionDb getArticles
-      html $ renderHtml $ articleList articles
+      let mCollId = viaNonEmpty head collMap
+      case mCollId of
+        Nothing -> redirect collectionRoute
+        Just cId -> do
+          let collId = getSqliteUUID $ getCollectionId $ collectionMappingId cId
+          let collectionDb = "data/" <> show collId <> ".db"
+          articles <- liftIO $ withConnection collectionDb getArticles
+          html $ renderHtml $ articleList articles
 
 deleteCollectionAction :: ActionM ()
 deleteCollectionAction = do
@@ -67,12 +67,16 @@ deleteCollectionAction = do
   where
     delAndRedir acc = do
       collMap <- liftIO $ withConnection mappingDb $ getCollection acc
-      let collId = collectionMappingId $ Prelude.head collMap
-      let sCollId = show $ getSqliteUUID $ getCollectionId collId
-      let collectionDb = "data/" <> sCollId <> ".db"
-      liftIO $ withConnection mappingDb $ deleteCollection collId
-      liftIO $ removeFile collectionDb
-      redirect collectionRoute
+      let mCollId = viaNonEmpty head collMap
+      case mCollId of
+        Nothing -> redirect collectionRoute
+        Just cId -> do
+          let collId = collectionMappingId cId
+          let sCollId = show $ getSqliteUUID $ getCollectionId collId
+          let collectionDb = "data/" <> sCollId <> ".db"
+          liftIO $ withConnection mappingDb $ deleteCollection collId
+          liftIO $ removeFile collectionDb
+          redirect collectionRoute
 
 getArticlesAction :: ActionM ()
 getArticlesAction = do
@@ -86,14 +90,17 @@ getArticleAction = do
   where
     getAndRender aId = do
       article <- liftIO $ withConnection "db.db" $ getArticle aId
-      html $ renderHtml $ articleDetails $ Prelude.head article
+      let mArticle = viaNonEmpty head article
+      case mArticle of
+        Nothing -> redirect articlesRoute
+        Just jArticle -> html $ renderHtml $ articleDetails jArticle
 
 createArticleAction :: ActionM ()
 createArticleAction = do
   aHref <- param "href"
   aTitle <- liftIO $ fetchTitle aHref
-  aTime <- liftIO $ getCurrentTime
-  aId <- liftIO $ nextRandom
+  aTime <- liftIO getCurrentTime
+  aId <- liftIO nextRandom
   let mTitle = fromMaybe "Empty Title" aTitle
   let article = Article (SqliteUUID aId) mTitle aHref aTime
   liftIO $ withConnection "db.db" $ insertArticle article
@@ -106,7 +113,10 @@ editArticleAction = do
   where
     getAndRender aId = do
       article <- liftIO $ withConnection "db.db" $ getArticle aId
-      html $ renderHtml $ editArticleDetails $ Prelude.head article
+      let mArticle = viaNonEmpty head article
+      case mArticle of
+        Nothing -> redirect articlesRoute
+        Just jArticle -> html $ renderHtml $ editArticleDetails jArticle
 
 patchArticleAction :: ActionM ()
 patchArticleAction = do

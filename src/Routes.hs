@@ -1,7 +1,5 @@
 module Routes where
 
-import Data.String (IsString)
-import Data.Text.Lazy (Text)
 import Web.Scotty (RoutePattern)
 
 capabilitiesRoute :: (Semigroup a, IsString a) => a -> a
@@ -10,7 +8,7 @@ capabilitiesRoute cap = "/api/" <> cap
 capabilitiesRoutePattern :: RoutePattern
 capabilitiesRoutePattern = "/api/:cap"
 
-collectionRoute :: Text
+collectionRoute :: LText
 collectionRoute = "/collections"
 
 collectionRoutePattern :: RoutePattern
@@ -22,13 +20,13 @@ collectionWithAccesstokenRoute acc = "/collections/" <> acc
 collectionWithAccesstokenRoutePattern :: RoutePattern
 collectionWithAccesstokenRoutePattern = "/collections/:acc"
 
-collectionCreationRoute :: Text
+collectionCreationRoute :: LText
 collectionCreationRoute = "/collections/new"
 
 collectionCreationRoutePattern :: RoutePattern
 collectionCreationRoutePattern = "/collections/new"
 
-articlesRoute :: Text
+articlesRoute :: LText
 articlesRoute = "/articles"
 
 articlesRoutePattern :: RoutePattern

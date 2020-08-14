@@ -1,8 +1,7 @@
 module View where
 
-import Data.Text.Lazy (Text, pack)
 import Data.Time (UTCTime, defaultTimeLocale, formatTime)
-import Data.UUID (toString)
+import Data.UUID (toText)
 import Model
 import Routes
 import Text.Blaze.Html5 as H
@@ -20,8 +19,8 @@ collectionMappingList collmaps = docTypeHtml $ do
   where
     renderCollMaps = li . toHtml . prettyCollMap
     prettyCollMap (CollectionMapping collId acc) = do
-      p $ do
-        a ! href (accesstokenToAttribute collectionWithAccesstokenRoute acc) $ toHtml $ show $ getSqliteUUID $ getCollectionId collId
+      let lCollId = show $ getSqliteUUID $ getCollectionId collId :: LText
+      p $ a ! href (accesstokenToAttribute collectionWithAccesstokenRoute acc) $ toHtml lCollId
       deleteCollectionForm acc
 
 articleList :: [Article] -> Html
@@ -90,14 +89,14 @@ deleteArticleForm aId = H.form ! action (uuidToAttribute articleWithIdRoute aId)
   input ! type_ "hidden" ! name "action" ! value "DELETE"
   input ! type_ "submit" ! name "submit" ! value "Delete article"
 
-prettyDate :: UTCTime -> Text
-prettyDate = pack . formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S"
+prettyDate :: UTCTime -> LText
+prettyDate = toLText . formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S"
 
-collectionIdToAttribute :: (String -> String) -> CollectionId -> AttributeValue
+collectionIdToAttribute :: (LText -> LText) -> CollectionId -> AttributeValue
 collectionIdToAttribute route = uuidToAttribute route . getCollectionId
 
-accesstokenToAttribute :: (String -> String) -> Accesstoken -> AttributeValue
+accesstokenToAttribute :: (LText -> LText) -> Accesstoken -> AttributeValue
 accesstokenToAttribute route = uuidToAttribute route . getAccesstoken
 
-uuidToAttribute :: (String -> String) -> SqliteUUID -> AttributeValue
-uuidToAttribute route = lazyTextValue . pack . route . toString . getSqliteUUID
+uuidToAttribute :: (LText -> LText) -> SqliteUUID -> AttributeValue
+uuidToAttribute route = lazyTextValue . route . toLText . Data.UUID.toText . getSqliteUUID

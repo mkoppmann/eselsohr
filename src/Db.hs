@@ -1,6 +1,5 @@
 module Db where
 
-import Data.Text.Lazy (Text)
 import Database.SQLite.Simple (Connection, NamedParam ((:=)), execute, executeNamed, execute_, queryNamed, query_)
 import Model
 
@@ -28,7 +27,7 @@ createArticlesTable conn = execute_ conn "CREATE TABLE IF NOT EXISTS articles (i
 deleteArticle :: SqliteUUID -> Connection -> IO ()
 deleteArticle aId conn = executeNamed conn "DELETE FROM articles WHERE id = :id" [":id" := aId]
 
-patchArticle :: SqliteUUID -> Text -> Connection -> IO ()
+patchArticle :: SqliteUUID -> LText -> Connection -> IO ()
 patchArticle aId title conn = executeNamed conn "UPDATE articles SET title = :title WHERE id = :id" [":title" := title, ":id" := aId]
 
 insertArticle :: Article -> Connection -> IO ()

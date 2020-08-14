@@ -3,7 +3,6 @@
 
 module Model where
 
-import Data.Text.Lazy (Text)
 import Data.Time (UTCTime)
 import Data.UUID (UUID, fromText, toText)
 import Database.SQLite.Simple (FromRow, ResultError (ConversionFailed), SQLData (SQLText), ToRow, field, fromRow, toRow)
@@ -11,6 +10,7 @@ import Database.SQLite.Simple.FromField (FromField, fromField, returnError)
 import Database.SQLite.Simple.Internal (Field (Field))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField, toField)
+import Prelude hiding (toText)
 
 newtype SqliteUUID = SqliteUUID {getSqliteUUID :: UUID}
   deriving newtype (Eq, Read)
@@ -48,8 +48,8 @@ instance ToRow CollectionMapping where
 
 data Article = Article
   { articleId :: SqliteUUID,
-    articleTitle :: Text,
-    articleHref :: Text,
+    articleTitle :: LText,
+    articleHref :: LText,
     articleCreate_at :: UTCTime
   }
   deriving stock (Eq, Read)
