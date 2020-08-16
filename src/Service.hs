@@ -14,13 +14,14 @@ initSystem dataFolder = do
   createDirectoryIfMissing True dataFolder
   sqlCollectionMapping createCollectionsTable
 
-createNewCollection :: IO ()
+createNewCollection :: IO Accesstoken
 createNewCollection = do
   collectionId <- coerce nextRandom
   accesstoken <- coerce nextRandom
   let collMap = CollectionMapping collectionId accesstoken
   initArticlesTable collectionId
   sqlCollectionMapping $ persistNewCollection collMap
+  return accesstoken
 
 getCollections :: IO [CollectionMapping]
 getCollections = sqlCollectionMapping getCollectionMappings
@@ -63,6 +64,6 @@ deleteArticleService acc aId = do
 buildArticle :: LText -> IO Article
 buildArticle aHref = do
   aId <- coerce nextRandom
-  aTitle <- fetchTitleWithDefault aHref
+  aTitle <- scrapWebsiteWithDefaults aHref
   aCreated <- getCurrentTime
   return $ Article aId aTitle aHref aCreated

@@ -11,7 +11,8 @@ startApp :: IO ()
 startApp = do
   initSystem dataFolder
   scotty 8080 $
-    cssController
+    rootController
+      >> cssController
       >> getArticlesController
       >> showArticleController
       >> editArticleController

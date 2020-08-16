@@ -50,7 +50,7 @@ data Article = Article
   { articleId :: SqliteUUID,
     articleTitle :: LText,
     articleHref :: LText,
-    articleCreate_at :: UTCTime
+    articleCreated_at :: UTCTime
   }
   deriving stock (Eq, Read)
 

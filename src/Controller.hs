@@ -1,6 +1,6 @@
 module Controller where
 
-import Data.UUID (fromText)
+import Data.UUID (fromText, toText)
 import Model
 import Network.HTTP.Types (status404)
 import Routes
@@ -11,6 +11,10 @@ import Prelude hiding (get)
 
 -- ACTIONS
 
+rootAction :: ActionM ()
+rootAction = do
+  html $ renderApp startpage
+
 cssAction :: ActionM ()
 cssAction = do
   let css = encodeUtf8 renderAppStylesheet
@@ -19,8 +23,9 @@ cssAction = do
 
 createNewCollectionAction :: ActionM ()
 createNewCollectionAction = do
-  liftIO createNewCollection
-  redirect collectionRoute
+  acc <- liftIO createNewCollection
+  let accText = toLText $ Data.UUID.toText $ getSqliteUUID $ getAccesstoken acc
+  redirect $ collectionWithAccesstokenRoute accText
 
 getCollectionsAction :: ActionM ()
 getCollectionsAction = do
@@ -94,6 +99,9 @@ invalidUUID :: ActionM ()
 invalidUUID = raiseStatus status404 "ID not found"
 
 -- CONTROLLER
+
+rootController :: ScottyM ()
+rootController = get rootRoutePattern rootAction
 
 cssController :: ScottyM ()
 cssController = get cssRoutePattern cssAction

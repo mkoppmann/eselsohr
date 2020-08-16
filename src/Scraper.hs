@@ -2,13 +2,13 @@ module Scraper where
 
 import qualified Text.HTML.Scalpel as SC
 
-fetchTitleWithDefault :: LText -> IO LText
-fetchTitleWithDefault url = do
-  mTitle <- fetchTitle url
-  return $ fromMaybe "Empty Title" mTitle
+scrapWebsiteWithDefaults :: LText -> IO LText
+scrapWebsiteWithDefaults url = do
+  mScrap <- scrapWebsite url
+  return $ fromMaybe "Empty Title" mScrap
 
-fetchTitle :: LText -> IO (Maybe LText)
-fetchTitle url = SC.scrapeURL (toString url) title
-  where
-    title :: SC.Scraper LText LText
-    title = SC.text "h1"
+scrapWebsite :: LText -> IO (Maybe LText)
+scrapWebsite url = SC.scrapeURL (toString url) titleScraper
+
+titleScraper :: SC.Scraper LText LText
+titleScraper = SC.text "h1"

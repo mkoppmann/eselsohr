@@ -2,6 +2,9 @@ module Routes where
 
 import Web.Scotty (RoutePattern)
 
+rootRoutePattern :: RoutePattern
+rootRoutePattern = "/"
+
 cssRoute :: LText
 cssRoute = "/static/style.css"
 
