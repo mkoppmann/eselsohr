@@ -26,26 +26,20 @@ collectionWithAccesstokenRoute acc = "/collections/" <> acc
 collectionWithAccesstokenRoutePattern :: RoutePattern
 collectionWithAccesstokenRoutePattern = "/collections/:acc"
 
-collectionCreationRoute :: LText
-collectionCreationRoute = "/collections/new"
-
-collectionCreationRoutePattern :: RoutePattern
-collectionCreationRoutePattern = "/collections/new"
-
-articlesRoute :: LText
-articlesRoute = "/articles"
+articlesRoute :: (Semigroup a, IsString a) => a -> a
+articlesRoute acc = "/collections/" <> acc <> "/articles"
 
 articlesRoutePattern :: RoutePattern
-articlesRoutePattern = "/articles"
+articlesRoutePattern = "/collections/:acc/articles"
 
-articleWithIdRoute :: (Semigroup a, IsString a) => a -> a
-articleWithIdRoute aId = "/article/" <> aId
+articleWithIdRoute :: (Semigroup a, IsString a) => a -> a -> a
+articleWithIdRoute acc aId = "/collections/" <> acc <> "/articles/" <> aId
 
 articleWithIdRoutePattern :: RoutePattern
-articleWithIdRoutePattern = "/article/:id"
+articleWithIdRoutePattern = "/collections/:acc/articles/:id"
 
-editArticleWithIdRoute :: (Semigroup a, IsString a) => a -> a
-editArticleWithIdRoute aId = "/article/" <> aId <> "/edit"
+editArticleWithIdRoute :: (Semigroup a, IsString a) => a -> a -> a
+editArticleWithIdRoute acc aId = "/collections/" <> acc <> "/articles/" <> aId <> "/edit"
 
 editArticleWithIdRoutePattern :: RoutePattern
-editArticleWithIdRoutePattern = "/article/:id/edit"
+editArticleWithIdRoutePattern = "/collections/:acc/articles/:id/edit"

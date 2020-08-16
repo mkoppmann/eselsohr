@@ -2,7 +2,7 @@ module View where
 
 import qualified Clay as C
 import Data.Time (UTCTime, defaultTimeLocale, formatTime)
-import Data.UUID (toText)
+import Data.UUID (UUID, toText)
 import Model
 import Routes
 import Text.Blaze.Html.Renderer.Text (renderHtml)
@@ -31,13 +31,13 @@ collectionMappingList collmaps = do
     renderCollMaps = li . toHtml . prettyCollMap
     prettyCollMap (CollectionMapping collId acc) = do
       let lCollId = show $ getSqliteUUID $ getCollectionId collId :: LText
-      p $ a ! href (accesstokenToAttribute collectionWithAccesstokenRoute acc) $ toHtml lCollId
+      p $ a ! href (routeWithAccesstokenToAttribute articlesRoute acc) $ toHtml lCollId
       deleteCollectionForm acc
 
-articleList :: [Article] -> Html
-articleList articles = do
+articleList :: Accesstoken -> [Article] -> Html
+articleList acc articles = do
   h2 "Add a new article"
-  newArticleForm
+  newArticleForm acc
   h1 "The mighty article list"
   ul $ mapM_ renderArticle articles
   where
@@ -45,51 +45,56 @@ articleList articles = do
     prettyArticle (Article aId aTitle _ created) = do
       p $ do
         toHtml $ prettyDate created <> "| "
-        a ! href (uuidToAttribute articleWithIdRoute aId) $ toHtml aTitle
-      editArticleForm aId
-      deleteArticleForm aId
+        a ! href (routeWithAccesstokenAndIdToAttribute articleWithIdRoute acc aId) $ toHtml aTitle
+      editArticleForm acc aId
+      deleteArticleForm acc aId
 
-articleDetails :: Article -> Html
-articleDetails (Article aId aTitle aHref created) = do
+articleDetails :: Accesstoken -> Article -> Html
+articleDetails acc (Article aId aTitle aHref created) = do
   h1 $ toHtml aTitle
   p $ toHtml $ "Created: " <> prettyDate created
   p $ a ! href (lazyTextValue aHref) $ toHtml aHref
-  editArticleForm aId
-  deleteArticleForm aId
-  p $ a ! href (lazyTextValue articlesRoute) $ "Back to articles list"
+  editArticleForm acc aId
+  deleteArticleForm acc aId
+  p $ a ! href (routeWithAccesstokenToAttribute articlesRoute acc) $ "Back to articles list"
 
-editArticleDetails :: Article -> Html
-editArticleDetails (Article aId aTitle aHref _) = do
+editArticleDetails :: Accesstoken -> Article -> Html
+editArticleDetails acc (Article aId aTitle aHref _) = do
   h1 "Edit article"
-  H.form ! action (uuidToAttribute articleWithIdRoute aId) ! method "POST" $ do
+  H.form ! action (routeWithAccesstokenAndIdToAttribute articleWithIdRoute acc aId) ! method "POST" $ do
     input ! type_ "text" ! name "title" ! value (lazyTextValue aTitle)
     p $ toHtml aHref
     input ! type_ "hidden" ! name "action" ! value "PATCH"
     input ! type_ "submit" ! name "submit" ! value "Save article"
-  p $ a ! href (lazyTextValue articlesRoute) $ "Back to articles list"
+  p $ a ! href (routeWithAccesstokenToAttribute collectionWithAccesstokenRoute acc) $ "Back to articles list"
 
-newArticleForm :: Html
-newArticleForm = H.form ! action (lazyTextValue articlesRoute) ! method "POST" $ do
-  input ! type_ "text" ! name "href" ! placeholder "URL"
-  input ! type_ "submit" ! name "submit"
+newArticleForm :: Accesstoken -> Html
+newArticleForm acc =
+  H.form ! action (routeWithAccesstokenToAttribute articlesRoute acc) ! method "POST" $ do
+    input ! type_ "text" ! name "href" ! placeholder "URL"
+    input ! type_ "submit" ! name "submit"
 
 newCollectionForm :: Html
-newCollectionForm = H.form ! action (lazyTextValue collectionCreationRoute) ! method "POST" $ do
-  input ! type_ "submit" ! name "submit"
+newCollectionForm =
+  H.form ! action (lazyTextValue collectionRoute) ! method "POST" $ do
+    input ! type_ "submit" ! name "submit" ! value "New collection"
 
 deleteCollectionForm :: Accesstoken -> Html
-deleteCollectionForm acc = H.form ! action (accesstokenToAttribute collectionWithAccesstokenRoute acc) ! method "POST" $ do
-  input ! type_ "hidden" ! name "action" ! value "DELETE"
-  input ! type_ "submit" ! name "submit" ! value "Delete collection"
+deleteCollectionForm acc =
+  H.form ! action (routeWithAccesstokenToAttribute collectionWithAccesstokenRoute acc) ! method "POST" $ do
+    input ! type_ "hidden" ! name "action" ! value "DELETE"
+    input ! type_ "submit" ! name "submit" ! value "Delete collection"
 
-editArticleForm :: SqliteUUID -> Html
-editArticleForm aId = H.form ! action (uuidToAttribute editArticleWithIdRoute aId) ! method "GET" $ do
-  input ! type_ "submit" ! name "submit" ! value "Edit article"
+editArticleForm :: Accesstoken -> SqliteUUID -> Html
+editArticleForm acc aId =
+  H.form ! action (routeWithAccesstokenAndIdToAttribute editArticleWithIdRoute acc aId) ! method "GET" $ do
+    input ! type_ "submit" ! name "submit" ! value "Edit article"
 
-deleteArticleForm :: SqliteUUID -> Html
-deleteArticleForm aId = H.form ! action (uuidToAttribute articleWithIdRoute aId) ! method "POST" $ do
-  input ! type_ "hidden" ! name "action" ! value "DELETE"
-  input ! type_ "submit" ! name "submit" ! value "Delete article"
+deleteArticleForm :: Accesstoken -> SqliteUUID -> Html
+deleteArticleForm acc aId =
+  H.form ! action (routeWithAccesstokenAndIdToAttribute articleWithIdRoute acc aId) ! method "POST" $ do
+    input ! type_ "hidden" ! name "action" ! value "DELETE"
+    input ! type_ "submit" ! name "submit" ! value "Delete article"
 
 appFooter :: Html
 appFooter = do
@@ -114,11 +119,13 @@ appStylesheet =
 prettyDate :: UTCTime -> LText
 prettyDate = toLText . formatTime defaultTimeLocale "%Y-%m-%d %H:%M:%S"
 
-collectionIdToAttribute :: (LText -> LText) -> CollectionId -> AttributeValue
-collectionIdToAttribute route = uuidToAttribute route . getCollectionId
+routeWithAccesstokenToAttribute :: (LText -> LText) -> Accesstoken -> AttributeValue
+routeWithAccesstokenToAttribute route = lazyTextValue . route . uuidToLText . coerce
 
-accesstokenToAttribute :: (LText -> LText) -> Accesstoken -> AttributeValue
-accesstokenToAttribute route = uuidToAttribute route . getAccesstoken
+routeWithAccesstokenAndIdToAttribute :: (LText -> LText -> LText) -> Accesstoken -> SqliteUUID -> AttributeValue
+routeWithAccesstokenAndIdToAttribute route acc uuid =
+  let newRoute = flip route (uuidToLText $ coerce uuid)
+   in routeWithAccesstokenToAttribute newRoute acc
 
-uuidToAttribute :: (LText -> LText) -> SqliteUUID -> AttributeValue
-uuidToAttribute route = lazyTextValue . route . toLText . Data.UUID.toText . getSqliteUUID
+uuidToLText :: UUID -> LText
+uuidToLText = toLText . Data.UUID.toText

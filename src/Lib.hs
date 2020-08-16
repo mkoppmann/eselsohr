@@ -1,16 +1,15 @@
 module Lib (startApp) where
 
 import Controller
-import Database.SQLite.Simple
-import Db
-import System.Directory
+import Service (initSystem)
 import Web.Scotty
+
+dataFolder :: String
+dataFolder = "data"
 
 startApp :: IO ()
 startApp = do
-  createDirectoryIfMissing True "data"
-  withConnection "data/collections.db" createCollectionsTable
-  withConnection "db.db" createArticlesTable
+  initSystem dataFolder
   scotty 8080 $
     cssController
       >> getArticlesController
