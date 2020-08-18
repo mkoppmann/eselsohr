@@ -1,11 +1,8 @@
 module Capability
-  ( QueryArticleCapability,
-    Capability,
+  ( QueryArticleCapability (getQueryArticleConn),
+    Capability (getCap),
     getQueryArticlesCap,
-    getCap,
-    getQueryArticleConn,
-    CommandArticleCapability,
-    getCommandArticleConn,
+    CommandArticleCapability (getCommandArticleConn),
     getCommandArticlesCap,
   )
 where

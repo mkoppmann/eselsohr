@@ -27,13 +27,15 @@ getCollections :: IO [CollectionMapping]
 getCollections = sqlCollectionMapping getCollectionMappings
 
 getArticlesForCollection :: Accesstoken -> IO (Maybe [Article])
-getArticlesForCollection acc = do
-  mCap <- getQueryArticlesCap acc
-  foldMap getArticles mCap >>= (return . pure)
+getArticlesForCollection acc =
+  getQueryArticlesCap acc
+    >>= foldMap getArticles
+    >>= (return . pure)
 
 getCollectionMappingService :: Accesstoken -> IO (Maybe CollectionMapping)
 getCollectionMappingService acc =
-  sqlCollectionMapping (getCollectionMapping acc) >>= (return . viaNonEmpty head)
+  sqlCollectionMapping (getCollectionMapping acc)
+    >>= (return . viaNonEmpty head)
 
 deleteCollection :: CollectionId -> IO ()
 deleteCollection cId = do
@@ -41,25 +43,25 @@ deleteCollection cId = do
   removeFile $ getCollectionPath cId
 
 getArticleFromCollection :: Accesstoken -> SqliteUUID -> IO (Maybe Article)
-getArticleFromCollection acc aId = do
-  mCap <- getQueryArticlesCap acc
-  foldMap (getArticle aId) mCap >>= (return . viaNonEmpty head)
+getArticleFromCollection acc aId =
+  getQueryArticlesCap acc
+    >>= foldMap (getArticle aId)
+    >>= (return . viaNonEmpty head)
 
 createArticle :: Accesstoken -> LText -> IO ()
 createArticle acc aHref = do
   article <- buildArticle aHref
-  mCap <- getCommandArticlesCap acc
-  foldMap (insertArticle article) mCap
+  getCommandArticlesCap acc >>= foldMap (insertArticle article)
 
 editArticle :: Accesstoken -> SqliteUUID -> LText -> IO ()
-editArticle acc aId aTitle = do
-  mCap <- getCommandArticlesCap acc
-  foldMap (patchArticle aId aTitle) mCap
+editArticle acc aId aTitle =
+  getCommandArticlesCap acc
+    >>= foldMap (patchArticle aId aTitle)
 
 deleteArticleService :: Accesstoken -> SqliteUUID -> IO ()
-deleteArticleService acc aId = do
-  mCap <- getCommandArticlesCap acc
-  foldMap (deleteArticle aId) mCap
+deleteArticleService acc aId =
+  getCommandArticlesCap acc
+    >>= foldMap (deleteArticle aId)
 
 buildArticle :: LText -> IO Article
 buildArticle aHref = do

@@ -1,6 +1,6 @@
 module Controller where
 
-import Data.UUID (fromText, toText)
+import Data.UUID (toText)
 import Model
 import Network.HTTP.Types (status404)
 import Routes
@@ -12,20 +12,18 @@ import Prelude hiding (get)
 -- ACTIONS
 
 rootAction :: ActionM ()
-rootAction = do
-  html $ renderApp startpage
+rootAction = html $ renderApp startpage
 
 cssAction :: ActionM ()
 cssAction = do
-  let css = encodeUtf8 renderAppStylesheet
   setHeader "content-type" "text/css; charset=utf-8"
-  raw css
+  raw $ encodeUtf8 renderAppStylesheet
 
 createNewCollectionAction :: ActionM ()
 createNewCollectionAction = do
   acc <- liftIO createNewCollection
-  let accText = toLText $ Data.UUID.toText $ getSqliteUUID $ getAccesstoken acc
-  redirect $ collectionWithAccesstokenRoute accText
+  let accText = toLText . Data.UUID.toText . coerce
+  redirect . collectionWithAccesstokenRoute $ accText acc
 
 getCollectionsAction :: ActionM ()
 getCollectionsAction = do
@@ -35,16 +33,13 @@ getCollectionsAction = do
 getArticlesForCollectionAction :: ActionM ()
 getArticlesForCollectionAction = do
   pAcc <- param "acc"
-  let mAcc = coerce <$> fromText pAcc
-  mArticles <- liftIO $ foldMap getArticlesForCollection mAcc
-  let mHtml = articleList <$> mAcc <*> mArticles
-  maybe invalidUUID (html . renderApp) mHtml
+  mArticles <- liftIO $ getArticlesForCollection pAcc
+  maybe invalidUUID (html . renderApp) $ articleList pAcc <$> mArticles
 
 deleteCollectionAction :: ActionM ()
 deleteCollectionAction = do
   pAcc <- param "acc"
-  let mAcc = Accesstoken . SqliteUUID <$> fromText pAcc
-  mCollMap <- liftIO $ join <$> mapM getCollectionMappingService mAcc
+  mCollMap <- liftIO $ getCollectionMappingService pAcc
   let mCollId = collectionMappingId <$> mCollMap
   liftIO $ foldMap deleteCollection mCollId
   redirect collectionRoute
@@ -53,47 +48,40 @@ getArticleAction :: ActionM ()
 getArticleAction = do
   pAcc <- param "acc"
   pId <- param "id"
-  let mAcc = coerce <$> fromText pAcc
-  let mId = coerce <$> fromText pId
-  mArticle <- liftIO $ fmap join $ sequence $ getArticleFromCollection <$> mAcc <*> mId
-  maybe invalidUUID (html . renderApp) $ articleDetails <$> mAcc <*> mArticle
+  mArticle <- liftIO $ getArticleFromCollection pAcc pId
+  maybe invalidUUID (html . renderApp) $ articleDetails pAcc <$> mArticle
 
 createArticleAction :: ActionM ()
 createArticleAction = do
   pAcc <- param "acc"
   pHref <- param "href"
-  let mAcc = coerce <$> fromText pAcc
-  _ <- liftIO $ sequence $ flip createArticle pHref <$> mAcc
-  redirect $ collectionWithAccesstokenRoute $ toLText pAcc
+  liftIO $ createArticle pAcc pHref
+  let tAcc = show @LText . getSqliteUUID $ getAccesstoken pAcc
+  redirect $ collectionWithAccesstokenRoute tAcc
 
 editArticleAction :: ActionM ()
 editArticleAction = do
   pAcc <- param "acc"
   pId <- param "id"
-  let mAcc = coerce <$> fromText pAcc
-  let mId = coerce <$> fromText pId
-  mArticle <- liftIO $ fmap join $ sequence $ getArticleFromCollection <$> mAcc <*> mId
-  maybe invalidUUID (html . renderApp) $ editArticleDetails <$> mAcc <*> mArticle
+  mArticle <- liftIO $ getArticleFromCollection pAcc pId
+  maybe invalidUUID (html . renderApp) $ editArticleDetails pAcc <$> mArticle
 
 patchArticleAction :: ActionM ()
 patchArticleAction = do
   pAcc <- param "acc"
   pId <- param "id"
   pTitle <- param "title"
-  let mAcc = coerce <$> fromText pAcc
-  let mId = coerce <$> fromText pId
-  let mTitle = pure pTitle
-  _ <- liftIO $ sequence $ editArticle <$> mAcc <*> mId <*> mTitle
-  redirect $ collectionWithAccesstokenRoute $ toLText pAcc
+  liftIO $ editArticle pAcc pId pTitle
+  let tAcc = show @LText . getSqliteUUID $ getAccesstoken pAcc
+  redirect $ collectionWithAccesstokenRoute tAcc
 
 deleteArticleAction :: ActionM ()
 deleteArticleAction = do
   pAcc <- param "acc"
   pId <- param "id"
-  let mAcc = coerce <$> fromText pAcc
-  let mId = coerce <$> fromText pId
-  _ <- liftIO $ sequence $ deleteArticleService <$> mAcc <*> mId
-  redirect $ collectionWithAccesstokenRoute $ toLText pAcc
+  liftIO $ deleteArticleService pAcc pId
+  let tAcc = show @LText . getSqliteUUID $ getAccesstoken pAcc
+  redirect $ collectionWithAccesstokenRoute tAcc
 
 invalidUUID :: ActionM ()
 invalidUUID = raiseStatus status404 "ID not found"

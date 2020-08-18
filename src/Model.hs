@@ -10,6 +10,7 @@ import Database.SQLite.Simple.FromField (FromField, fromField, returnError)
 import Database.SQLite.Simple.Internal (Field (Field))
 import Database.SQLite.Simple.Ok (Ok (Ok))
 import Database.SQLite.Simple.ToField (ToField, toField)
+import Web.Scotty (Parsable, parseParam, readEither)
 import Prelude hiding (toText)
 
 newtype SqliteUUID = SqliteUUID {getSqliteUUID :: UUID}
@@ -26,11 +27,14 @@ instance ToField SqliteUUID where
   toField = SQLText . toText . getSqliteUUID
   {-# INLINE toField #-}
 
+instance Parsable SqliteUUID where
+  parseParam = Web.Scotty.readEither
+
 newtype Accesstoken = Accesstoken {getAccesstoken :: SqliteUUID}
-  deriving newtype (FromField, ToField, Eq, Read)
+  deriving newtype (Parsable, FromField, ToField, Eq, Read)
 
 newtype CollectionId = CollectionId {getCollectionId :: SqliteUUID}
-  deriving newtype (FromField, ToField, Eq, Read)
+  deriving newtype (Parsable, FromField, ToField, Eq, Read)
 
 data Actions = PATCH | DELETE deriving stock (Eq, Read, Show)
 
