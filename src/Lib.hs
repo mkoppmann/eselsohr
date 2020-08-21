@@ -1,24 +1,31 @@
-module Lib (startApp) where
+module Lib
+  ( main,
+    mkAppEnv,
+    runServer,
+  )
+where
 
-import Controller
-import Service (initSystem)
-import Web.Scotty
+import Lib.App (AppEnv, Env (..))
+import Lib.Config (Config (..), loadConfig)
+import Lib.Effect.Log (mainLogAction)
+import Lib.Web (application)
+import Network.Wai.Handler.Warp (run)
+import System.Directory (createDirectoryIfMissing)
 
-dataFolder :: String
-dataFolder = "data"
+mkAppEnv :: Config -> IO AppEnv
+mkAppEnv Config {..} = do
+  let envDataFolder = confDataFolder
+  let envLogAction = mainLogAction confLogSeverity
+  let envServerPort = confServerPort
+  return Env {..}
 
-startApp :: IO ()
-startApp = do
-  initSystem dataFolder
-  scotty 8080 $
-    rootController
-      >> cssController
-      >> getArticlesController
-      >> showArticleController
-      >> editArticleController
-      >> createArticleController
-      >> postArticleController
-      >> createCollectionController
-      >> getCollectionsController
-      >> showCollectionController
-      >> postCollectionController
+prepareDatafolder :: FilePath -> IO ()
+prepareDatafolder = createDirectoryIfMissing True
+
+runServer :: AppEnv -> IO ()
+runServer env@Env {..} = do
+  prepareDatafolder envDataFolder
+  run envServerPort $ application env
+
+main :: IO ()
+main = mkAppEnv loadConfig >>= runServer

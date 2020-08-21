@@ -3,7 +3,7 @@ name:               eselsohr
 version:            0.1.0.0
 license:            AGPL-3.0-only
 license-file:       LICENSE
-maintainer:         me@mkoppmann.at
+maintainer:         mkoppmann <me@mkoppmann.at>
 author:             mkoppmann
 category:           Web
 extra-source-files: CHANGELOG.md
@@ -11,47 +11,92 @@ extra-source-files: CHANGELOG.md
 library
     exposed-modules:
         Lib
-        Model
-        Scraper
-        View
-        Routes
-        Controller
-        Service
-        Capability
-        Db.Article
-        Db.CollectionMapping
-        Db.Internal.Article
+        Lib.App
+        Lib.App.Env
+        Lib.App.Error
+        Lib.App.Monad
+        Lib.Config
+        Lib.Core.Accesstoken
+        Lib.Core.Article
+        Lib.Core.Capability
+        Lib.Core.Collection
+        Lib.Core.Email
+        Lib.Core.Id
+        Lib.Core.Uri
+        Lib.Core.UserAction
+        Lib.Core.Uuid
+        Lib.Db.Wrapper
+        Lib.Effect.Log
+        Lib.Effect.Random
+        Lib.Effect.Resource
+        Lib.Effect.Resource.Accesstoken
+        Lib.Effect.Resource.Article
+        Lib.Effect.Resource.Collection
+        Lib.Effect.Scraper
+        Lib.Effect.Time
+        Lib.Web
+        Lib.Web.Handler
+        Lib.Web.Handler.Action
+        Lib.Web.Handler.Common
+        Lib.Web.Handler.Frontend
+        Lib.Web.Route
+        Lib.Web.Route.Action
+        Lib.Web.Route.Frontend
+        Lib.Web.Types
+        Lib.Web.View.App
+        Lib.Web.View.Form
+        Lib.Web.View.Page
+        Lib.Web.View.Style
+        Network.Wai.Middleware.MyMethodOverridePost
+        Servant.CSS.Clay
 
     hs-source-dirs:     src
     default-language:   Haskell2010
     default-extensions:
         DataKinds FlexibleContexts GADTs LambdaCase PolyKinds RankNTypes
         ScopedTypeVariables TypeApplications TypeOperators TypeFamilies
-        OverloadedStrings
+        OverloadedStrings MultiParamTypeClasses FlexibleInstances
+        ConstraintKinds DerivingVia DerivingStrategies QuasiQuotes
+        RecordWildCards InstanceSigs DeriveGeneric PatternSynonyms
 
     ghc-options:
-        -Wall -Wcompat -Wincomplete-record-updates
-        -Wincomplete-uni-patterns -Wredundant-constraints -Widentities
-        -Wincomplete-record-updates -fhide-source-paths -Wpartial-fields
-        -Wmissing-deriving-strategies
+        -Wall -Wcompat -Widentities -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints
+        -fhide-source-paths -Wpartial-fields -Wmissing-deriving-strategies
+        -fwrite-ide-info -hiedir=.hie -Wunused-packages -O0 -j
+        -freverse-errors
 
     build-depends:
         base ^>=4.14.0.0,
+        binary -any,
+        bytestring -any,
+        clay -any,
+        co-log -any,
+        directory -any,
+        exceptions -any,
+        http-api-data -any,
+        http-media -any,
+        http-types -any,
+        lucid -any,
+        microlens -any,
+        modern-uri -any,
+        mtl -any,
         relude -any,
-        scotty -any,
+        scalpel -any,
+        servant -any,
+        servant-lucid -any,
+        servant-server -any,
         sqlite-simple -any,
         time -any,
-        uuid -any,
         text -any,
-        directory -any,
-        blaze-html -any,
-        clay -any,
-        scalpel -any,
-        http-types -any
+        uuid -any,
+        wai -any,
+        wai-extra -any,
+        warp -any
 
     mixins:
         base hiding (Prelude),
-        relude (Relude as Prelude)
+        relude (Relude as Prelude, Relude.Extra.Bifunctor)
 
 executable eselsohr
     main-is:          Main.hs
