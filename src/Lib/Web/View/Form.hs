@@ -1,5 +1,6 @@
 module Lib.Web.View.Form
   ( newCollection,
+    newListArticles,
     newArticle,
     showArticle,
     editArticle,
@@ -22,6 +23,19 @@ newCollection actionRoute acc =
   form_ [linkAbsAction_ actionRoute, method_ "POST"] $ do
     input_ [type_ "hidden", name_ "postafAccesstoken", value_ $ accText acc]
     input_ [type_ "submit", value_ "Create new collection"]
+
+newListArticles :: Link -> Id Accesstoken -> Html ()
+newListArticles actionRoute acc =
+  form_ [linkAbsAction_ actionRoute, method_ "POST"] $ do
+    input_ [type_ "hidden", name_ "postafAccesstoken", value_ $ accText acc]
+    ul_ $ do
+      li_ $ do
+        label_ [Lucid.for_ "secureLink"] "Secure links:"
+        input_ [type_ "checkbox", name_ "postafSecureLink", id_ "secureLink", value_ "True"]
+      li_ $ do
+        label_ [Lucid.for_ "noExpiration"] "Access link does not expire:"
+        input_ [type_ "checkbox", name_ "postafNoExpiration", id_ "noExpiration", value_ "True"]
+    input_ [type_ "submit", value_ "Create access link"]
 
 newArticle :: Link -> Id Accesstoken -> Html ()
 newArticle actionRoute acc =

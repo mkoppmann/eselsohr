@@ -17,6 +17,23 @@ data FrontendSite route = FrontendSite
   { startpage ::
       route
         :- Get '[HTML] HtmlPage,
+    collectionMain ::
+      route
+        :- "collection"
+        :> QueryParam "acc" (Id Accesstoken)
+        :> Get '[HTML] HtmlPage,
+    collectionSettings ::
+      route
+        :- "collection"
+        :> "settings"
+        :> QueryParam "acc" (Id Accesstoken)
+        :> Get '[HTML] HtmlPage,
+    collectionShare ::
+      route
+        :- "collection"
+        :> "sharing"
+        :> QueryParam "acc" (Id Accesstoken)
+        :> Get '[HTML] HtmlPage,
     listArticles ::
       route
         :- "articles"

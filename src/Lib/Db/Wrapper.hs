@@ -7,17 +7,13 @@ module Lib.Db.Wrapper
     query_,
     queryNamed,
     asSingleRow,
-    collectionToAnyId,
-    accesstokenToAnyId,
   )
 where
 
 import qualified Database.SQLite.Simple as Sql
 import Lib.App.Env (DataPath, Has, grab)
 import Lib.App.Error (AppErrorType, WithError, dbError, throwOnNothingM)
-import Lib.Core.Accesstoken (Accesstoken)
-import Lib.Core.Collection (Collection)
-import Lib.Core.Id (AnyId, Id, castId, unId)
+import Lib.Core.Id (AnyId, unId)
 import Lib.Core.Uuid (Uuid (unUuid))
 
 type WithDb env m = (MonadReader env m, Has DataPath env, MonadIO m)
@@ -105,9 +101,3 @@ asSingleRow res =
 
 singleRowError :: AppErrorType
 singleRowError = dbError "Expected a single row, but got none"
-
-collectionToAnyId :: Id Collection -> AnyId
-collectionToAnyId = castId @()
-
-accesstokenToAnyId :: Id Accesstoken -> AnyId
-accesstokenToAnyId = castId @()

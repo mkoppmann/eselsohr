@@ -29,9 +29,6 @@ library
         Lib.Effect.Log
         Lib.Effect.Random
         Lib.Effect.Resource
-        Lib.Effect.Resource.Accesstoken
-        Lib.Effect.Resource.Article
-        Lib.Effect.Resource.Collection
         Lib.Effect.Scraper
         Lib.Effect.Time
         Lib.Web

@@ -12,12 +12,13 @@ import Lib.Core.Id (Id, castId)
 import Lib.Core.Uri (Uri, render)
 import Lib.Core.UserAction (ArticleAction (..), CollectionAction (..), UserAction (..))
 import Lib.Db.Wrapper (WithDb)
-import Lib.Effect.Log (WithLog, log, pattern D, pattern E)
+import Lib.Effect.Log (WithLog, log, pattern D)
 import Lib.Effect.Random (MonadRandom (..))
-import Lib.Effect.Resource (CommandAccesstoken (..), CommandArticle (..), CommandCollection (..), QueryAccesstoken (..), QueryCollection (..), RWAccesstoken, RWCollection)
+import Lib.Effect.Resource (CommandEntity (..), QueryEntity (..), RWEntity)
+import qualified Lib.Effect.Resource as Res
 import Lib.Effect.Scraper (MonadScraper (..))
 import Lib.Effect.Time (MonadTime (..))
-import Lib.Web.Handler.Common (addCapAndAccesstoken, getAccIdForAction, linkAsText, listArticlesR, showArticleR)
+import qualified Lib.Web.Handler.Common as HC
 import qualified Lib.Web.Route.Action as Route
 import Lib.Web.Types (AppServer, DeleteActionForm (..), PatchActionForm (..), PostActionForm (..), Redirection)
 
@@ -30,23 +31,23 @@ actionServer =
     }
 
 genericActionHandler ::
-  ( QueryAccesstoken m,
-    QueryCollection m
+  ( QueryEntity Accesstoken m,
+    QueryEntity Capability m
   ) =>
   Id Accesstoken ->
   m (Id Collection, UserAction)
 genericActionHandler accId = do
-  acc <- getAccesstoken accId
+  acc <- Res.getOne Res.accDbId accId
   let collId = accesstokenCol acc
   let capId = accesstokenCap acc
-  cap <- getCapability collId capId
+  cap <- Res.getOne collId capId
   let capAction = capabilityAction cap
   pure (collId, capAction)
 
 deleteAction ::
-  ( RWAccesstoken m,
-    CommandArticle m,
-    RWCollection m,
+  ( RWEntity Accesstoken m,
+    CommandEntity Article m,
+    RWEntity Capability m,
     WithError m
   ) =>
   DeleteActionForm ->
@@ -54,22 +55,38 @@ deleteAction ::
 deleteAction DeleteActionForm {..} = do
   (collId, capAction) <- genericActionHandler deleteafAccesstoken
   case capAction of
-    UaArticleAction articleAction -> case articleAction of
+    UaArtAction articleAction -> case articleAction of
       DeleteArticle aId -> handleDeleteArticle collId aId
       _nonDeleteAction -> throwError $ invalid "Wrong action"
-    _nonDeleteAction -> throwError $ invalid "Wrong action"
+    UaColAction collectionAction -> case collectionAction of
+      DeleteListArticles -> handleDeleteListArticles collId
+      _nonDeleteAction -> throwError $ invalid "Wrong action"
   where
+    handleDeleteListArticles collId = do
+      acc <- Res.getOne Res.accDbId deleteafAccesstoken
+      let capId = accesstokenCap acc
+      cap <- Res.getOne collId capId
+      case capabilityEntity cap of
+        Nothing -> throwError $ serverError "Couldn’t find matching accesstoken"
+        Just listArticlesAccId -> do
+          listArticlesAcc <- Res.getOne Res.accDbId $ castId @Accesstoken listArticlesAccId
+          Res.delete Res.accDbId $ accesstokenId listArticlesAcc
+          Res.delete Res.accDbId deleteafAccesstoken
+          Res.delete collId $ capabilityId cap
+          -- Collection Main Link necessary
+          throwError . redirect . HC.linkAsText $ HC.collectionMainR Nothing
+
     handleDeleteArticle collId aId = do
       deleteAllArticleCaps collId aId
-      deleteArticle collId aId
-      let listCap = UaArticleAction ListArticles
-      listArticles <- getAccIdForAction collId Nothing listCap
-      throwError . redirect . linkAsText . listArticlesR $ Just listArticles
+      Res.delete collId aId
+      let listCap = UaArtAction ListArticles
+      listArticles <- HC.getAccIdForAction collId Nothing listCap
+      throwError . redirect . HC.linkAsText . HC.listArticlesR $ Just listArticles
 
 patchAction ::
-  ( RWAccesstoken m,
-    CommandArticle m,
-    RWCollection m,
+  ( RWEntity Accesstoken m,
+    RWEntity Article m,
+    RWEntity Capability m,
     WithError m
   ) =>
   PatchActionForm ->
@@ -77,7 +94,7 @@ patchAction ::
 patchAction PatchActionForm {..} = do
   (collId, capAction) <- genericActionHandler patchafAccesstoken
   case capAction of
-    UaArticleAction articleAction -> case articleAction of
+    UaArtAction articleAction -> case articleAction of
       ChangeArticleTitle aId -> handleChangeArticleTitle collId aId patchafArticleTitle
       ArchiveArticle aId -> handleArchiveArticle collId aId
       UnreadArticle aId -> handleUnreadArticle collId aId
@@ -88,27 +105,27 @@ patchAction PatchActionForm {..} = do
       case mNewTitle of
         Nothing -> throwError $ missingParameter "New title is missing"
         Just newTitle -> do
-          changeArticleTitle collId aId newTitle
-          let showCap = UaArticleAction $ ShowArticle aId
-          showArticle <- getAccIdForAction collId Nothing showCap
-          throwError . redirect . linkAsText . showArticleR $ Just showArticle
+          Res.artUpdateTitle collId aId newTitle
+          let showCap = UaArtAction $ ShowArticle aId
+          showArticle <- HC.getAccIdForAction collId Nothing showCap
+          throwError . redirect . HC.linkAsText . HC.showArticleR $ Just showArticle
 
     handleArchiveArticle collId aId = do
-      archiveArticle collId aId
-      let listCap = UaArticleAction ListArticles
-      listArticles <- getAccIdForAction collId Nothing listCap
-      throwError . redirect . linkAsText . listArticlesR $ Just listArticles
+      Res.artUpdateState collId aId Archived
+      let listCap = UaArtAction ListArticles
+      listArticles <- HC.getAccIdForAction collId Nothing listCap
+      throwError . redirect . HC.linkAsText . HC.listArticlesR $ Just listArticles
 
     handleUnreadArticle collId aId = do
-      unreadArticle collId aId
-      let listCap = UaArticleAction ListArticles
-      listArticles <- getAccIdForAction collId Nothing listCap
-      throwError . redirect . linkAsText . listArticlesR $ Just listArticles
+      Res.artUpdateState collId aId Unread
+      let listCap = UaArtAction ListArticles
+      listArticles <- HC.getAccIdForAction collId Nothing listCap
+      throwError . redirect . HC.linkAsText . HC.listArticlesR $ Just listArticles
 
 postAction ::
-  ( RWAccesstoken m,
-    CommandArticle m,
-    RWCollection m,
+  ( RWEntity Accesstoken m,
+    CommandEntity Article m,
+    RWEntity Capability m,
     MonadRandom m,
     MonadScraper m,
     MonadTime m,
@@ -121,33 +138,43 @@ postAction ::
 postAction PostActionForm {..} = do
   (collId, capAction) <- genericActionHandler postafAccesstoken
   case capAction of
-    UaArticleAction articleAction -> case articleAction of
+    UaArtAction articleAction -> case articleAction of
       InsertArticle -> handleInsertArticle collId postafUri
-      _nonPostAction -> throwError $ invalid "Wrong action"
-    UaCollectionAction collectionArticle -> case collectionArticle of
+      _nonPostArticleAction -> throwError $ invalid "Wrong action"
+    UaColAction collectionArticle -> case collectionArticle of
       CreateCollection -> handleCreateCollection
+      CreateListArticlesAcc -> handleListArticlesAcc collId
+      _nonPostCollectionAction -> throwError $ invalid "Wrong action"
   where
     handleInsertArticle collId mUri = do
       case mUri of
         Nothing -> throwError $ missingParameter "URI is missing"
         Just uri -> do
           article <- createArticle uri
-          insertArticle collId article
+          Res.insert collId article
           createArticleCaps collId $ articleId article
           log D $ "New article for url " <> toText (render uri) <> " was created."
-          let listCap = UaArticleAction ListArticles
-          listArticles <- getAccIdForAction collId Nothing listCap
-          throwError . redirect . linkAsText . listArticlesR $ Just listArticles
+          let listCap = UaArtAction ListArticles
+          listArticles <- HC.getAccIdForAction collId Nothing listCap
+          throwError . redirect . HC.linkAsText . HC.listArticlesR $ Just listArticles
 
     handleCreateCollection = do
-      capId <- createCollection
-      log D $ "New collection with id " <> show capId <> " was created."
-      throwError . redirect . linkAsText . listArticlesR $ Just capId
+      collectionMainAcc <- createCollection
+      log D "New collection was created."
+      throwError . redirect . HC.linkAsText . HC.collectionMainR $ Just collectionMainAcc
+
+    handleListArticlesAcc collId = do
+      listArticlesAcc <- unlockCollection collId
+      log D $ "New ListArticles cap with accesstoken " <> show listArticlesAcc <> " was created."
+      Res.delete Res.accDbId postafAccesstoken
+      log D $ "Accesstoken " <> show postafAccesstoken <> " was deleted."
+      throwError . redirect . HC.linkAsText . HC.listArticlesR $ Just listArticlesAcc
 
 addArticleCapAndAcc ::
-  ( CommandAccesstoken m,
-    CommandCollection m,
-    MonadRandom m
+  ( CommandEntity Accesstoken m,
+    CommandEntity Capability m,
+    MonadRandom m,
+    WithLog env m
   ) =>
   Id Collection ->
   Maybe (Id Article) ->
@@ -156,10 +183,10 @@ addArticleCapAndAcc ::
 addArticleCapAndAcc collId mAId articleAction =
   case articleAction of
     InsertArticle ->
-      addCapAndAccesstoken collId Nothing userAction
+      HC.addCapAndAcc collId Nothing userAction
         >>= (return . pure)
     ListArticles ->
-      addCapAndAccesstoken collId Nothing userAction
+      HC.addCapAndAcc collId Nothing userAction
         >>= (return . pure)
     ShowArticle actionId -> compareIdsAndAddCaps actionId mAId
     EditArticle actionId -> compareIdsAndAddCaps actionId mAId
@@ -168,10 +195,10 @@ addArticleCapAndAcc collId mAId articleAction =
     UnreadArticle actionId -> compareIdsAndAddCaps actionId mAId
     DeleteArticle actionId -> compareIdsAndAddCaps actionId mAId
   where
-    userAction = UaArticleAction articleAction
+    userAction = UaArtAction articleAction
 
     addCap articleId =
-      addCapAndAccesstoken collId (Just $ castId @() articleId) userAction
+      HC.addCapAndAcc collId (Just $ castId @() articleId) userAction
         >>= (return . pure)
 
     compareIdsAndAddCaps aId1 = \case
@@ -179,22 +206,24 @@ addArticleCapAndAcc collId mAId articleAction =
       Nothing -> pure Nothing
 
 deleteAllArticleCaps ::
-  ( CommandAccesstoken m,
-    RWCollection m
+  ( RWEntity Accesstoken m,
+    RWEntity Capability m,
+    WithError m
   ) =>
   Id Collection ->
   Id Article ->
   m ()
 deleteAllArticleCaps collId aId = do
-  articleCaps <- getAllCapabilitiesViaEntity collId $ castId @() aId
+  articleCaps <- Res.capGetManyViaEntity collId $ castId @() aId
   let articleCapIds = fmap capabilityId articleCaps
-  traverse_ deleteAccesstokenViaCapability articleCapIds
-  traverse_ (deleteCapability collId) articleCapIds
+  traverse_ (Res.accDeleteViaCap Res.accDbId) articleCapIds
+  traverse_ (Res.delete collId) articleCapIds
 
 createArticleCaps ::
-  ( CommandAccesstoken m,
-    CommandCollection m,
-    MonadRandom m
+  ( CommandEntity Accesstoken m,
+    CommandEntity Capability m,
+    MonadRandom m,
+    WithLog env m
   ) =>
   Id Collection ->
   Id Article ->
@@ -225,29 +254,35 @@ createArticle aUri = do
   let aState = Unread
   return $ Article aId aTitle aUri aState aCreated
 
-createCollection ::
-  ( CommandAccesstoken m,
-    CommandCollection m,
+unlockCollection ::
+  ( RWEntity Accesstoken m,
+    RWEntity Capability m,
     MonadRandom m,
     WithError m,
+    WithLog env m
+  ) =>
+  Id Collection ->
+  m (Id Accesstoken)
+unlockCollection collId = do
+  listArticlesCap <- Res.capGetOneViaAction collId $ UaArtAction ListArticles
+  insertArticlesCap <- Res.capGetOneViaAction collId $ UaArtAction InsertArticle
+  listArticlesAccId <- HC.addAcc collId $ capabilityId listArticlesCap
+  _ <- HC.addAcc collId $ capabilityId insertArticlesCap
+  _ <- HC.addCapAndAcc collId (Just $ castId @() listArticlesAccId) $ UaColAction DeleteListArticles
+  pure listArticlesAccId
+
+createCollection ::
+  ( CommandEntity Accesstoken m,
+    CommandEntity Article m,
+    RWEntity Capability m,
+    MonadRandom m,
     WithLog env m
   ) =>
   m (Id Accesstoken)
 createCollection = do
   collId <- getRandomId
-  createCollectionTables collId
-  accId <- addCap collId ListArticles
-  _ <- addCap collId InsertArticle
-  pure accId
-  where
-    addCap collId cap = do
-      mArticleCap <- addArticleCapAndAcc collId Nothing cap
-      case mArticleCap of
-        Nothing -> do
-          log E $
-            "Couldn’t create capability "
-              <> show cap
-              <> "for collection "
-              <> show collId
-          throwError $ serverError "Could not create new collection"
-        Just articleCap -> pure articleCap
+  HC.initCollDb collId
+  _ <- HC.addCap collId Nothing $ UaColAction CreateListArticlesAcc
+  _ <- HC.addCap collId Nothing $ UaArtAction ListArticles
+  _ <- HC.addCap collId Nothing $ UaArtAction InsertArticle
+  HC.addCapAndAcc collId Nothing $ UaColAction OverviewCollection

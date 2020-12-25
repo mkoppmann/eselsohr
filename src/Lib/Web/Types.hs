@@ -46,6 +46,8 @@ instance FromForm PatchActionForm
 
 data PostActionForm = PostActionForm
   { postafAccesstoken :: !(Id Accesstoken),
+    postafSecureLink :: !(Maybe Bool),
+    postafNoExpiration :: !(Maybe Bool),
     postafUri :: !(Maybe Uri)
   }
   deriving stock (Generic)

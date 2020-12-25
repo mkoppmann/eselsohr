@@ -25,4 +25,3 @@ instance FromField Uuid where
 instance ToField Uuid where
   toField = SQLText . U.toText . unUuid
   {-# INLINE toField #-}
-

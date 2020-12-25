@@ -17,27 +17,44 @@ import Lib.Core.Article (Article)
 import Lib.Core.Id (Id)
 
 data CollectionAction
-  = CreateCollection
+  = -- | Effect: Creates a new collection database
+    CreateCollection
+  | -- | Effect: Unlocks collection and creates new accesstoken for
+    -- 'ListArticles' capability
+    CreateListArticlesAcc
+  | -- | Effect: Delete the matching 'ListArticles' accesstoken stored in the
+    -- capability and then deletes itself
+    DeleteListArticles
+  | -- | Gui: Show collection main page
+    OverviewCollection
   deriving stock (Eq, Generic, Show)
 
 instance Binary CollectionAction
 
 data ArticleAction
-  = InsertArticle
-  | ListArticles
-  | ShowArticle !(Id Article)
-  | EditArticle !(Id Article)
-  | ChangeArticleTitle !(Id Article)
-  | ArchiveArticle !(Id Article)
-  | UnreadArticle !(Id Article)
-  | DeleteArticle !(Id Article)
+  = -- | Effect: Inserts an 'Article' into the database
+    InsertArticle
+  | -- | Effect: Change the article’s title
+    ChangeArticleTitle !(Id Article)
+  | -- | Effect: Set the state of the article to 'Archived'
+    ArchiveArticle !(Id Article)
+  | -- | Effect: Set the state of the article to 'Unread'
+    UnreadArticle !(Id Article)
+  | -- | Effect: Delete the article
+    DeleteArticle !(Id Article)
+  | -- | Gui: Show article overview
+    ListArticles
+  | -- | Gui: Show the article’s detail page
+    ShowArticle !(Id Article)
+  | -- | Gui: Show the article’s edit page
+    EditArticle !(Id Article)
   deriving stock (Eq, Generic, Show)
 
 instance Binary ArticleAction
 
 data UserAction
-  = UaArticleAction !ArticleAction
-  | UaCollectionAction !CollectionAction
+  = UaArtAction !ArticleAction
+  | UaColAction !CollectionAction
   deriving stock (Eq, Generic, Show)
 
 instance Binary UserAction

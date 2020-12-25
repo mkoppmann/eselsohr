@@ -1,5 +1,6 @@
 module Lib.Web.View.Page
   ( root,
+    collectionMain,
     articles,
     showArticle,
     editArticle,
@@ -15,6 +16,7 @@ import Lib.Core.Uri (Uri (unUri))
 import Lib.Web.Types (ArticleWithTokens (..))
 import qualified Lib.Web.View.Form as Form
 import Lucid
+import Lucid.Servant (linkAbsHref_)
 import Servant (Link)
 import qualified Text.URI as URI
 import qualified Text.URI.Lens as UL
@@ -27,6 +29,41 @@ root actionR newCollAcc = do
     \ Save web articles and consume them later.\
     \ Start your collection by clicking on the button."
   Form.newCollection actionR newCollAcc
+
+collectionMain ::
+  Link ->
+  Link ->
+  Link ->
+  Link ->
+  [(Id Accesstoken, Id Accesstoken)] ->
+  Id Accesstoken ->
+  Html ()
+collectionMain settingsR shareMenuR actionR listArticlesR activeLinks newListArticlesAcc = do
+  h1_ "Collection Main Page"
+  p_
+    "Welcome to the main page of this collection.\
+    \ You can unlock your article list here and access the collection settings,\
+    \ as well as the sharing menu."
+  p_
+    "Bookmark this page for quick access.\
+    \ If you loose access to this page, you can generate a new link, if you\
+    \ store a recovery e-mail-address in the settings."
+  ul_ $ do
+    li_ $ a_ [linkAbsHref_ settingsR] "Collection settings"
+    li_ $ a_ [linkAbsHref_ shareMenuR] "Share menu"
+  h2_ "Currently active unlock links"
+  case activeLinks of
+    [] -> noActiveLinks
+    links -> traverse_ renderActiveLinks links
+  h2_ "Unlock article list"
+  p_ "Here you can generate a new token for accessing your article list."
+  Form.newListArticles actionR newListArticlesAcc
+  where
+    renderActiveLinks (accId, delAcc) = do
+      Form.showArticle listArticlesR accId $ show accId
+      Form.deleteArticle actionR delAcc
+
+    noActiveLinks = p_ "You have no active access links for this collection"
 
 articles :: Link -> Link -> Link -> Id Accesstoken -> [ArticleWithTokens] -> Html ()
 articles showArticleR editArticleR actionR insertAcc articleWithTokens = do

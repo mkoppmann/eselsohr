@@ -3,16 +3,18 @@ module Lib.Web.Handler.Frontend
   )
 where
 
-import Lib.App.Error (WithError, invalid, missingParameter, throwError)
+import Lib.App (WithError, invalid, missingParameter, serverError, throwError)
 import Lib.Core.Accesstoken (Accesstoken (..))
 import Lib.Core.Article (Article (..))
 import Lib.Core.Capability (Capability (..))
 import Lib.Core.Collection (Collection)
 import Lib.Core.Id (Id, castId)
 import Lib.Core.UserAction (ArticleAction (..), CollectionAction (..), UserAction (..))
+import Lib.Effect.Log (WithLog, log, pattern D)
 import Lib.Effect.Random (MonadRandom (..))
-import Lib.Effect.Resource (CommandAccesstoken (..), QueryAccesstoken (..), QueryArticle (..), QueryCollection (..), RWAccesstoken, RWCollection, accDbId)
-import Lib.Web.Handler.Common (actionR, addCapAndAccesstoken, editArticleR, getAccIdForAction, showArticleR, stylesheetR)
+import Lib.Effect.Resource (QueryEntity (..), RWEntity)
+import qualified Lib.Effect.Resource as Res
+import qualified Lib.Web.Handler.Common as HC
 import qualified Lib.Web.Route as Route
 import Lib.Web.Types (AppServer, ArticleWithTokens (..), HtmlPage)
 import qualified Lib.Web.View.App as App
@@ -23,6 +25,9 @@ frontendServer :: Route.FrontendSite AppServer
 frontendServer =
   Route.FrontendSite
     { Route.startpage = startpage,
+      Route.collectionMain = collectionMain,
+      Route.collectionSettings = collectionSettings,
+      Route.collectionShare = collectionShare,
       Route.listArticles = listArticles,
       Route.showArticle = showArticle,
       Route.editArticle = editArticle,
@@ -30,32 +35,79 @@ frontendServer =
     }
 
 startpage ::
-  ( RWAccesstoken m,
-    RWCollection m,
-    MonadRandom m
+  ( RWEntity Accesstoken m,
+    RWEntity Capability m,
+    MonadRandom m,
+    WithError m,
+    WithLog env m
   ) =>
   m HtmlPage
 startpage = prepareFirstCap >>= renderPage
   where
     prepareFirstCap = do
-      createAccesstokenTable
-      let collId = castId @Collection accDbId
-      let createCap = UaCollectionAction CreateCollection
-      mCap <- lookupCapabilityViaAction collId createCap
+      log D "Initializing database"
+      HC.initAccDb Res.accDbId
+      log D "Database created"
+      let createCap = UaColAction CreateCollection
+      log D "Looking for initial capabilities"
+      mCap <- Res.capLookupViaAction Res.accDbId createCap
       case mCap of
-        Just cap -> getAccId $ capabilityId cap
-        Nothing -> addCapAndAccesstoken collId Nothing createCap
-
-    getAccId capId = accesstokenId <$> getAccesstokenViaCapability capId
+        Just cap -> do
+          log D "Initial capabilities already exist. Using them."
+          HC.getAccIdViaCapId Res.accDbId $ capabilityId cap
+        Nothing -> do
+          log D "We need to create our initial capabilities."
+          HC.addCapAndAcc Res.accDbId Nothing createCap
 
     renderPage accId = do
-      let page = Page.root actionR accId
-      pure $ App.render stylesheetR page
+      let page = Page.root HC.actionR accId
+      pure $ App.render HC.stylesheetR page
+
+collectionMain ::
+  ( RWEntity Accesstoken m,
+    RWEntity Capability m,
+    MonadRandom m,
+    WithError m,
+    WithLog env m
+  ) =>
+  Maybe (Id Accesstoken) ->
+  m HtmlPage
+collectionMain mAccId = case mAccId of
+  Nothing -> throwError $ missingParameter "Acc parameter missing"
+  Just accId -> do
+    (collId, action) <- HC.getCollIdAndActionViaAccId Res.accDbId accId
+    case action of
+      UaArtAction _notCollectionAction -> throwError $ invalid "Wrong action"
+      UaColAction collectionAction -> case collectionAction of
+        OverviewCollection -> do
+          -- TODO: Get tokens for collection settings and share menu
+          listArticlesCapId <- Res.capGetOneViaAction collId $ UaArtAction ListArticles
+          listArticlesAccIds <- HC.getAccIdsViaCapId Res.accDbId $ capabilityId listArticlesCapId
+          deleteAccIds <- HC.getAccIdsForAction collId Nothing $ UaColAction DeleteListArticles
+          let activeLinks = zip listArticlesAccIds deleteAccIds
+          newListArticleCap <- Res.capGetOneViaAction collId $ UaColAction CreateListArticlesAcc
+          newListArticlesAcc <- HC.addAcc collId $ capabilityId newListArticleCap
+          let page =
+                Page.collectionMain
+                  (HC.collectionSettingsR Nothing)
+                  (HC.collectionShareR Nothing)
+                  HC.actionR
+                  (HC.listArticlesR Nothing)
+                  activeLinks
+                  newListArticlesAcc
+          pure $ App.render HC.stylesheetR page
+        _wrongCollectionAction -> throwError $ invalid "Wrong action"
+
+collectionSettings :: (WithError m) => Maybe (Id Accesstoken) -> m HtmlPage
+collectionSettings mAccId = throwError $ serverError "Action not yet implemented"
+
+collectionShare :: (WithError m) => Maybe (Id Accesstoken) -> m HtmlPage
+collectionShare mAccId = throwError $ serverError "Action not yet implemented"
 
 listArticles ::
-  ( QueryAccesstoken m,
-    QueryArticle m,
-    QueryCollection m,
+  ( QueryEntity Accesstoken m,
+    QueryEntity Article m,
+    QueryEntity Capability m,
     WithError m
   ) =>
   Maybe (Id Accesstoken) ->
@@ -64,22 +116,22 @@ listArticles mAccId = do
   (collId, articleAction) <- genericArticleHandler mAccId
   case articleAction of
     ListArticles -> do
-      insertArticleToken <- getAccIdForAction collId Nothing $ UaArticleAction InsertArticle
+      insertArticleToken <- HC.getAccIdForAction collId Nothing $ UaArtAction InsertArticle
       articlesWithTokens <- getArticlesForRendering collId
       let page =
             Page.articles
-              (showArticleR Nothing)
-              (editArticleR Nothing)
-              actionR
+              (HC.showArticleR Nothing)
+              (HC.editArticleR Nothing)
+              HC.actionR
               insertArticleToken
               articlesWithTokens
-      pure $ App.render stylesheetR page
+      pure $ App.render HC.stylesheetR page
     _otherAction -> throwError $ invalid "Wrong action"
 
 showArticle ::
-  ( QueryAccesstoken m,
-    QueryArticle m,
-    QueryCollection m,
+  ( QueryEntity Accesstoken m,
+    QueryEntity Article m,
+    QueryEntity Capability m,
     WithError m
   ) =>
   Maybe (Id Accesstoken) ->
@@ -89,14 +141,14 @@ showArticle mAccId = do
   case articleAction of
     ShowArticle aId -> do
       articleWithTokens <- getArticleForRendering collId aId
-      let page = Page.showArticle (editArticleR Nothing) actionR articleWithTokens
-      pure $ App.render stylesheetR page
+      let page = Page.showArticle (HC.editArticleR Nothing) HC.actionR articleWithTokens
+      pure $ App.render HC.stylesheetR page
     _otherAction -> throwError $ invalid "Wrong action"
 
 editArticle ::
-  ( QueryAccesstoken m,
-    QueryArticle m,
-    QueryCollection m,
+  ( QueryEntity Accesstoken m,
+    QueryEntity Article m,
+    QueryEntity Capability m,
     WithError m
   ) =>
   Maybe (Id Accesstoken) ->
@@ -105,16 +157,16 @@ editArticle mAccId = do
   (collId, articleAction) <- genericArticleHandler mAccId
   case articleAction of
     EditArticle aId -> do
-      article <- getArticle collId aId
-      let changeCap = UaArticleAction $ ChangeArticleTitle aId
-      editTitleCap <- getAccIdForAction collId (Just $ castId @() aId) changeCap
-      let page = Page.editArticle actionR editTitleCap $ articleTitle article
-      pure $ App.render stylesheetR page
+      article <- Res.getOne collId aId
+      let changeCap = UaArtAction $ ChangeArticleTitle aId
+      editTitleCap <- HC.getAccIdForAction collId (Just $ castId @() aId) changeCap
+      let page = Page.editArticle HC.actionR editTitleCap $ articleTitle article
+      pure $ App.render HC.stylesheetR page
     _otherAction -> throwError $ invalid "Wrong action"
 
 genericArticleHandler ::
-  ( QueryAccesstoken m,
-    QueryCollection m,
+  ( QueryEntity Accesstoken m,
+    QueryEntity Capability m,
     WithError m
   ) =>
   Maybe (Id Accesstoken) ->
@@ -122,49 +174,37 @@ genericArticleHandler ::
 genericArticleHandler mAccId = case mAccId of
   Nothing -> throwError $ missingParameter "Acc parameter missing"
   Just accId -> do
-    (collId, action) <- getCollIdAndActionFromAccId accId
+    (collId, action) <- HC.getCollIdAndActionViaAccId Res.accDbId accId
     case action of
-      UaCollectionAction _notArticleAction -> throwError $ invalid "Wrong action"
-      UaArticleAction articleAction -> pure (collId, articleAction)
+      UaColAction _notArticleAction -> throwError $ invalid "Wrong action"
+      UaArtAction articleAction -> pure (collId, articleAction)
 
 stylesheet :: (Monad m) => m Css
 stylesheet = return appStylesheet
 
-getCollIdAndActionFromAccId ::
-  ( QueryAccesstoken m,
-    QueryCollection m
-  ) =>
-  Id Accesstoken ->
-  m (Id Collection, UserAction)
-getCollIdAndActionFromAccId accId = do
-  acc <- getAccesstoken accId
-  let collId = accesstokenCol acc
-  cap <- getCapability collId (accesstokenCap acc)
-  pure . (,) collId $ capabilityAction cap
-
 getArticlesForRendering ::
-  ( QueryAccesstoken m,
-    QueryArticle m,
-    QueryCollection m,
+  ( QueryEntity Accesstoken m,
+    QueryEntity Article m,
+    QueryEntity Capability m,
     WithError m
   ) =>
   Id Collection ->
   m [ArticleWithTokens]
 getArticlesForRendering collId =
-  getArticles collId
+  Res.getMany collId
     >>= traverse (getArticleForRendering collId . articleId)
 
 getArticleForRendering ::
-  ( QueryAccesstoken m,
-    QueryArticle m,
-    QueryCollection m,
+  ( QueryEntity Accesstoken m,
+    QueryEntity Article m,
+    QueryEntity Capability m,
     WithError m
   ) =>
   Id Collection ->
   Id Article ->
   m ArticleWithTokens
 getArticleForRendering collId aId = do
-  article <- getArticle collId aId
+  article <- Res.getOne collId aId
   showToken <- tokenFor $ ShowArticle aId
   editToken <- tokenFor $ EditArticle aId
   changeTitleToken <- tokenFor $ ChangeArticleTitle aId
@@ -182,4 +222,4 @@ getArticleForRendering collId aId = do
       deleteToken
   where
     tokenFor =
-      getAccIdForAction collId (Just $ castId @() aId) . UaArticleAction
+      HC.getAccIdForAction collId (Just $ castId @() aId) . UaArtAction

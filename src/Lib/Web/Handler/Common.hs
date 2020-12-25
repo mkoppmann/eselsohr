@@ -1,25 +1,52 @@
 module Lib.Web.Handler.Common
-  ( listArticlesR,
+  ( -- * Route helpers
+    collectionMainR,
+    collectionSettingsR,
+    collectionShareR,
+    listArticlesR,
     showArticleR,
     editArticleR,
     stylesheetR,
     actionR,
     linkAsText,
+
+    -- * Resource helpers
+    initAccDb,
+    initCollDb,
+    addCap,
+    addAcc,
+    addCapAndAcc,
     getAccIdForAction,
-    addCapAndAccesstoken,
+    getAccIdsForAction,
+    getAccIdViaCapId,
+    getAccIdsViaCapId,
+    getCollIdAndActionViaAccId,
   )
 where
 
-import Lib.App.Error (WithError, dbError, throwError)
+import Lib.App.Error (WithError)
 import Lib.Core.Accesstoken (Accesstoken (..))
+import Lib.Core.Article (Article)
 import Lib.Core.Capability (Capability (..))
 import Lib.Core.Collection (Collection)
 import Lib.Core.Id (AnyId, Id)
 import Lib.Core.UserAction (UserAction (..))
+import Lib.Effect.Log (WithLog, log, pattern D)
 import Lib.Effect.Random (MonadRandom (..))
-import Lib.Effect.Resource (CommandAccesstoken (..), CommandCollection (..), QueryAccesstoken (..), QueryCollection (..))
+import qualified Lib.Effect.Resource as Res
 import qualified Lib.Web.Route as Route
 import Servant (Link, fieldLink, linkURI)
+
+-- Route helpers
+
+collectionMainR :: Maybe (Id Accesstoken) -> Link
+collectionMainR = fieldLink Route.collectionMain
+
+collectionSettingsR :: Maybe (Id Accesstoken) -> Link
+collectionSettingsR = fieldLink Route.collectionMain
+
+collectionShareR :: Maybe (Id Accesstoken) -> Link
+collectionShareR = fieldLink Route.collectionMain
 
 listArticlesR :: Maybe (Id Accesstoken) -> Link
 listArticlesR = fieldLink Route.listArticles
@@ -39,59 +66,124 @@ actionR = fieldLink Route.postAction
 linkAsText :: Link -> LText
 linkAsText = (<>) "/" . show @LText . linkURI
 
-getAccesstokenForAction ::
-  ( QueryAccesstoken m,
-    QueryCollection m
+initAccDb ::
+  ( Res.CommandEntity Accesstoken m,
+    Res.CommandEntity Capability m
+  ) =>
+  Id Collection ->
+  m ()
+initAccDb cId = initAccTable >> initCapTable
+  where
+    initAccTable = Res.init @Accesstoken cId
+    initCapTable = Res.init @Capability cId
+
+initCollDb ::
+  ( Res.CommandEntity Article m,
+    Res.CommandEntity Capability m
+  ) =>
+  Id Collection ->
+  m ()
+initCollDb cId = initArtTable >> initCapTable
+  where
+    initArtTable = Res.init @Article cId
+    initCapTable = Res.init @Capability cId
+
+addCap ::
+  ( Res.CommandEntity Capability m,
+    MonadRandom m,
+    WithLog env m
   ) =>
   Id Collection ->
   Maybe AnyId ->
   UserAction ->
-  m [Accesstoken]
-getAccesstokenForAction collId mId userAction =
-  maybe tokensWithoutEntity tokensWithEntity mId
-  where
-    getAccesstokens capIds =
-      traverse getAccesstokenViaCapability capIds
+  m (Id Capability)
+addCap cId entId uAction = do
+  capId <- getRandomId
+  log D $ "Adding capability for action: " <> show uAction
+  Res.insert cId $ Capability capId entId uAction
+  log D $ "Capability added with id: " <> show capId
+  pure capId
 
-    tokensWithEntity aId = do
-      caps <- getAllCapabilitiesViaEntity collId aId
-      getAccesstokens $ capabilityId <$> filter (\cap -> capabilityAction cap == userAction) caps
+addAcc ::
+  ( Res.CommandEntity Accesstoken m,
+    MonadRandom m,
+    WithLog env m
+  ) =>
+  Id Collection ->
+  Id Capability ->
+  m (Id Accesstoken)
+addAcc cId capId = do
+  accId <- getRandomId
+  log D $ "Adding accesstoken for capId: " <> show capId
+  Res.insert Res.accDbId $ Accesstoken accId cId capId
+  log D "Accesstoken added"
+  pure accId
 
-    tokensWithoutEntity = do
-      cap <- getCapabilityViaAction collId userAction
-      getAccesstokens . one $ capabilityId cap
+addCapAndAcc ::
+  ( Res.CommandEntity Accesstoken m,
+    Res.CommandEntity Capability m,
+    MonadRandom m,
+    WithLog env m
+  ) =>
+  Id Collection ->
+  Maybe AnyId ->
+  UserAction ->
+  m (Id Accesstoken)
+addCapAndAcc cId entId = addAcc cId <=< addCap cId entId
 
 getAccIdForAction ::
-  ( QueryAccesstoken m,
-    QueryCollection m,
+  ( Res.QueryEntity Accesstoken m,
+    Res.QueryEntity Capability m,
     WithError m
   ) =>
   Id Collection ->
   Maybe AnyId ->
   UserAction ->
   m (Id Accesstoken)
-getAccIdForAction collId mAId userAction = do
-  tokens <- getAccesstokenForAction collId mAId userAction
-  case viaNonEmpty head tokens of
-    Nothing ->
-      throwError . dbError $
-        "Error getting accesstoken for action: " <> show userAction
-    Just token -> return $ accesstokenId token
+getAccIdForAction cId mEntId =
+  pure . accesstokenId <=< Res.accGetOneViaAction cId mEntId
 
-addCapAndAccesstoken ::
-  ( CommandAccesstoken m,
-    CommandCollection m,
-    MonadRandom m
+getAccIdsForAction ::
+  ( Res.QueryEntity Accesstoken m,
+    Res.QueryEntity Capability m,
+    WithError m
   ) =>
   Id Collection ->
   Maybe AnyId ->
   UserAction ->
+  m [Id Accesstoken]
+getAccIdsForAction cId mEntId =
+  pure . fmap accesstokenId <=< Res.accGetManyViaAction cId mEntId
+
+getAccIdViaCapId ::
+  ( Res.QueryEntity Accesstoken m,
+    WithError m
+  ) =>
+  Id Collection ->
+  Id Capability ->
   m (Id Accesstoken)
-addCapAndAccesstoken collId entityId userAction = do
-  capId <- getRandomId
-  accId <- getRandomId
-  let cap = Capability capId entityId userAction
-  let acc = Accesstoken accId collId capId
-  insertCapability collId cap
-  insertAccesstoken acc
-  pure accId
+getAccIdViaCapId cId =
+  pure . accesstokenId <=< Res.accGetOneViaCap cId
+
+getAccIdsViaCapId ::
+  ( Res.QueryEntity Accesstoken m
+  ) =>
+  Id Collection ->
+  Id Capability ->
+  m [Id Accesstoken]
+getAccIdsViaCapId cId =
+  pure . fmap accesstokenId <=< Res.accGetManyViaCap cId
+
+getCollIdAndActionViaAccId ::
+  ( Res.QueryEntity Accesstoken m,
+    Res.QueryEntity Capability m
+  ) =>
+  Id Collection ->
+  Id Accesstoken ->
+  m (Id Collection, UserAction)
+getCollIdAndActionViaAccId cId accId = do
+  acc <- Res.getOne cId accId
+  let collId = accesstokenCol acc
+  let capId = accesstokenCap acc
+  cap <- Res.getOne collId capId
+  pure . (,) collId $ capabilityAction cap
