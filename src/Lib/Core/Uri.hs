@@ -6,7 +6,6 @@ module Lib.Core.Uri
   )
 where
 
-import Control.Monad.Catch (MonadThrow, throwM)
 import Database.SQLite.Simple (ResultError (ConversionFailed), SQLData (SQLText))
 import Database.SQLite.Simple.FromField (FromField, fromField, returnError)
 import Database.SQLite.Simple.Internal (Field (Field))
@@ -18,11 +17,11 @@ import qualified Text.URI as U
 newtype Uri = Uri {unUri :: U.URI}
   deriving (Eq) via U.URI
 
-instance MonadThrow Ok where
-  throwM = fail . show
-
 instance FromField Uri where
-  fromField _field@(Field (SQLText t) _) = U.mkURI t >>= (Ok . Uri)
+  fromField f@(Field (SQLText t) _) =
+    case U.mkURI t of
+      Right uri -> Ok $ Uri uri
+      Left e -> returnError ConversionFailed f ("couldn’t parse Uri field: " <> displayException e)
   fromField f = returnError ConversionFailed f "expecting SQLText column type"
 
 instance ToField Uri where

@@ -5,12 +5,12 @@ module Lib.App.Monad
   )
 where
 
-import Control.Exception (catch, throwIO, try)
-import Control.Monad.Catch (MonadThrow, throwM)
 import Control.Monad.Except (MonadError (..))
 import Lib.App.Env (Env)
 import Lib.App.Error (AppError, AppException (..))
 import Relude.Extra.Bifunctor (firstF)
+import UnliftIO (MonadUnliftIO)
+import UnliftIO.Exception (catch, throwIO, try)
 
 -- | 'Env' data type parameterized by 'App' monad
 type AppEnv = Env App
@@ -18,7 +18,7 @@ type AppEnv = Env App
 -- | Main application monad.
 newtype App a = App {unApp :: ReaderT AppEnv IO a}
   deriving
-    (Functor, Applicative, Monad, MonadIO, MonadReader AppEnv)
+    (Functor, Applicative, Monad, MonadIO, MonadReader AppEnv, MonadUnliftIO)
     via ReaderT AppEnv IO
 
 instance MonadError AppError App where
@@ -32,11 +32,6 @@ instance MonadError AppError App where
       let ioAction = runApp env action
       ioAction `catch` \(AppException e) -> runApp env $ handler e
   {-# INLINE catchError #-}
-
-instance MonadThrow App where
-  throwM :: Exception e => e -> App a
-  throwM = liftIO . throwIO
-  {-# INLINE throwM #-}
 
 -- | Helper for running route handlers in IO. Catches exception of type
 -- 'AppException' and unwraps 'AppError' from it.
