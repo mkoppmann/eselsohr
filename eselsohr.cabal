@@ -25,12 +25,12 @@ library
         Lib.Core.Uri
         Lib.Core.UserAction
         Lib.Core.Uuid
-        Lib.Db.Wrapper
         Lib.Effect.Log
         Lib.Effect.Random
         Lib.Effect.Resource
         Lib.Effect.Scraper
         Lib.Effect.Time
+        Lib.Persistence.Sqlite
         Lib.Web
         Lib.Web.Handler
         Lib.Web.Handler.Action

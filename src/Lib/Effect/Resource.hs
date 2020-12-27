@@ -39,8 +39,8 @@ import Lib.Core.Collection (Collection)
 import Lib.Core.Id (AnyId, Id (..), castId)
 import Lib.Core.UserAction (UserAction)
 import Lib.Core.Uuid (Uuid (..))
-import Lib.Db.Wrapper (WithDb, asSingleRow, execute, executeNamed, execute_, queryNamed, query_)
 import Lib.Effect.Log (WithLog, log, pattern D)
+import Lib.Persistence.Sqlite (WithDb, asSingleRow, execute, executeNamed, execute_, queryNamed, query_)
 
 class (Monad m) => QueryEntity a m where
   getOne :: Id Collection -> Id a -> m a

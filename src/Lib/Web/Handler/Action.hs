@@ -11,13 +11,13 @@ import Lib.Core.Collection (Collection)
 import Lib.Core.Id (Id, castId)
 import Lib.Core.Uri (Uri, render)
 import Lib.Core.UserAction (ArticleAction (..), CollectionAction (..), UserAction (..))
-import Lib.Db.Wrapper (WithDb)
 import Lib.Effect.Log (WithLog, log, pattern D)
 import Lib.Effect.Random (MonadRandom (..))
 import Lib.Effect.Resource (CommandEntity (..), QueryEntity (..), RWEntity)
 import qualified Lib.Effect.Resource as Res
 import Lib.Effect.Scraper (MonadScraper (..))
 import Lib.Effect.Time (MonadTime (..))
+import Lib.Persistence.Sqlite (WithDb)
 import qualified Lib.Web.Handler.Common as HC
 import qualified Lib.Web.Route.Action as Route
 import Lib.Web.Types (AppServer, DeleteActionForm (..), PatchActionForm (..), PostActionForm (..), Redirection)

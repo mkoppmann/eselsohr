@@ -1,4 +1,4 @@
-module Lib.Db.Wrapper
+module Lib.Persistence.Sqlite
   ( WithDb,
     execute,
     execute_,
