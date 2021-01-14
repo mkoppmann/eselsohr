@@ -41,9 +41,9 @@ data Action
   deriving anyclass (Binary)
 
 data CommandAction
-  = Delete DeleteAction
-  | Patch PatchAction
-  | Post PostAction
+  = Delete !DeleteAction
+  | Patch !PatchAction
+  | Post !PostAction
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Binary)
 
@@ -69,9 +69,9 @@ data PatchAction
   deriving anyclass (Binary)
 
 data CreateGetArticlesCapActions = CreateGetArticlesCapActions
-  { cgacGetArticles :: Id Action,
-    cgacGetActiveGetArticlesCap :: Id Action,
-    cgacResourceOverview :: Id Action
+  { cgacGetArticles :: !(Id Action),
+    cgacGetActiveGetArticlesCap :: !(Id Action),
+    cgacResourceOverview :: !(Id Action)
   }
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Binary)
@@ -92,33 +92,33 @@ data PostAction
   deriving anyclass (Binary)
 
 data ResourceOverviewActions = ResourceOverviewActions
-  { roaGetSharedActions :: Id Action,
-    roaGetSharedResourceOverviewAction :: Id Action,
-    roaGetActiveGetArticlesCap :: Id Action,
-    roaGetArticles :: Id Action,
-    roaCreateGetArticlesCap :: Maybe (Id Action),
-    roaFrontCreateGetArticlesCap :: Maybe (Id Action)
+  { roaGetSharedActions :: !(Id Action),
+    roaGetSharedResourceOverviewAction :: !(Id Action),
+    roaGetActiveGetArticlesCap :: !(Id Action),
+    roaGetArticles :: !(Id Action),
+    roaCreateGetArticlesCap :: !(Maybe (Id Action)),
+    roaFrontCreateGetArticlesCap :: !(Maybe (Id Action))
   }
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Binary)
 
 data GetArticlesActions = GetArticlesActions
-  { gaaGetSharedArticlesActions :: Id Action,
-    gaaCreateArticle :: Maybe (Id Action),
-    gaaFrontCreateArticle :: Maybe (Id Action),
-    gaaShowArticles :: Set (Id Action)
+  { gaaGetSharedArticlesActions :: !(Id Action),
+    gaaCreateArticle :: !(Maybe (Id Action)),
+    gaaFrontCreateArticle :: !(Maybe (Id Action)),
+    gaaShowArticles :: !(Set (Id Action))
   }
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Binary)
 
 data GetArticleActions = GetArticleActions
-  { gaaShowArticle :: Id Action,
-    gaaGetSharedArticleAction :: Id Action,
-    gaaChangeArticleTitle :: Maybe (Id Action),
-    gaaArchiveArticle :: Maybe (Id Action),
-    gaaUnreadArticle :: Maybe (Id Action),
-    gaaDeleteArticle :: Maybe (Id Action),
-    gaaGetArticles :: Maybe (Id Action)
+  { gaaShowArticle :: !(Id Action),
+    gaaGetSharedArticleAction :: !(Id Action),
+    gaaChangeArticleTitle :: !(Maybe (Id Action)),
+    gaaArchiveArticle :: !(Maybe (Id Action)),
+    gaaUnreadArticle :: !(Maybe (Id Action)),
+    gaaDeleteArticle :: !(Maybe (Id Action)),
+    gaaGetArticles :: !(Maybe (Id Action))
   }
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Binary)
@@ -158,7 +158,7 @@ data SharedAction = SharedAction
     -- | Counter of remaining usages of this 'SharedAction'.
     sharedRemainingUsages :: !(Maybe Natural),
     -- | 'Id' of the 'Action' this 'SharedAction' is pointing to.
-    sharedAction :: Id Action
+    sharedAction :: !(Id Action)
   }
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Binary)

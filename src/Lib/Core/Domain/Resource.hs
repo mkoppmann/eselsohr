@@ -11,8 +11,8 @@ import Lib.Core.Domain.Capability (Action, Capability)
 import Lib.Core.Domain.Id (Id)
 
 data Resource
-  = ArticleResource ArticleCollection
-  | CapOnlyResource CapabilityCollection
+  = ArticleResource !ArticleCollection
+  | CapOnlyResource !CapabilityCollection
   deriving stock (Generic, Show, Eq)
   deriving anyclass (Binary)
 

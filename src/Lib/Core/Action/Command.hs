@@ -217,8 +217,10 @@ createArticle ctx getArticlesId mUri = do
             let newGetArticlesAct = oldGetArticlesAct {gaaShowArticles = newGetArticlesSet}
             let newGetArticles = Query $ GetArticles newGetArticlesAct
             R.updateAct resId getArticlesId newGetArticles
-          _ -> throwError $ serverError "Could not add new article to GetArticles"
-        _ -> throwError $ serverError "Could not add new article to GetArticles"
+          _wrongQuery ->
+            throwError $ serverError "Could not add new article to GetArticles"
+        _nonQuery ->
+          throwError $ serverError "Could not add new article to GetArticles"
 
 createResource :: (WriteEntity Article m, MonadRandom m) => Context -> m Text
 createResource _ = do
