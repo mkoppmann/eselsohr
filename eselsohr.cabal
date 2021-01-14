@@ -78,8 +78,7 @@ library
         -Wall -Wcompat -Widentities -Wincomplete-uni-patterns
         -Wincomplete-record-updates -Wredundant-constraints
         -fhide-source-paths -Wpartial-fields -Wmissing-deriving-strategies
-        -fwrite-ide-info -hiedir=.hie -Wunused-packages -O0 -j
-        -freverse-errors
+        -fwrite-ide-info -hiedir=.hie -Wunused-packages -j -freverse-errors
 
     build-depends:
         base ^>=4.14.0.0,
