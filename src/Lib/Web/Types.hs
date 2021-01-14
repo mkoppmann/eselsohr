@@ -1,4 +1,5 @@
--- | This module introduce aliases to use for @servant-generic@ types and functions writing.
+{-# LANGUAGE DuplicateRecordFields #-}
+
 module Lib.Web.Types
   ( AppServer,
     ToApi,
@@ -7,15 +8,12 @@ module Lib.Web.Types
     DeleteActionForm (..),
     PatchActionForm (..),
     PostActionForm (..),
-    ArticleWithTokens (..),
   )
 where
 
+import Data.Time (UTCTime)
 import Lib.App (App)
-import Lib.Core.Accesstoken (Accesstoken)
-import Lib.Core.Article (Article)
-import Lib.Core.Id (Id)
-import Lib.Core.Uri (Uri)
+import Lib.Core.Domain (Accesstoken, ExpirationDate, Uri)
 import Lucid (Html)
 import Servant.API.Generic (ToServantApi)
 import Servant.Server.Generic (AsServerT)
@@ -30,36 +28,23 @@ type HtmlPage = Html ()
 type Redirection = HtmlPage
 
 newtype DeleteActionForm = DeleteActionForm
-  { deleteafAccesstoken :: Id Accesstoken
+  { acc :: Accesstoken
   }
   deriving stock (Generic)
-
-instance FromForm DeleteActionForm
+  deriving anyclass (FromForm)
 
 data PatchActionForm = PatchActionForm
-  { patchafAccesstoken :: !(Id Accesstoken),
-    patchafArticleTitle :: !(Maybe LText)
+  { acc :: !Accesstoken,
+    articleTitle :: !(Maybe Text)
   }
   deriving stock (Generic)
-
-instance FromForm PatchActionForm
+  deriving anyclass (FromForm)
 
 data PostActionForm = PostActionForm
-  { postafAccesstoken :: !(Id Accesstoken),
-    postafSecureLink :: !(Maybe Bool),
-    postafNoExpiration :: !(Maybe Bool),
-    postafUri :: !(Maybe Uri)
+  { acc :: !Accesstoken,
+    articleUri :: !(Maybe Uri),
+    petname :: !(Maybe Text),
+    expirationDate :: !(Maybe ExpirationDate)
   }
   deriving stock (Generic)
-
-instance FromForm PostActionForm
-
-data ArticleWithTokens = ArticleWithTokens
-  { awtArticle :: !Article,
-    awtShow :: !(Id Accesstoken),
-    awtEdit :: !(Id Accesstoken),
-    awtChangeTitle :: !(Id Accesstoken),
-    awtArchive :: !(Id Accesstoken),
-    awtUnread :: !(Id Accesstoken),
-    awtDelete :: !(Id Accesstoken)
-  }
+  deriving anyclass (FromForm)

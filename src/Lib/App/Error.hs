@@ -9,7 +9,8 @@ module Lib.App.Error
     toHttpError,
 
     -- * Redirect hack
-    redirect,
+    redirect303,
+    redirect307,
 
     -- * Error checks
     isServerError,
@@ -21,7 +22,7 @@ module Lib.App.Error
     serverError,
     invalid,
     missingParameter,
-    dbError,
+    storeError,
     limitError,
 
     -- * Error throwing helpers
@@ -35,7 +36,7 @@ where
 import Control.Monad.Except (MonadError)
 import qualified Control.Monad.Except as E (throwError)
 import GHC.Stack (SrcLoc (SrcLoc, srcLocModule, srcLocStartLine))
-import Servant.Server (err303, err400, err404, err413, err417, err500, errBody, errHeaders)
+import Servant.Server (err303, err307, err400, err404, err413, err417, err500, errBody, errHeaders)
 import qualified Servant.Server as Servant (ServerError)
 
 -- | Type alias for errors.
@@ -46,22 +47,22 @@ throwError :: WithError m => AppErrorType -> m a
 throwError = E.throwError . AppError (toSourcePosition callStack)
 {-# INLINE throwError #-}
 
-newtype SourcePosition = SourcePosition LText
-  deriving (Show, Eq) via LText
+newtype SourcePosition = SourcePosition Text
+  deriving (Show, Eq) via Text
 
 -- | Display 'CallStack' as 'SourcePosition' in a format: @Module.function#line_number@.
 toSourcePosition :: CallStack -> SourcePosition
 toSourcePosition cs = SourcePosition showCallStack
   where
-    showCallStack :: LText
+    showCallStack :: Text
     showCallStack = case getCallStack cs of
       [] -> "<unknown loc>"
       [(name, loc)] -> showLoc name loc
       (_, loc) : (callerName, _) : _rest -> showLoc callerName loc
 
-    showLoc :: String -> SrcLoc -> LText
+    showLoc :: String -> SrcLoc -> Text
     showLoc name SrcLoc {..} =
-      toLText srcLocModule <> "." <> toLText name <> "#" <> show srcLocStartLine
+      toText srcLocModule <> "." <> toText name <> "#" <> show srcLocStartLine
 
 -- | Exception wrapper around 'AppError'. Useful when you need to throw/catch
 -- 'AppError' as 'Exception'.
@@ -88,25 +89,27 @@ data IError
   = -- | General not found.
     NotFound
   | -- | Some exceptional circumstance has happened stop execution and return.
-    --    Optional text to provide some context in server logs.
-    ServerError !LText
+    -- Optional text to provide some context in server logs.
+    ServerError !Text
   | -- | An expected parameter was not given by the client. Optional text to
-    --    provide the parameter’s name.
-    MissingParameter !LText
+    -- provide the parameter’s name.
+    MissingParameter !Text
   | -- | Given inputs do not conform to the expected format or shape. Optional
-    --    text to provide some context in server logs.
-    Invalid !LText
-  | -- | Data base specific errors.
-    DbError !LText
+    -- text to provide some context in server logs.
+    Invalid !Text
+  | -- | Repository specific errors.
+    StoreError !Text
   | -- | Limits on the multi-request are overflowed.
     LimitError
   | -- | Redirect to given URL. Not a real error but a hack currently required
-    --    in Servant
-    Redirect !ByteString
+    -- in Servant. 303 means that the browser use get to fetch the page and also
+    -- drop the body.
+    Redirect303 !ByteString
+  | -- | Redirect to given URL. Not a real error but a hack currently required
+    -- in Servant. 307 means that the browser use the same method and body for
+    -- the redirect.
+    Redirect307 !ByteString
   deriving stock (Show, Eq)
-
-{- instance Scotty.ScottyError IOException where
-  stringError = show @LText -}
 
 -- | Map 'AppError' into a HTTP error code.
 toHttpError :: AppError -> Servant.ServerError
@@ -116,9 +119,10 @@ toHttpError (AppError _callStack errorType) = case errorType of
     ServerError msg -> err500 {errBody = encodeUtf8 msg}
     MissingParameter name -> err400 {errBody = "Parameter not found: " <> encodeUtf8 name}
     Invalid msg -> err417 {errBody = encodeUtf8 msg}
-    DbError e -> err500 {errBody = encodeUtf8 e}
+    StoreError e -> err500 {errBody = encodeUtf8 e}
     LimitError -> err413 {errBody = "Request is over the limits"}
-    Redirect linkTo -> err303 {errHeaders = [("Location", linkTo)]}
+    Redirect303 linkTo -> err303 {errHeaders = [("Location", linkTo)]}
+    Redirect307 linkTo -> err307 {errHeaders = [("Location", linkTo)]}
 
 ----------------------------------------------------------------------------
 -- Error checks
@@ -133,7 +137,8 @@ isInvalid (InternalError (Invalid _)) = True
 isInvalid _ = False
 
 isRedirect :: AppErrorType -> Bool
-isRedirect (InternalError (Redirect _)) = True
+isRedirect (InternalError (Redirect303 _)) = True
+isRedirect (InternalError (Redirect307 _)) = True
 isRedirect _ = False
 
 ----------------------------------------------------------------------------
@@ -143,23 +148,26 @@ isRedirect _ = False
 notFound :: AppErrorType
 notFound = InternalError NotFound
 
-serverError :: LText -> AppErrorType
+serverError :: Text -> AppErrorType
 serverError = InternalError . ServerError
 
-missingParameter :: LText -> AppErrorType
+missingParameter :: Text -> AppErrorType
 missingParameter = InternalError . MissingParameter
 
-invalid :: LText -> AppErrorType
+invalid :: Text -> AppErrorType
 invalid = InternalError . Invalid
 
-dbError :: LText -> AppErrorType
-dbError = InternalError . DbError
+storeError :: Text -> AppErrorType
+storeError = InternalError . StoreError
 
 limitError :: AppErrorType
 limitError = InternalError LimitError
 
-redirect :: LText -> AppErrorType
-redirect = InternalError . Redirect . encodeUtf8
+redirect303 :: Text -> AppErrorType
+redirect303 = InternalError . Redirect303 . encodeUtf8
+
+redirect307 :: Text -> AppErrorType
+redirect307 = InternalError . Redirect307 . encodeUtf8
 
 ----------------------------------------------------------------------------
 -- Helpers

@@ -5,12 +5,11 @@ module Lib
   )
 where
 
-import Lib.App (AppEnv, Env (..))
+import Lib.App (AppEnv, Env (..), mainLogAction)
 import Lib.Config (Config (..), loadConfig)
-import Lib.Effect.Log (mainLogAction)
+import qualified Lib.Init as Init
 import Lib.Web (application)
 import Network.Wai.Handler.Warp (run)
-import System.Directory (createDirectoryIfMissing)
 
 mkAppEnv :: Config -> IO AppEnv
 mkAppEnv Config {..} = do
@@ -19,12 +18,12 @@ mkAppEnv Config {..} = do
   let envServerPort = confServerPort
   return Env {..}
 
-prepareDatafolder :: FilePath -> IO ()
-prepareDatafolder = createDirectoryIfMissing True
-
 runServer :: AppEnv -> IO ()
 runServer env@Env {..} = do
-  prepareDatafolder envDataFolder
+  Init.datafolder envDataFolder
+  Init.initialCap envDataFolder
+  print @Text "Eselsohr is now running."
+  print @Text $ "Access it on: http://localhost:" <> show envServerPort
   run envServerPort $ application env
 
 main :: IO ()

@@ -1,6 +1,5 @@
 module Lib.Web.View.Style
   ( appStylesheet,
-    module Clay,
   )
 where
 

@@ -1,14 +1,13 @@
 module Lib.Web.Route.Frontend
-  ( FrontendApi,
+  ( Frontend,
     FrontendSite (..),
   )
 where
 
 import Clay (Css)
-import Lib.Core.Accesstoken (Accesstoken)
-import Lib.Core.Id (Id)
-import Lib.Web.Types (HtmlPage, ToApi)
-import Servant (Get, QueryParam, (:>))
+import Lib.Core.Domain (Accesstoken)
+import Lib.Web.Types (DeleteActionForm, HtmlPage, PatchActionForm, PostActionForm, Redirection, ToApi)
+import Servant (Delete, FormUrlEncoded, Get, Patch, Post, QueryParam, ReqBody, (:>))
 import Servant.API.Generic (GenericMode ((:-)))
 import Servant.CSS.Clay (CSS)
 import Servant.HTML.Lucid (HTML)
@@ -20,43 +19,59 @@ data FrontendSite route = FrontendSite
     collectionMain ::
       route
         :- "collection"
-        :> QueryParam "acc" (Id Accesstoken)
-        :> Get '[HTML] HtmlPage,
-    collectionSettings ::
-      route
-        :- "collection"
-        :> "settings"
-        :> QueryParam "acc" (Id Accesstoken)
+        :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage,
     collectionShare ::
       route
         :- "collection"
         :> "sharing"
-        :> QueryParam "acc" (Id Accesstoken)
+        :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage,
     listArticles ::
       route
         :- "articles"
-        :> QueryParam "acc" (Id Accesstoken)
+        :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage,
     showArticle ::
       route
         :- "articles"
-        :> "view"
-        :> QueryParam "acc" (Id Accesstoken)
+        :> "read"
+        :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage,
     editArticle ::
       route
         :- "articles"
         :> "edit"
-        :> QueryParam "acc" (Id Accesstoken)
+        :> QueryParam "acc" Accesstoken
+        :> Get '[HTML] HtmlPage,
+    invalidToken ::
+      route
+        :- "invalid-token"
         :> Get '[HTML] HtmlPage,
     stylesheet ::
       route
         :- "static"
         :> "style.css"
-        :> Get '[CSS] Css
+        :> Get '[CSS] Css,
+    deleteFrontend ::
+      route
+        :- "api"
+        :> "cap"
+        :> ReqBody '[FormUrlEncoded] DeleteActionForm
+        :> Delete '[HTML] Redirection,
+    patchFrontend ::
+      route
+        :- "api"
+        :> "cap"
+        :> ReqBody '[FormUrlEncoded] PatchActionForm
+        :> Patch '[HTML] Redirection,
+    postFrontend ::
+      route
+        :- "api"
+        :> "cap"
+        :> ReqBody '[FormUrlEncoded] PostActionForm
+        :> Post '[HTML] Redirection
   }
   deriving stock (Generic)
 
-type FrontendApi = ToApi FrontendSite
+type Frontend = ToApi FrontendSite
