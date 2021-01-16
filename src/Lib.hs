@@ -27,4 +27,4 @@ runServer env@Env {..} = do
   run envServerPort $ application env
 
 main :: IO ()
-main = mkAppEnv loadConfig >>= runServer
+main = loadConfig >>= mkAppEnv >>= runServer
