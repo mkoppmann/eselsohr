@@ -15,7 +15,8 @@ import UnliftIO.Environment (lookupEnv)
 data Config = Config
   { confDataFolder :: !FilePath,
     confLogSeverity :: !Severity,
-    confServerPort :: !Port
+    confServerPort :: !Port,
+    confListenAddr :: !String
   }
 
 loadConfig :: (MonadIO m) => m Config
@@ -23,8 +24,9 @@ loadConfig = do
   void $ loadFile defaultConfig
   df <- getDataFolder
   sp <- getPort
+  la <- getListenAddr
   ls <- getLogLevel
-  pure $ Config df ls sp
+  pure $ Config df ls sp la
   where
     getDataFolder :: (MonadIO m) => m String
     getDataFolder = do
@@ -47,3 +49,10 @@ loadConfig = do
       case mSP of
         Nothing -> pure 6979
         Just sp -> pure . fromMaybe 6979 $ readMaybe sp
+
+    getListenAddr :: (MonadIO m) => m String
+    getListenAddr = do
+      mLA <- lookupEnv "LISTEN_ADDR"
+      case mLA of
+        Nothing -> pure "127.0.0.1"
+        Just la -> pure la

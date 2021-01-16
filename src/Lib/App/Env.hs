@@ -10,14 +10,12 @@ module Lib.App.Env
 where
 
 import Colog (HasLog (..), LogAction, Message)
-import Network.Wai.Handler.Warp (Port)
 
 type DataPath = FilePath
 
 data Env (m :: Type -> Type) = Env
   { envDataFolder :: !DataPath,
-    envLogAction :: !(LogAction m Message),
-    envServerPort :: !Port
+    envLogAction :: !(LogAction m Message)
   }
 
 instance HasLog (Env m) Message m where
@@ -35,8 +33,6 @@ class Has field env where
 instance Has DataPath (Env m) where obtain = envDataFolder
 
 instance Has (LogAction m Message) (Env m) where obtain = envLogAction
-
-instance Has Port (Env m) where obtain = envServerPort
 
 grab :: forall field env m. (MonadReader env m, Has field env) => m field
 grab = asks $ obtain @field
