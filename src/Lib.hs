@@ -15,6 +15,7 @@ mkAppEnv :: Config -> IO AppEnv
 mkAppEnv Config {..} = do
   let envDataFolder = confDataFolder
   let envLogAction = mainLogAction confLogSeverity
+  let envBaseUrl = confBaseUrl
   return Env {..}
 
 runServer :: Config -> AppEnv -> IO ()

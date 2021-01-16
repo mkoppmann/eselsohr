@@ -6,9 +6,12 @@ where
 
 import Colog (Severity (Error))
 import Configuration.Dotenv (defaultConfig, loadFile)
+import Data.Maybe (fromJust)
 import Data.Text (toTitle)
+import Lib.Core.Domain.Uri (Uri (..))
 import Network.Wai.Handler.Warp (Port)
 import System.FilePath (addTrailingPathSeparator)
+import qualified Text.URI as U
 import UnliftIO.Directory (XdgDirectory (XdgData), getXdgDirectory)
 import UnliftIO.Environment (lookupEnv)
 
@@ -16,7 +19,8 @@ data Config = Config
   { confDataFolder :: !FilePath,
     confLogSeverity :: !Severity,
     confServerPort :: !Port,
-    confListenAddr :: !String
+    confListenAddr :: !String,
+    confBaseUrl :: !Uri
   }
 
 loadConfig :: (MonadIO m) => m Config
@@ -25,8 +29,9 @@ loadConfig = do
   df <- getDataFolder
   sp <- getPort
   la <- getListenAddr
+  bu <- getBaseUrl sp
   ls <- getLogLevel
-  pure $ Config df ls sp la
+  pure $ Config df ls sp la bu
   where
     getDataFolder :: (MonadIO m) => m String
     getDataFolder = do
@@ -56,3 +61,17 @@ loadConfig = do
       case mLA of
         Nothing -> pure "127.0.0.1"
         Just la -> pure la
+
+    getBaseUrl :: (MonadIO m) => Port -> m Uri
+    getBaseUrl port = do
+      mBU <- lookupEnv "BASE_URL"
+      case mBU of
+        Nothing ->
+          pure . Uri . fromJust . U.mkURI $ "http://localhost:" <> show port <> "/"
+        Just bu -> do
+          let eUri = U.mkURI $ toText bu
+          print @Text $ "eUri: " <> show eUri
+          case eUri of
+            Left err ->
+              error . toText $ "Invalid base url: " <> displayException err
+            Right uri -> pure $ Uri uri
