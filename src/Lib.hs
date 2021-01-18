@@ -9,7 +9,7 @@ import Lib.App (AppEnv, Env (..), mainLogAction)
 import Lib.Config (Config (..), loadConfig)
 import qualified Lib.Init as Init
 import Lib.Web (application)
-import Network.Wai.Handler.Warp (defaultSettings, runSettings, setHost, setPort)
+import Network.Wai.Handler.Warp (defaultSettings, runSettings, setHost, setPort, setServerName)
 
 mkAppEnv :: Config -> IO AppEnv
 mkAppEnv Config {..} = do
@@ -26,6 +26,7 @@ runServer Config {..} env@Env {..} = do
   let settings =
         setHost (fromString confListenAddr)
           . setPort confServerPort
+          . setServerName ""
           $ defaultSettings
 
   print @Text "Eselsohr is now running."
