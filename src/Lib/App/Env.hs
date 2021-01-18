@@ -11,13 +11,19 @@ where
 
 import Colog (HasLog (..), LogAction, Message)
 import Lib.Core.Domain.Uri (Uri)
+import System.Metrics (Store)
+import System.Metrics.Distribution (Distribution)
 
 type DataPath = FilePath
+
+type Timings = IORef (HashMap Text Distribution)
 
 data Env (m :: Type -> Type) = Env
   { envDataFolder :: !DataPath,
     envLogAction :: !(LogAction m Message),
-    envBaseUrl :: !Uri
+    envBaseUrl :: !Uri,
+    envTimings :: !Timings,
+    envEkgStore :: !Store
   }
 
 instance HasLog (Env m) Message m where
@@ -37,6 +43,10 @@ instance Has DataPath (Env m) where obtain = envDataFolder
 instance Has (LogAction m Message) (Env m) where obtain = envLogAction
 
 instance Has Uri (Env m) where obtain = envBaseUrl
+
+instance Has Timings (Env m) where obtain = envTimings
+
+instance Has Store (Env m) where obtain = envEkgStore
 
 grab :: forall field env m. (MonadReader env m, Has field env) => m field
 grab = asks $ obtain @field
