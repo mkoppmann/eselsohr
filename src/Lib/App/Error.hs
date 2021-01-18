@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveAnyClass #-}
-
 module Lib.App.Error
   ( AppError (..),
     AppErrorType,
