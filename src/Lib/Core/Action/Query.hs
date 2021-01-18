@@ -13,7 +13,7 @@ import qualified Data.Set as Set
 import Lib.App.Error (WithError, serverError, throwError)
 import Lib.App.Log (WithLog, log, pattern E)
 import Lib.Core.Domain.Accesstoken (Accesstoken, Reference (..), Revocable, mkAccesstoken)
-import Lib.Core.Domain.Article (Article)
+import Lib.Core.Domain.Article (Article (..))
 import Lib.Core.Domain.Capability (Action (..), Capability (..), GetArticleActions (..), GetArticlesActions (..), QueryAction (..), ResourceOverviewActions (..))
 import Lib.Core.Domain.Context (Context (..))
 import Lib.Core.Domain.Entity (Entity (..))
@@ -60,6 +60,7 @@ getShowArticlesAccess ctx GetArticlesActions {..} = do
   ca <- mActIdToAcc resId gaaFrontCreateArticle
   sas <-
     Seq.reverse
+      . Seq.sortBy expDateCmp
       . Seq.fromList
       . catMaybes
       <$> mapConcurrently (getArtAndSAAccess resId) (Set.toList gaaShowArticles)
@@ -76,6 +77,10 @@ getShowArticlesAccess ctx GetArticlesActions {..} = do
       case Entity.val actEnt of
         Query qAction -> getShowArticleAccess ctx qAction
         _wrongAction -> throwError $ serverError "Wrong action"
+
+    expDateCmp ::
+      (Article, ShowArticleAccess) -> (Article, ShowArticleAccess) -> Ordering
+    expDateCmp (art1, _) (art2, _) = compare (creation art1) (creation art2)
 
 getShowArticleAccess ::
   (ReadEntity Article m, WithError m) =>
