@@ -1,0 +1,108 @@
+[Unit]
+Description=Eselsohr
+After=network.target
+
+[Service]
+Type=simple
+DynamicUser=true
+Restart=always
+
+; Adapt paths according to your setup.
+; Path to the Eselsohr binary.
+ExecStart=/usr/bin/eselsohr
+EnvironmentFile=/etc/eselsohr/eselsohr.conf
+
+; The whole file system is made read-only to the service by ProtectSystem=, so
+; we specify here which folder will contain the persistent data. StateDirectory=
+; resolves to /var/lib/.
+StateDirectory=eselsohr
+
+; Drops some capabilities from the service.
+CapabilityBoundingSet=
+
+; If you want to bind Eselsohr to a port below 1024, uncomment the two values
+; below.
+; CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+; AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+; Disallow changing the kernel execution domain
+LockPersonality=true
+
+; Disallow that a memory mapping is both executable and writeable
+MemoryDenyWriteExecute=true
+
+; This service and all its children can never gain new privileges through
+; execve().
+NoNewPrivileges=true
+
+; Sets up a new /dev mount for the process and only adds API pseudo devices like
+; /dev/null, /dev/zero or /dev/random but not physical devices.
+PrivateDevices=true
+
+; Use private /tmp and /var/tmp folders inside a new file system namespace,
+; which are discarded after the process stops.
+PrivateTmp=true
+
+; The service get a minimal user and group mapping and does not see any other
+; users except for root and nobody
+PrivateUsers=true
+
+; Make files and directories not directly associated with process management
+; invisible in /proc/.
+ProcSubset=pid
+
+; The service cannot change the system clock anymore.
+ProtectClock=true
+
+; /sys/fs/cgroup will be made read-only for this service.
+ProtectControlGroups=true
+
+; The /home, /root, and /run/user folders can not be accessed by this service
+; anymore.
+ProtectHome=true
+
+; Sets up a new UTS namespace for the executed process.
+ProtectHostname=true
+
+; Disallow access to the kernel log ring bugger
+ProtectKernelLogs=true
+
+; Disables kernel module loading.
+ProtectKernelModules=true
+
+; /proc/sys, /sys/ and other kernel variables are made read-only for this
+; service.
+ProtectKernelTunables=true
+
+; The service cannot set processes owned by other users in /proc.
+ProtectProc=invisible
+
+; Mount the entire file system hierarchy read-only, except for /dev/, /proc/,
+; and /sys/. ProtectDevices=, ProtectKernelTunables=, and ProtectControlGroups=,
+; will protect those directories.
+ProtectSystem=strict
+
+; Only allow IPv4 and IPv6 sockets
+RestrictAddressFamilies=AF_INET AF_INET6
+
+; Disallow the creation of name spaces
+RestrictNamespaces=true
+
+; Disables realtime scheduling for this service which makes some
+; Denial-of-Service attacks harder.
+RestrictRealtime=true
+
+; Only allow syscalls for the native ABI of the system.
+SystemCallArchitectures=native
+
+; List of allowed sys calls.
+SystemCallFilter=@system-service
+; List of sys calls that get removed from the first one.
+SystemCallFilter=~@privileged @resources
+SystemCallErrorNumber=EPERM
+
+; Apply umask filter
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
