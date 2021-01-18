@@ -5,7 +5,8 @@ module Lib.Config
 where
 
 import Colog (Severity (Error))
-import Configuration.Dotenv (configPath, defaultConfig, loadFile)
+import Configuration.Dotenv (configPath, defaultConfig, loadFile, onMissingFile)
+import Control.Monad.Catch (MonadCatch)
 import Data.Maybe (fromJust)
 import Data.Text (toTitle)
 import Lib.Core.Domain.Uri (Uri (..))
@@ -23,7 +24,7 @@ data Config = Config
     confBaseUrl :: !Uri
   }
 
-loadConfig :: (MonadIO m) => Maybe FilePath -> m Config
+loadConfig :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m Config
 loadConfig mConfPath = do
   loadEnvFile mConfPath
   df <- getDataFolder
@@ -33,9 +34,9 @@ loadConfig mConfPath = do
   ls <- getLogLevel
   pure $ Config df ls sp la bu
   where
-    loadEnvFile :: (MonadIO m) => Maybe FilePath -> m ()
+    loadEnvFile :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m ()
     loadEnvFile = \case
-      Nothing -> void $ loadFile defaultConfig
+      Nothing -> onMissingFile (void $ loadFile defaultConfig) (pure ())
       Just fp -> do
         let config = defaultConfig {configPath = [fp]}
         void $ loadFile config
