@@ -67,12 +67,11 @@ library
     hs-source-dirs:     src
     default-language:   Haskell2010
     default-extensions:
-        DataKinds FlexibleContexts GADTs LambdaCase PolyKinds RankNTypes
-        ScopedTypeVariables TypeApplications TypeOperators TypeFamilies
-        OverloadedStrings MultiParamTypeClasses FlexibleInstances
-        ConstraintKinds DerivingVia DerivingStrategies QuasiQuotes
-        RecordWildCards InstanceSigs DeriveGeneric PatternSynonyms
-        DeriveAnyClass DeriveTraversable
+        DataKinds FlexibleContexts LambdaCase ScopedTypeVariables
+        TypeApplications TypeOperators TypeFamilies OverloadedStrings
+        MultiParamTypeClasses FlexibleInstances ConstraintKinds DerivingVia
+        DerivingStrategies RecordWildCards InstanceSigs DeriveGeneric
+        PatternSynonyms DeriveAnyClass DeriveTraversable
 
     ghc-options:
         -Wall -Wcompat -Widentities -Wincomplete-uni-patterns
