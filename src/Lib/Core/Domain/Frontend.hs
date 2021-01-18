@@ -8,14 +8,12 @@ where
 import Lib.Core.Domain.Accesstoken (Accesstoken)
 import Lib.Core.Domain.Article (Article)
 
-data ResourceOverviewAccess = ResourceOverviewAccess
-  { roAccGetSharedActions :: !Accesstoken,
-    roAccCreateGetArticlesCap :: !(Maybe Accesstoken)
+newtype ResourceOverviewAccess = ResourceOverviewAccess
+  { roAccCreateGetArticlesCap :: Maybe Accesstoken
   }
 
 data ShowArticlesAccess = ShowArticlesAccess
-  { sasAccGetSharedArticlesAction :: !Accesstoken,
-    sasAccCreateArticle :: !(Maybe Accesstoken),
+  { sasAccCreateArticle :: !(Maybe Accesstoken),
     sasAccArticleAccs :: !(Seq (Article, ShowArticleAccess))
   }
   deriving stock (Show)

@@ -7,8 +7,10 @@ where
 import qualified Data.Binary as Bin
 import qualified Data.Map.Strict as Map
 import qualified Data.UUID.V4 as UUID
-import Lib.Core.Domain (Action (..), Capability (..), CapabilityCollection (..), CommandAction (..), FrontendAction (..), Id, PostAction (..), QueryAction (..), Resource (..), ResourceOverviewActions (..))
+import Lib.Core.Domain.Capability (Action (..), Capability (..), CommandAction (..), FrontendAction (..), PostAction (..), QueryAction (..), ResourceOverviewActions (..))
+import Lib.Core.Domain.Id (Id)
 import qualified Lib.Core.Domain.Id as Id
+import Lib.Core.Domain.Resource (CapabilityCollection (..), Resource (..))
 import qualified Lib.Core.Effect.Repository as R
 import UnliftIO.Directory (createDirectoryIfMissing, doesFileExist)
 
@@ -42,8 +44,6 @@ initialCap fp =
             Query
               . ResourceOverview
               $ ResourceOverviewActions
-                Id.mkNilId
-                Id.mkNilId
                 Id.mkNilId
                 Id.mkNilId
                 Nothing

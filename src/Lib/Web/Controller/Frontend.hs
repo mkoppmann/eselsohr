@@ -6,12 +6,21 @@ where
 import Clay (Css)
 import qualified Data.Set as Set
 import Data.Time (UTCTime (..), addGregorianMonthsClip)
-import Lib.App (WithError, WithLog, invalid, log, notFound, redirect303, redirect307, serverError, throwError, pattern D, pattern E)
+import Lib.App.Error (WithError, invalid, notFound, redirect303, redirect307, serverError, throwError)
+import Lib.App.Log (WithLog, log, pattern E)
 import qualified Lib.Core.Action.Query as Query
-import Lib.Core.Domain (Accesstoken, Action (..), Article (..), Capability, Context (..), GetArticlesActions, Id, QueryAction (..), ResourceOverviewAccess, ResourceOverviewActions (..), Revocable, ShowArticleAccess (..), mkAccesstoken)
+import Lib.Core.Domain.Accesstoken (Accesstoken, Revocable, mkAccesstoken)
+import Lib.Core.Domain.Article (Article (..))
+import Lib.Core.Domain.Capability (Action (..), Capability, GetArticlesActions, QueryAction (..), ResourceOverviewActions (..))
+import Lib.Core.Domain.Context (Context (..))
 import qualified Lib.Core.Domain.Entity as Entity
-import Lib.Core.Domain.ExpirationDate (ExpirationDate, toExpirationDate)
-import Lib.Core.Effect (MonadRandom, MonadScraper, MonadTime (..), RWEntity, ReadCapabilities, ReadEntity)
+import Lib.Core.Domain.ExpirationDate (ExpirationDate (..))
+import Lib.Core.Domain.Frontend (ResourceOverviewAccess, ShowArticleAccess (..))
+import Lib.Core.Domain.Id (Id)
+import Lib.Core.Effect.Random (MonadRandom)
+import Lib.Core.Effect.Repository (RWEntity, ReadCapabilities, ReadEntity)
+import Lib.Core.Effect.Scraper (MonadScraper)
+import Lib.Core.Effect.Time (MonadTime (..))
 import qualified Lib.Core.Flow as Flow
 import qualified Lib.Web.Controller.Common as CC
 import qualified Lib.Web.Route as Route
@@ -27,7 +36,6 @@ frontend =
   Route.FrontendSite
     { Route.startpage = startpage,
       Route.collectionMain = collectionMain,
-      Route.collectionShare = collectionShare,
       Route.listArticles = listArticles,
       Route.showArticle = showArticle,
       Route.editArticle = editArticle,
@@ -59,8 +67,8 @@ collectionMain mAcc = case mAcc of
         currTime@UTCTime {..} <- getCurrentTime
         let expDate = addGregorianMonthsClip 1 utctDay
         let dates =
-              ( toExpirationDate currTime,
-                toExpirationDate $ currTime {utctDay = expDate}
+              ( ExpirationDate currTime,
+                ExpirationDate $ currTime {utctDay = expDate}
               )
         roaActs <- getActions . Entity.val $ ctxAct ctx
         let gagacId = roaGetActiveGetArticlesCap roaActs
@@ -95,8 +103,6 @@ collectionMain mAcc = case mAcc of
 
 notAuthorized :: HtmlPage
 notAuthorized = App.render Page.notAuthorized
-
-collectionShare = undefined
 
 listArticles ::
   (ReadEntity Article m, MonadTime m, WithError m, WithLog env m) =>
@@ -173,7 +179,7 @@ editArticle = \case
         mEdAcc <- Query.getShowArticleAccess ctx edQAction
         case mEdAcc of
           Nothing -> throwError notFound
-          Just (Article aTitle _ _ _ _, ShowArticleAccess {..}) ->
+          Just (Article aTitle _ _ _, ShowArticleAccess {..}) ->
             case saAccChangeArticleTitle of
               Nothing -> pure notAuthorized
               Just caAcc -> pure . App.render $ Page.editArticle aTitle caAcc

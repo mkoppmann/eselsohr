@@ -21,12 +21,6 @@ data FrontendSite route = FrontendSite
         :- "collection"
         :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage,
-    collectionShare ::
-      route
-        :- "collection"
-        :> "sharing"
-        :> QueryParam "acc" Accesstoken
-        :> Get '[HTML] HtmlPage,
     listArticles ::
       route
         :- "articles"

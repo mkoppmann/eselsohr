@@ -29,9 +29,12 @@ where
 
 import qualified Data.Map.Strict as Map
 import Lib.App (AppErrorType, WithError, storeError, throwOnNothing)
-import Lib.App.Log (WithLog, log, pattern D)
-import Lib.Core.Domain (Action, Article (..), ArticleCollection (..), Capability (..), CapabilityCollection (..), Entity (..), Id, Resource (..))
+import Lib.Core.Domain.Article (Article (..))
 import qualified Lib.Core.Domain.Article as Article
+import Lib.Core.Domain.Capability (Action, Capability (..))
+import Lib.Core.Domain.Entity (Entity (..))
+import Lib.Core.Domain.Id (Id)
+import Lib.Core.Domain.Resource (ArticleCollection (..), CapabilityCollection (..), Resource (..))
 import Lib.Impl.Repository.File (WithFile)
 import qualified Lib.Impl.Repository.File as File
 import Prelude hiding (getAll, init)

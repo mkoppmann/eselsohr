@@ -21,8 +21,7 @@ data Article = Article
   { title :: !Text,
     uri :: !Uri,
     state :: !ArticleState,
-    creation :: !UTCTime,
-    tags :: !(Set Text)
+    creation :: !UTCTime
   }
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Binary, FromJSON, ToJSON)

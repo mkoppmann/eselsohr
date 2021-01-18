@@ -1,23 +1,18 @@
-{-# LANGUAGE DeriveTraversable #-}
-
 module Lib.Core.Action.Command
   ( deleteGetArticles,
     deleteArticle,
-    deleteSharedAction,
     changeArticleTitle,
     archiveArticle,
     unreadArticle,
     createArticle,
     createResource,
     createGetArticlesCap,
-    shareAction,
   )
 where
 
 import qualified Data.Set as Set
 import qualified Data.Text as Text
 import Lib.App.Error (WithError, missingParameter, serverError, throwError)
-import Lib.App.Log (WithLog, log, pattern D)
 import Lib.Core.Domain.Accesstoken (Accesstoken, Reference (..), mkAccesstoken)
 import Lib.Core.Domain.Article (Article (..), ArticleState (..))
 import Lib.Core.Domain.Capability (Action (..), Capability (..), CommandAction (..), CreateGetArticlesCapActions (..), DeleteAction (..), FrontendAction (..), GetArticleActions (..), GetArticlesActions (..), PatchAction (..), PostAction (..), QueryAction (..), ResourceOverviewActions (..))
@@ -28,8 +23,11 @@ import Lib.Core.Domain.ExpirationDate (ExpirationDate)
 import Lib.Core.Domain.Id (Id)
 import Lib.Core.Domain.Resource (Resource)
 import Lib.Core.Domain.Uri (Uri)
-import Lib.Core.Effect (MonadRandom (..), MonadScraper (..), MonadTime (..), RWCapabilities, RWEntity, WriteCapabilities (..), WriteEntity (..))
+import Lib.Core.Effect.Random (MonadRandom (..))
+import Lib.Core.Effect.Repository (RWCapabilities, RWEntity, WriteCapabilities (..), WriteEntity (..))
 import qualified Lib.Core.Effect.Repository as R
+import Lib.Core.Effect.Scraper (MonadScraper (..))
+import Lib.Core.Effect.Time (MonadTime (..))
 import Lib.Web.Route.Common (collectionMainR, linkAsText, listArticlesR, showArticleR)
 import Servant (Link)
 import UnliftIO.Async (concurrently)
@@ -37,15 +35,13 @@ import UnliftIO.Async (concurrently)
 deleteGetArticles :: (WriteCapabilities m) => Context -> Id Capability -> m ()
 deleteGetArticles ctx gaCapId = do
   let resId = resourceId $ ctxRef ctx
-  let dgaCapId = Entity.id $ ctxCap ctx
-  let dgaActId = Entity.id $ ctxAct ctx
 
   -- Delete the stored capability id for the GetArticles action
   R.deleteCap resId gaCapId
 
   -- Delete the capability and action for this DeleteGetArticles
-  R.deleteCap resId dgaCapId
-  R.deleteAct resId dgaActId
+  R.deleteCap resId . Entity.id $ ctxCap ctx
+  R.deleteAct resId . Entity.id $ ctxAct ctx
 
 deleteArticle :: (WriteEntity Article m) => Context -> Id Article -> m ()
 deleteArticle ctx = R.deleteEnt (resourceId $ ctxRef ctx)
@@ -67,16 +63,12 @@ unreadArticle ctx artId =
   R.artUpdateState (resourceId $ ctxRef ctx) artId Unread
 
 data ArticleAction a = ArticleAction
-  { aaGsaa :: !a,
-    aaCat :: !a,
-    aaAa :: !a,
-    aaUa :: !a,
+  { _aaCat :: !a,
+    _aaAa :: !a,
+    _aaUa :: !a,
     aaDa :: !a
   }
   deriving stock (Functor, Foldable, Traversable)
-
-articleActionToList :: ArticleAction a -> [a]
-articleActionToList ArticleAction {..} = [aaGsaa, aaCat, aaAa, aaUa, aaDa]
 
 createArticle ::
   ( RWCapabilities m,
@@ -143,12 +135,9 @@ createArticle ctx getArticlesId mUri = do
           . createArticleCapabilities
           $ getArticleActId :
           getArticleActId' :
-          map
-            Entity.id
-            ( articleActionToList actEnts
-                ++ articleActionToList actFrontEnts
-                ++ articleActionToList actFrontEnts'
-            )
+          concatMap
+            (map Entity.id . toList)
+            [actEnts, actFrontEnts, actFrontEnts']
 
       -- Update existing GetArticles action with new data.
       updateGetArticlesAction resId getArticleActId'
@@ -159,8 +148,7 @@ createArticle ctx getArticlesId mUri = do
       aId <- getRandomId
       (aTitle, aCreated) <- concurrently (scrapWebsite uri) getCurrentTime
       let aState = Unread
-      let aTags = Set.empty
-      pure . Entity aId $ Article aTitle uri aState aCreated aTags
+      pure . Entity aId $ Article aTitle uri aState aCreated
 
     storeArticle ::
       (WriteEntity Article m) => Id Resource -> Entity Article -> m ()
@@ -169,7 +157,6 @@ createArticle ctx getArticlesId mUri = do
     createArticleActions :: Id Article -> ArticleAction Action
     createArticleActions artId =
       ArticleAction
-        (Query . GetSharedArticleAction $ Set.empty)
         (Command . Patch $ ChangeArticleTitle artId)
         (Command . Patch $ ArchiveArticle artId)
         (Command . Patch $ UnreadArticle artId)
@@ -182,12 +169,11 @@ createArticle ctx getArticlesId mUri = do
       ArticleAction (Entity Action) ->
       m Action
     createGetArticleAction artId getArtActId actEnts =
-      let (ArticleAction gsa _ _ _ _) = Entity.id <$> actEnts
-          (ArticleAction _ cat aa ua da) = Just . Entity.id <$> actEnts
+      let (ArticleAction cat aa ua da) = Just . Entity.id <$> actEnts
        in pure
             . Query
             . GetArticle artId
-            $ GetArticleActions getArtActId gsa cat aa ua da (Just getArticlesId)
+            $ GetArticleActions getArtActId cat aa ua da (Just getArticlesId)
 
     createArticleFrontendActions ::
       ArticleAction (Id Action) ->
@@ -230,27 +216,21 @@ createResource _ = do
 
   -- Create actions that are always available and don’t depend on other data.
   gagacaEnt <- insertAction resId . Query $ GetActiveGetArticlesCaps Set.empty
-  saEnt <- insertAction resId . Query $ GetSharedActions Set.empty
-  sroaEnt <- insertAction resId . Query $ GetSharedResourceOverviewAction Set.empty
-  saaEnt <- insertAction resId . Query $ GetSharedArticlesAction Set.empty
 
-  -- Create GetArticles and give it GetSharedArticlesAction initially.
+  -- Create GetArticles and give it the id of CreateArticle.
+  caaActId <- getRandomId
+
   let gaActions =
         GetArticlesActions
-          (Entity.id saaEnt)
-          Nothing
+          (Just caaActId)
           Nothing
           Set.empty
   gaaEnt <- insertAction resId . Query $ GetArticles gaActions
 
   -- Create CreateArticle and give it the GetArticles id.
-  -- Then update GetArticles with CreateArticle’s id.
-  caaEnt <-
-    insertAction resId . Command . Post . CreateArticle $ Entity.id gaaEnt
+  R.insertAct resId caaActId . Command . Post . CreateArticle $ Entity.id gaaEnt
 
-  let gaActions' = gaActions {gaaCreateArticle = Just $ Entity.id caaEnt}
-  R.updateAct resId (Entity.id gaaEnt) . Query $ GetArticles gaActions'
-
+  -- Generate Resource Overview id here because we need it earlier.
   roaActId <- getRandomId
 
   -- Create CreateGetArticlesCap and give it the GetArticles id and
@@ -265,12 +245,10 @@ createResource _ = do
             roaActId
   cgaaEnt <- insertAction resId cgaa
 
-  -- Create ResourceOverview and give it GetSharedActions, GetArticles,
-  -- GetSharedResourceOverviewAction, and CreateGetArticlesCap initially.
+  -- Create ResourceOverview and give it GetActiveGetArticlesCap, GetArticles,
+  -- and CreateGetArticlesCap initially.
   let roaActions =
         ResourceOverviewActions
-          (Entity.id saEnt)
-          (Entity.id sroaEnt)
           (Entity.id gagacaEnt)
           (Entity.id gaaEnt)
           (Just $ Entity.id cgaaEnt)
@@ -280,7 +258,7 @@ createResource _ = do
   let roaEnt = Entity roaActId roaAct
 
   -- Create FrontendAction for GetArticles and store it
-  void $ createFga resId (Entity.id caaEnt) (Entity.id gaaEnt) gaActions'
+  void $ createFga resId caaActId (Entity.id gaaEnt) gaActions
 
   -- Create capability for ResourceOverview, store it and create an
   -- accesstoken.
@@ -289,14 +267,15 @@ createResource _ = do
   let acc = mkAccesstoken . Reference resId $ Entity.id roaCapEnt
 
   -- Create FrontendAction for ResourceOverview and store
-  cgafaEnt <- createFro resId acc (Entity.id cgaaEnt) (Entity.id roaEnt) roaActions
+  cgafaEnt <-
+    createFro resId acc (Entity.id cgaaEnt) (Entity.id roaEnt) roaActions
 
-  -- Create capabilities CreateGetArticlesCap, and GetSharedActions, and store
-  -- them.
-  let cgaaCap = Capability Nothing Nothing . Entity.id $ cgafaEnt
-  void $ insertCapability resId cgaaCap
-  let saCap = Capability Nothing Nothing $ Entity.id saEnt
-  void $ insertCapability resId saCap
+  -- Create capabilitiy for CreateGetArticlesCap and store it.
+  void
+    . insertCapability resId
+    . Capability Nothing Nothing
+    . Entity.id
+    $ cgafaEnt
 
   -- Return the ResourceOverview accesstoken.
   pure . linkAsText . collectionMainR $ Just acc
@@ -319,10 +298,6 @@ createResource _ = do
       R.updateAct resId roaId newRoa
       pure cgafaEnt
 
-deleteSharedAction = undefined
-
-shareAction = undefined
-
 createGetArticlesCap ::
   (RWCapabilities m, MonadRandom m, WithError m) =>
   Context ->
@@ -333,10 +308,10 @@ createGetArticlesCap ::
 createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..} = do
   let resId = resourceId $ ctxRef ctx
   gaActEnt <- R.getOneAct resId cgacGetArticles
-  (GetArticlesActions id1 mId2 mId3 showArticleIds) <-
+  (GetArticlesActions mId1 mId2 showArticleIds) <-
     getGaActions $ Entity.val gaActEnt
   let saIds = Just <$> Set.toList showArticleIds
-  let gaActions = catMaybes $ [Just id1, mId2, mId3] ++ saIds
+  let gaActions = catMaybes $ [mId1, mId2] ++ saIds
 
   let unlockPetname = convertPetname mUnlockPetname
   -- Create capabilities for all action ids in GetArticles and for GetArticles.

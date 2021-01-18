@@ -1,7 +1,6 @@
 module Lib.Web.Route.Common
   ( -- * Route helpers
     collectionMainR,
-    collectionShareR,
     listArticlesR,
     showArticleR,
     editArticleR,
@@ -20,9 +19,6 @@ import Servant (Link, fieldLink, linkURI)
 
 collectionMainR :: Maybe Accesstoken -> Link
 collectionMainR = fieldLink collectionMain
-
-collectionShareR :: Maybe Accesstoken -> Link
-collectionShareR = fieldLink collectionShare
 
 listArticlesR :: Maybe Accesstoken -> Link
 listArticlesR = fieldLink listArticles

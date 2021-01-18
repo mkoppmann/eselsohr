@@ -4,8 +4,10 @@ module Lib.Web.Controller.Query
 where
 
 import Data.Aeson (Value)
-import Lib.Core.Domain (Accesstoken)
-import qualified Lib.Web.Route as Route
+import Lib.App.Error (WithError)
+import Lib.Core.Domain.Accesstoken (Accesstoken)
+import qualified Lib.Web.Controller.Common as CC
+import qualified Lib.Web.Route.Query as Route
 import Lib.Web.Types (AppServer)
 
 query :: Route.QuerySite AppServer
@@ -14,5 +16,5 @@ query =
     { Route.query = query'
     }
 
-query' :: (Monad m) => Maybe Accesstoken -> m Value
-query' _ = undefined
+query' :: (WithError m) => Maybe Accesstoken -> m Value
+query' _ = CC.notImplemented

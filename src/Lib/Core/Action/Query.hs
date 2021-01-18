@@ -11,41 +11,41 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import Lib.App.Error (WithError, serverError, throwError)
-import Lib.App.Log (WithLog, log, pattern D)
-import Lib.Core.Domain (Accesstoken, Action (..), Article, Capability (..), Context (..), Entity (..), GetArticleActions (..), GetArticlesActions (..), Id, QueryAction (..), Reference (..), Resource, ResourceOverviewAccess (..), ResourceOverviewActions (..), Revocable, ShowArticleAccess (..), ShowArticlesAccess (..))
-import Lib.Core.Domain.Accesstoken (mkAccesstoken)
+import Lib.App.Log (WithLog, log, pattern E)
+import Lib.Core.Domain.Accesstoken (Accesstoken, Reference (..), Revocable, mkAccesstoken)
+import Lib.Core.Domain.Article (Article)
+import Lib.Core.Domain.Capability (Action (..), Capability (..), GetArticleActions (..), GetArticlesActions (..), QueryAction (..), ResourceOverviewActions (..))
+import Lib.Core.Domain.Context (Context (..))
+import Lib.Core.Domain.Entity (Entity (..))
 import qualified Lib.Core.Domain.Entity as Entity
-import Lib.Core.Effect (ReadCapabilities (..), ReadEntity (..))
+import Lib.Core.Domain.Frontend (ResourceOverviewAccess (..), ShowArticleAccess (..), ShowArticlesAccess (..))
+import Lib.Core.Domain.Id (Id)
+import Lib.Core.Domain.Resource (Resource)
+import Lib.Core.Effect.Repository (ReadCapabilities (..), ReadEntity (..))
 import qualified Lib.Core.Effect.Repository as R
-import UnliftIO.Async (concurrently, mapConcurrently)
+import UnliftIO.Async (mapConcurrently)
 
 getCreateCollectionAcc :: (ReadCapabilities m) => m Accesstoken
-getCreateCollectionAcc = do
-  (Entity capId _) <- R.getOneCap R.systemColId R.initialCapId
-  pure $ capIdToAcc R.systemColId capId
+getCreateCollectionAcc =
+  capIdToAcc R.systemColId
+    . Entity.id
+    <$> R.getOneCap R.systemColId R.initialCapId
 
 getResourceOverviewAccs ::
-  (ReadCapabilities m) =>
+  (ReadCapabilities m, WithError m, WithLog env m) =>
   Context ->
   ResourceOverviewActions ->
   m ResourceOverviewAccess
 getResourceOverviewAccs ctx roActs = do
   let resId = resourceId $ ctxRef ctx
-  let gsaaId = roaGetSharedActions roActs
-  let mFcgacId = roaFrontCreateGetArticlesCap roActs
-  case mFcgacId of
+  case roaFrontCreateGetArticlesCap roActs of
     Nothing -> do
-      gsaaCapId <- R.getCapIdForActId resId gsaaId
-      let acc1 = mkAccesstoken $ Reference resId gsaaCapId
-      pure $ ResourceOverviewAccess acc1 Nothing
+      log E "roaFrontCreateGetArticlesCap is missing"
+      throwError $ serverError "A system error occured."
     Just fcgacId -> do
-      (gsaaCapId, fcgacCapId) <-
-        concurrently
-          (R.getCapIdForActId resId gsaaId)
-          (R.getCapIdForActId resId fcgacId)
-      let acc1 = mkAccesstoken $ Reference resId gsaaCapId
-      let acc2 = mkAccesstoken $ Reference resId fcgacCapId
-      pure $ ResourceOverviewAccess acc1 $ Just acc2
+      fcgacCapId <- R.getCapIdForActId resId fcgacId
+      let acc = mkAccesstoken $ Reference resId fcgacCapId
+      pure . ResourceOverviewAccess $ Just acc
 
 getShowArticlesAccess ::
   (ReadEntity Article m, WithError m) =>
@@ -55,7 +55,6 @@ getShowArticlesAccess ::
 getShowArticlesAccess ctx GetArticlesActions {..} = do
   let resId = resourceId $ ctxRef ctx
 
-  gsa <- actIdToAcc resId gaaGetSharedArticlesActions
   ca <- mActIdToAcc resId gaaFrontCreateArticle
   sas <-
     Seq.reverse
@@ -63,7 +62,7 @@ getShowArticlesAccess ctx GetArticlesActions {..} = do
       . catMaybes
       <$> mapConcurrently (getArtAndSAAccess resId) (Set.toList gaaShowArticles)
 
-  pure $ ShowArticlesAccess gsa ca sas
+  pure $ ShowArticlesAccess ca sas
   where
     getArtAndSAAccess ::
       (ReadEntity Article m, WithError m) =>

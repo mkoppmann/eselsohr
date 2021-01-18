@@ -1,8 +1,5 @@
 module Lib.Core.Domain.ExpirationDate
-  ( ExpirationDate,
-    unExpirationDate,
-    mkExpirationDate,
-    toExpirationDate,
+  ( ExpirationDate (..),
     expDateToText,
   )
 where
@@ -16,16 +13,14 @@ newtype ExpirationDate = ExpirationDate {unExpirationDate :: UTCTime}
   deriving (Binary, Eq, Ord, Show) via UTCTime
 
 instance FromHttpApiData ExpirationDate where
-  parseUrlPiece = mkExpirationDate
+  parseUrlPiece = parseExpirationDate
 
-mkExpirationDate :: Text -> Either Text ExpirationDate
-mkExpirationDate =
+parseExpirationDate :: Text -> Either Text ExpirationDate
+parseExpirationDate =
   pure
     . ExpirationDate
-    <=< parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M" . toString
-
-toExpirationDate :: UTCTime -> ExpirationDate
-toExpirationDate = ExpirationDate
+    <=< parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M"
+      . toString
 
 expDateToText :: ExpirationDate -> Text
 expDateToText =

@@ -6,7 +6,6 @@ module Lib.Core.Domain.Capability
     PatchAction (..),
     PostAction (..),
     QueryAction (..),
-    SharedAction (..),
     FrontendAction (..),
     ResourceOverviewActions (..),
     GetArticlesActions (..),
@@ -16,7 +15,6 @@ module Lib.Core.Domain.Capability
 where
 
 import Data.Binary (Binary)
-import Data.Time (UTCTime)
 import Lib.Core.Domain.Article (Article)
 import Lib.Core.Domain.ExpirationDate (ExpirationDate)
 import Lib.Core.Domain.Id (Id)
@@ -35,7 +33,6 @@ data Capability = Capability
 data Action
   = Command !CommandAction
   | Query !QueryAction
-  | Shared !SharedAction
   | Frontend !FrontendAction
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Binary)
@@ -48,9 +45,7 @@ data CommandAction
   deriving anyclass (Binary)
 
 data DeleteAction
-  = -- | Deletes the 'SharedAction' with this 'Action'’s 'Id'.
-    DeleteSharedAction !(Id Action)
-  | -- | Delete the matching 'GetArticles' 'Capability' stored in the
+  = -- | Delete the matching 'GetArticles' 'Capability' stored in the
     -- 'Action' and then deletes itself.
     DeleteGetArticles !(Id Capability)
   | -- | Delete the 'Article'.
@@ -79,8 +74,6 @@ data CreateGetArticlesCapActions = CreateGetArticlesCapActions
 data PostAction
   = -- | Creates a new 'Resource'.
     CreateResource
-  | -- | Creates a new 'SharedAction' with this 'Action'’s 'Id'.
-    ShareAction !(Id Action)
   | -- | Unlocks 'Resource' and creates new 'Capability' for 'GetArticles',
     -- and all 'Action's contained in it.
     CreateGetArticlesCap !CreateGetArticlesCapActions
@@ -92,9 +85,7 @@ data PostAction
   deriving anyclass (Binary)
 
 data ResourceOverviewActions = ResourceOverviewActions
-  { roaGetSharedActions :: !(Id Action),
-    roaGetSharedResourceOverviewAction :: !(Id Action),
-    roaGetActiveGetArticlesCap :: !(Id Action),
+  { roaGetActiveGetArticlesCap :: !(Id Action),
     roaGetArticles :: !(Id Action),
     roaCreateGetArticlesCap :: !(Maybe (Id Action)),
     roaFrontCreateGetArticlesCap :: !(Maybe (Id Action))
@@ -103,8 +94,7 @@ data ResourceOverviewActions = ResourceOverviewActions
   deriving anyclass (Binary)
 
 data GetArticlesActions = GetArticlesActions
-  { gaaGetSharedArticlesActions :: !(Id Action),
-    gaaCreateArticle :: !(Maybe (Id Action)),
+  { gaaCreateArticle :: !(Maybe (Id Action)),
     gaaFrontCreateArticle :: !(Maybe (Id Action)),
     gaaShowArticles :: !(Set (Id Action))
   }
@@ -113,7 +103,6 @@ data GetArticlesActions = GetArticlesActions
 
 data GetArticleActions = GetArticleActions
   { gaaShowArticle :: !(Id Action),
-    gaaGetSharedArticleAction :: !(Id Action),
     gaaChangeArticleTitle :: !(Maybe (Id Action)),
     gaaArchiveArticle :: !(Maybe (Id Action)),
     gaaUnreadArticle :: !(Maybe (Id Action)),
@@ -133,33 +122,6 @@ data QueryAction
     GetArticles !GetArticlesActions
   | -- | Get 'Article' in the resource with this 'Id'.
     GetArticle !(Id Article) !GetArticleActions
-  | -- | Get all 'Action's that are currently shared.
-    -- Contains the 'Set' of 'Id's of 'Action's that are currently shared, with
-    -- the matching action to delete this 'SharedAction'.
-    GetSharedActions !(Set (Id Action, Id Action))
-  | -- | Get all shared 'ResourceOverview' 'Action's.
-    -- Contains the 'Set' of 'Id's of 'Action's that are currently shared, with
-    -- the matching action to delete this 'SharedAction'.
-    GetSharedResourceOverviewAction !(Set (Id Action, Id Action))
-  | -- | Get all shared 'GetArticles' 'Action's
-    -- Contains the 'Set' of 'Id's of 'Action's that are currently shared, with
-    -- the matching action to delete this 'SharedAction'.
-    GetSharedArticlesAction !(Set (Id Action, Id Action))
-  | -- | Get all shared 'GetArticle' 'Action's.
-    -- Contains the 'Set' of 'Id's of 'Action's that are currently shared, with
-    -- the matching action to delete this 'SharedAction'.
-    GetSharedArticleAction !(Set (Id Action, Id Action))
-  deriving stock (Eq, Generic, Show)
-  deriving anyclass (Binary)
-
-data SharedAction = SharedAction
-  { -- | Date and time at which this 'SharedAction' is no longer valid.
-    sharedExpirationDate :: !(Maybe UTCTime),
-    -- | Counter of remaining usages of this 'SharedAction'.
-    sharedRemainingUsages :: !(Maybe Natural),
-    -- | 'Id' of the 'Action' this 'SharedAction' is pointing to.
-    sharedAction :: !(Id Action)
-  }
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Binary)
 

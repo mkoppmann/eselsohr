@@ -3,7 +3,9 @@ module Lib.Web.Controller.Command
   )
 where
 
-import Lib.Core.Domain (Accesstoken)
+import Lib.App.Error (WithError)
+import Lib.Core.Domain.Accesstoken (Accesstoken)
+import qualified Lib.Web.Controller.Common as CC
 import qualified Lib.Web.Route.Command as Route
 import Lib.Web.Types (AppServer)
 import Servant.API (NoContent)
@@ -16,11 +18,11 @@ command =
       Route.postApi = postApi
     }
 
-deleteApi :: (Monad m) => Maybe Accesstoken -> m NoContent
-deleteApi _ = undefined
+deleteApi :: (WithError m) => Maybe Accesstoken -> m NoContent
+deleteApi _ = CC.notImplemented
 
-patchApi :: (Monad m) => Maybe Accesstoken -> m NoContent
-patchApi _ = undefined
+patchApi :: (WithError m) => Maybe Accesstoken -> m NoContent
+patchApi _ = CC.notImplemented
 
-postApi :: (Monad m) => Maybe Accesstoken -> m NoContent
-postApi _ = undefined
+postApi :: (WithError m) => Maybe Accesstoken -> m NoContent
+postApi _ = CC.notImplemented

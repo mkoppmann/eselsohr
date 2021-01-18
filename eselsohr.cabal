@@ -72,7 +72,7 @@ library
         OverloadedStrings MultiParamTypeClasses FlexibleInstances
         ConstraintKinds DerivingVia DerivingStrategies QuasiQuotes
         RecordWildCards InstanceSigs DeriveGeneric PatternSynonyms
-        DeriveAnyClass
+        DeriveAnyClass DeriveTraversable
 
     ghc-options:
         -Wall -Wcompat -Widentities -Wincomplete-uni-patterns

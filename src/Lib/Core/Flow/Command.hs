@@ -5,34 +5,30 @@ module Lib.Core.Flow.Command
   )
 where
 
-import Data.Time (UTCTime)
 import Lib.App.Error (WithError)
-import Lib.App.Log (WithLog, log, pattern D)
 import qualified Lib.Core.Action.Command as Action
-import Lib.Core.Domain (Action (..), Article, CommandAction (..), Context (..), DeleteAction (..), PatchAction (..), PostAction (..), Uri)
+import Lib.Core.Domain.Article (Article)
+import Lib.Core.Domain.Capability (Action (..), CommandAction (..), DeleteAction (..), PatchAction (..), PostAction (..))
+import Lib.Core.Domain.Context (Context (..))
 import qualified Lib.Core.Domain.Context as Context
 import qualified Lib.Core.Domain.Entity as Entity
 import Lib.Core.Domain.ExpirationDate (ExpirationDate)
-import Lib.Core.Effect (MonadRandom, MonadScraper, MonadTime, RWEntity, WriteEntity)
+import Lib.Core.Domain.Uri (Uri)
+import Lib.Core.Effect.Random (MonadRandom)
+import Lib.Core.Effect.Repository (RWEntity, WriteEntity)
+import Lib.Core.Effect.Scraper (MonadScraper)
+import Lib.Core.Effect.Time (MonadTime)
 
-deleteAction ::
-  (WriteEntity Article m, WithLog env m) =>
-  Context ->
-  m ()
+deleteAction :: (WriteEntity Article m) => Context -> m ()
 deleteAction ctx = case Entity.val $ Context.ctxAct ctx of
   Command cAction -> case cAction of
     Delete delAction -> case delAction of
       DeleteGetArticles capId -> Action.deleteGetArticles ctx capId
       DeleteArticle aId -> Action.deleteArticle ctx aId
-      DeleteSharedAction actId -> Action.deleteSharedAction ctx actId
     _nonDeleteAction -> pure ()
   _nonCommandAction -> pure ()
 
-patchAction ::
-  (RWEntity Article m) =>
-  Context ->
-  Maybe Text ->
-  m ()
+patchAction :: (RWEntity Article m) => Context -> Maybe Text -> m ()
 patchAction ctx mArtTitle = case Entity.val $ Context.ctxAct ctx of
   Command cAction -> case cAction of
     Patch patAction -> case patAction of
@@ -43,13 +39,7 @@ patchAction ctx mArtTitle = case Entity.val $ Context.ctxAct ctx of
   _nonCommandAction -> pure ()
 
 postAction ::
-  ( RWEntity Article m,
-    MonadRandom m,
-    MonadScraper m,
-    MonadTime m,
-    WithError m,
-    WithLog env m
-  ) =>
+  (RWEntity Article m, MonadRandom m, MonadScraper m, MonadTime m, WithError m) =>
   Context ->
   Maybe Uri ->
   Maybe Text ->
@@ -63,6 +53,5 @@ postAction ctx mUri unlockPetname expDate =
         CreateResource -> Just <$> Action.createResource ctx
         CreateGetArticlesCap cgacActions ->
           Action.createGetArticlesCap ctx unlockPetname expDate cgacActions >> pure Nothing
-        ShareAction actId -> Action.shareAction ctx actId >> pure Nothing
       _nonPostAction -> pure Nothing
     _nonCommandAction -> pure Nothing

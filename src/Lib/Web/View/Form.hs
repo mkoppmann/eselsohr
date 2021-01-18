@@ -1,8 +1,6 @@
 module Lib.Web.View.Form
   ( createCollection,
     createGetArticlesCap,
-    showShareMenu,
-    showPageShare,
     createArticle,
     showArticles,
     showArticle,
@@ -20,7 +18,7 @@ module Lib.Web.View.Form
   )
 where
 
-import Lib.Core.Domain (Accesstoken)
+import Lib.Core.Domain.Accesstoken (Accesstoken)
 import Lib.Core.Domain.ExpirationDate (ExpirationDate, expDateToText)
 import qualified Lib.Web.Route.Common as Route
 import Lucid
@@ -40,23 +38,14 @@ genPost asLink commandMethod route inputFields buttonName acc =
 postMethodButton :: [Html ()] -> Text -> Accesstoken -> Html ()
 postMethodButton = genPost False "POST" Route.actionR
 
-postMethodLink :: [Html ()] -> Text -> Accesstoken -> Html ()
-postMethodLink = genPost True "POST" Route.actionR
-
 patchMethodButton :: [Html ()] -> Text -> Accesstoken -> Html ()
 patchMethodButton = genPost False "PATCH" Route.actionR
 
 patchMethodLink :: [Html ()] -> Text -> Accesstoken -> Html ()
 patchMethodLink = genPost True "PATCH" Route.actionR
 
-deleteMethodButton :: Text -> Accesstoken -> Html ()
-deleteMethodButton = genPost False "DELETE" Route.actionR []
-
 deleteMethodLink :: Text -> Accesstoken -> Html ()
 deleteMethodLink = genPost True "DELETE" Route.actionR []
-
-getMethodButton :: Link -> [Html ()] -> Text -> Accesstoken -> Html ()
-getMethodButton = genPost False "GET"
 
 getMethodLink :: Link -> [Html ()] -> Text -> Accesstoken -> Html ()
 getMethodLink = genPost True "GET"
@@ -74,12 +63,6 @@ deleteArticle = deleteMethodLink "Delete article"
 
 showArticles :: Text -> Accesstoken -> Html ()
 showArticles = getMethodLink (Route.listArticlesR Nothing) []
-
-showShareMenu :: Accesstoken -> Html ()
-showShareMenu = getMethodLink (Route.collectionShareR Nothing) [] "Open share menu"
-
-showPageShare :: Accesstoken -> Html ()
-showPageShare = getMethodLink (Route.collectionShareR Nothing) [] "Share this page"
 
 showArticle :: Text -> Accesstoken -> Html ()
 showArticle = getMethodLink (Route.showArticleR Nothing) []

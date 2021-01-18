@@ -11,9 +11,13 @@ where
 
 import Data.Time (UTCTime, defaultTimeLocale, formatTime)
 import Lens.Micro ((^?), _Right)
-import Lib.Core.Domain (Accesstoken, Article, ArticleState (..), Capability (..), ResourceOverviewAccess (..), Revocable, ShowArticleAccess (..), ShowArticlesAccess (..), Uri (..))
+import Lib.Core.Domain.Accesstoken (Accesstoken, Revocable)
+import Lib.Core.Domain.Article (Article, ArticleState (..))
 import qualified Lib.Core.Domain.Article as Article
+import Lib.Core.Domain.Capability (Capability (..))
 import Lib.Core.Domain.ExpirationDate (ExpirationDate, expDateToText)
+import Lib.Core.Domain.Frontend (ResourceOverviewAccess (..), ShowArticleAccess (..), ShowArticlesAccess (..))
+import Lib.Core.Domain.Uri (Uri (..))
 import qualified Lib.Web.View.Form as Form
 import Lucid
 import qualified Text.URI as URI
@@ -33,8 +37,6 @@ invalidToken = do
   ul_ $ do
     li_ "The token was not created by this system"
     li_ "The token expired"
-    li_ "The token reached its maximum usages"
-    li_ "The token was revoked by the person who created it"
   p_ "You have to provide a valid token to perform this action."
 
 root :: Accesstoken -> Html ()
@@ -55,16 +57,10 @@ resourceOverview viewAcc dates roAcc activeLinks = do
     \ You can unlock your article list here, as well as accessing the sharing\
     \ menu."
   p_
-    "Bookmark this page for quick access.\
+    "Bookmark this page for quick access or store it in your password manager.\
     \ If you loose access to this page, you can cannot access it again. Treat\
     \ the link like a password.\
-    \ Do not share it with anyone.\
-    \ If you want to share this collection, use the sharing functionality and\
-    \ generate new links for others.\
-    \ This has the benefit of you keeping the control, because you can add\
-    \ restrictions to those links or revoke them at any time."
-  ul_ $ do
-    li_ . Form.showShareMenu $ roAccGetSharedActions roAcc
+    \ Do not share it with anyone."
 
   h2_ "Currently active unlock links"
   if null activeLinks
@@ -93,7 +89,6 @@ resourceOverview viewAcc dates roAcc activeLinks = do
 articleList :: Accesstoken -> ShowArticlesAccess -> Html ()
 articleList viewAcc sasAcc = do
   Form.refreshShowArticles viewAcc
-  Form.showPageShare $ sasAccGetSharedArticlesAction sasAcc
   case sasAccCreateArticle sasAcc of
     Nothing -> pure ()
     Just acc -> newArticle acc

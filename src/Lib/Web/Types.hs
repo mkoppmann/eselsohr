@@ -11,7 +11,6 @@ module Lib.Web.Types
   )
 where
 
-import Data.Time (UTCTime)
 import Lib.App (App)
 import Lib.Core.Domain (Accesstoken, ExpirationDate, Uri)
 import Lucid (Html)

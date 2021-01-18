@@ -20,9 +20,13 @@ module Lib.Core.Effect.Repository
 where
 
 import Lib.App (App)
-import Lib.Core.Domain (Action (..), Article, ArticleState, Capability (..), Entity (..), Id (..), Resource, mkNilId)
+import Lib.Core.Domain.Article (Article, ArticleState)
 import qualified Lib.Core.Domain.Article as Article
+import Lib.Core.Domain.Capability (Action (..), Capability (..))
+import Lib.Core.Domain.Entity (Entity (..))
 import qualified Lib.Core.Domain.Entity as Entity
+import Lib.Core.Domain.Id (Id, mkNilId)
+import Lib.Core.Domain.Resource (Resource)
 import qualified Lib.Impl.Repository as Impl
 import UnliftIO (MonadUnliftIO)
 
