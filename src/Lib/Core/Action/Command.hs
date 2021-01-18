@@ -84,6 +84,7 @@ createArticle ::
   m ()
 createArticle ctx getArticlesId mUri = do
   let resId = resourceId $ ctxRef ctx
+  let mExpDate = capExpirationDate . Entity.val $ ctxCap ctx
   case mUri of
     Nothing -> throwError $ missingParameter "The parameter `uri` is missing."
     Just uri -> do
@@ -132,7 +133,7 @@ createArticle ctx getArticlesId mUri = do
       -- Create and store all capabilities.
       _capEnts <-
         traverse (insertCapability resId)
-          . createArticleCapabilities
+          . createArticleCapabilities mExpDate
           $ getArticleActId :
           getArticleActId' :
           concatMap
@@ -188,8 +189,8 @@ createArticle ctx getArticlesId mUri = do
               $ route Nothing
        in fmap makeFAct commandIds
 
-    createArticleCapabilities :: [Id Action] -> [Capability]
-    createArticleCapabilities = fmap (Capability Nothing Nothing)
+    createArticleCapabilities :: Maybe ExpirationDate -> [Id Action] -> [Capability]
+    createArticleCapabilities mExpDate = fmap (Capability Nothing mExpDate)
 
     updateGetArticlesAction ::
       (RWCapabilities m, WithError m) => Id Resource -> Id Action -> m ()
@@ -315,14 +316,14 @@ createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..
 
   let unlockPetname = convertPetname mUnlockPetname
   -- Create capabilities for all action ids in GetArticles and for GetArticles.
-  traverse_ (insertCapability resId . Capability Nothing Nothing) gaActions
+  traverse_ (insertCapability resId . Capability Nothing mExpDate) gaActions
   gaCapEnt <-
     insertCapability resId . Capability unlockPetname mExpDate $ Entity.id gaActEnt
 
   -- Create action and capability for DeleteGetArticles.
   let dga = Command . Delete . DeleteGetArticles $ Entity.id gaCapEnt
   dgaEnt <- insertAction resId dga
-  let dgaCap = Capability Nothing Nothing $ Entity.id dgaEnt
+  let dgaCap = Capability Nothing mExpDate $ Entity.id dgaEnt
   void $ insertCapability resId dgaCap
   roaAcc <-
     mkAccesstoken
@@ -334,7 +335,7 @@ createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..
           . linkAsText
           $ collectionMainR (Just roaAcc)
   dgaFEnt <- insertAction resId dgaF
-  let dgaFCap = Capability Nothing Nothing $ Entity.id dgaFEnt
+  let dgaFCap = Capability Nothing mExpDate $ Entity.id dgaFEnt
   dgaFCapEnt <- insertCapability resId dgaFCap
 
   -- Lookup 'GetActiveGetArticlesCaps' and update the 'Set' of revocable

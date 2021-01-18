@@ -7,7 +7,7 @@ import Clay (Css)
 import qualified Data.Set as Set
 import Data.Time (UTCTime (..), addGregorianMonthsClip)
 import Lib.App.Error (WithError, invalid, notFound, redirect303, redirect307, serverError, throwError)
-import Lib.App.Log (WithLog, log, pattern E)
+import Lib.App.Log (WithLog, log, pattern E, pattern I)
 import qualified Lib.Core.Action.Query as Query
 import Lib.Core.Domain.Accesstoken (Accesstoken, Revocable, mkAccesstoken)
 import Lib.Core.Domain.Article (Article (..))
@@ -59,7 +59,7 @@ collectionMain mAcc = case mAcc of
     mOrigCtx <- CC.getContext acc
     case mOrigCtx of
       Left err -> do
-        log E err
+        log I err
         throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
       Right origCtx -> do
         ctx <- CC.getQuery origCtx
@@ -114,7 +114,7 @@ listArticles mAcc = case mAcc of
     mOrigCtx <- CC.getContext acc
     case mOrigCtx of
       Left err -> do
-        log E err
+        log I err
         throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
       Right origCtx -> do
         ctx <- CC.getQuery origCtx
@@ -142,7 +142,7 @@ showArticle = \case
     mOrigCtx <- CC.getContext acc
     case mOrigCtx of
       Left err -> do
-        log E err
+        log I err
         throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
       Right origCtx -> do
         ctx <- CC.getQuery origCtx
@@ -171,7 +171,7 @@ editArticle = \case
     mOrigCtx <- CC.getContext acc
     case mOrigCtx of
       Left err -> do
-        log E err
+        log I err
         throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
       Right origCtx -> do
         ctx <- CC.getQuery origCtx

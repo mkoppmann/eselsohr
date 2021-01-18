@@ -37,7 +37,7 @@ getContext acc = do
         Just expDate -> do
           currTime <- getCurrentTime
           if unExpirationDate expDate < currTime
-            then pure $ Left "Capabillity has expired"
+            then pure $ Left "Capability has expired"
             else fetchAction ref resId capEnt
   where
     fetchAction ::

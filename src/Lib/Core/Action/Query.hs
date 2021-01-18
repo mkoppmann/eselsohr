@@ -18,11 +18,13 @@ import Lib.Core.Domain.Capability (Action (..), Capability (..), GetArticleActio
 import Lib.Core.Domain.Context (Context (..))
 import Lib.Core.Domain.Entity (Entity (..))
 import qualified Lib.Core.Domain.Entity as Entity
+import Lib.Core.Domain.ExpirationDate (ExpirationDate (..))
 import Lib.Core.Domain.Frontend (ResourceOverviewAccess (..), ShowArticleAccess (..), ShowArticlesAccess (..))
 import Lib.Core.Domain.Id (Id)
 import Lib.Core.Domain.Resource (Resource)
 import Lib.Core.Effect.Repository (ReadCapabilities (..), ReadEntity (..))
 import qualified Lib.Core.Effect.Repository as R
+import Lib.Core.Effect.Time (MonadTime (..))
 import UnliftIO.Async (mapConcurrently)
 
 getCreateCollectionAcc :: (ReadCapabilities m) => m Accesstoken
@@ -115,12 +117,14 @@ actIdToAcc :: (ReadCapabilities m) => Id Resource -> Id Action -> m Accesstoken
 actIdToAcc resId = fmap (capIdToAcc resId) . R.getCapIdForActId resId
 
 getRevMap ::
-  (ReadCapabilities m) =>
+  (ReadCapabilities m, MonadTime m) =>
   Context ->
   Set (Id Capability, Id Capability) ->
   m (Seq (Capability, Revocable))
 getRevMap ctx capIdsSet = do
   let resId = resourceId $ ctxRef ctx
+
+  currTime <- getCurrentTime
 
   -- Convert the set to an ascending list; this will help later for the zipping
   -- process.
@@ -138,10 +142,14 @@ getRevMap ctx capIdsSet = do
   pure
     . fmap (second (bimap (capIdToAcc resId) (capIdToAcc resId)))
     . Seq.sortBy expDateCmp
+    . Seq.filter (expDateFilter currTime)
     . Seq.fromList
     . zip (snd <$> capList)
     $ filter (flip elem (fst <$> capList) . uncurry const) capIdsList
   where
+    expDateFilter currTime (cap, _) = case capExpirationDate cap of
+      Nothing -> True
+      Just expDate -> unExpirationDate expDate > currTime
     expDateCmp (cap1, _) (cap2, _) =
       compare (capExpirationDate cap1) (capExpirationDate cap2)
 
