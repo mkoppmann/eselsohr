@@ -127,4 +127,5 @@ executable eselsohr
     ghc-options:      -threaded -rtsopts "-with-rtsopts=-T -N"
     build-depends:
         base ^>=4.14.0.0,
-        eselsohr -any
+        eselsohr -any,
+        optparse-applicative >=0.16.1 && <0.17,

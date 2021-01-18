@@ -5,7 +5,7 @@ module Lib.Config
 where
 
 import Colog (Severity (Error))
-import Configuration.Dotenv (defaultConfig, loadFile)
+import Configuration.Dotenv (configPath, defaultConfig, loadFile)
 import Data.Maybe (fromJust)
 import Data.Text (toTitle)
 import Lib.Core.Domain.Uri (Uri (..))
@@ -23,9 +23,9 @@ data Config = Config
     confBaseUrl :: !Uri
   }
 
-loadConfig :: (MonadIO m) => m Config
-loadConfig = do
-  void $ loadFile defaultConfig
+loadConfig :: (MonadIO m) => Maybe FilePath -> m Config
+loadConfig mConfPath = do
+  loadEnvFile mConfPath
   df <- getDataFolder
   sp <- getPort
   la <- getListenAddr
@@ -33,6 +33,13 @@ loadConfig = do
   ls <- getLogLevel
   pure $ Config df ls sp la bu
   where
+    loadEnvFile :: (MonadIO m) => Maybe FilePath -> m ()
+    loadEnvFile = \case
+      Nothing -> void $ loadFile defaultConfig
+      Just fp -> do
+        let config = defaultConfig {configPath = [fp]}
+        void $ loadFile config
+
     getDataFolder :: (MonadIO m) => m String
     getDataFolder = do
       mDF <- lookupEnv "DATA_FOLDER"
@@ -68,10 +75,8 @@ loadConfig = do
       case mBU of
         Nothing ->
           pure . Uri . fromJust . U.mkURI $ "http://localhost:" <> show port <> "/"
-        Just bu -> do
-          let eUri = U.mkURI $ toText bu
-          print @Text $ "eUri: " <> show eUri
-          case eUri of
+        Just bu ->
+          case U.mkURI $ toText bu of
             Left err ->
               error . toText $ "Invalid base url: " <> displayException err
             Right uri -> pure $ Uri uri

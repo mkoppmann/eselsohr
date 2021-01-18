@@ -47,5 +47,6 @@ runServer Config {..} env@Env {..} = do
   () <$ forkServerWith envEkgStore "localhost" 6980
   runSettings settings $ application env
 
-main :: IO ()
-main = loadConfig >>= \conf -> mkAppEnv conf >>= runServer conf
+main :: Maybe FilePath -> IO ()
+main mConfPath =
+  loadConfig mConfPath >>= \conf -> mkAppEnv conf >>= runServer conf

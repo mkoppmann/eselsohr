@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+# Author: Michael Koppmann <me@mkoppmann.at>
+#
+# $FreeBSD$
+#
+
+# PROVIDE: eselsohr
+# REQUIRE: DAEMON NETWORKING
+# KEYWORD: shutdown
+
+# Add the following lines to /etc/rc.conf to enable Eselsohr:
+# eselsohr_enable="YES"
+
+. /etc/rc.subr
+
+name="eselsohr"
+rcvar=eselsohr_enable
+prefix="/usr/local"
+
+load_rc_config ${name}
+
+: ${eselsohr_enable="NO"}
+: ${eselsohr_config="${prefix}/etc/eselsohr/eselsohr.conf"}
+
+pidfile="/var/run/eselsohr.pid"
+procname="${prefix}/bin/eselsohr"
+command="/usr/sbin/daemon"
+command_args="-T eselsohr -m 3 -S -p ${pidfile} -u eselsohr ${prefix}/bin/eselsohr -c ${eselsohr_config}"
+
+run_rc_command "$1"
