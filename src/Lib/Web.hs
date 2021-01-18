@@ -7,6 +7,7 @@ where
 import Lib.App (AppEnv, runAppAsHandler)
 import qualified Lib.Web.Controller as Controller (command, frontend, query)
 import qualified Lib.Web.Route as Route (Command, Frontend, Query)
+import Network.Wai.Middleware.AddHeaders (addHeaders)
 import Network.Wai.Middleware.Gzip (def, gzip)
 import Network.Wai.Middleware.MyMethodOverride (methodOverride)
 import Servant.API ((:<|>) (..))
@@ -26,4 +27,21 @@ server env =
 
 application :: AppEnv -> Application
 application env =
-  gzip def $ methodOverride $ serve (Proxy @Api) (server env)
+  gzip def
+    . addHeaders securityHeaders
+    . methodOverride
+    $ serve (Proxy @Api) (server env)
+
+securityHeaders :: [(ByteString, ByteString)]
+securityHeaders =
+  [ ("Referrer-Policy", "no-referrer"),
+    ("X-Content-Type-Options", "nosniff"),
+    ( "Content-Security-Policy",
+      "default-src 'none';\
+      \ style-src 'self';\
+      \ img-src 'self';\
+      \ frame-ancestors https:\
+      \ form-action 'self';\
+      \ upgrade-insecure-requests;"
+    )
+  ]
