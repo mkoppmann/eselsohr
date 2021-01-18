@@ -6,7 +6,7 @@ where
 
 import Lib.App (AppEnv, runAppAsHandler)
 import qualified Lib.Web.Controller as Controller (command, frontend, query)
-import qualified Lib.Web.Route as Route (Command, Frontend, Query)
+import Lib.Web.Route (Command, Frontend, Query)
 import Network.Wai.Middleware.AddHeaders (addHeaders)
 import Network.Wai.Middleware.Gzip (def, gzip)
 import Network.Wai.Middleware.MyMethodOverride (methodOverride)
@@ -14,7 +14,7 @@ import Servant.API ((:<|>) (..))
 import Servant.API.Generic (toServant)
 import Servant.Server (Application, Server, hoistServer, serve)
 
-type Api = Route.Frontend :<|> Route.Query :<|> Route.Command
+type Api = Frontend :<|> Query :<|> Command
 
 server :: AppEnv -> Server Api
 server env =
