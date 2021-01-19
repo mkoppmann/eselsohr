@@ -1,6 +1,6 @@
 ### Eselsohr ###
-data/
-.env
+eselsohr/data/
+eselsohr/.env
 
 # Created by https://www.toptal.com/developers/gitignore/api/haskell,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=haskell,visualstudiocode
