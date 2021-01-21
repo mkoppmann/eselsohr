@@ -7,12 +7,10 @@ where
 import Colog (Severity (Error))
 import Configuration.Dotenv (configPath, defaultConfig, loadFile, onMissingFile)
 import Control.Monad.Catch (MonadCatch)
-import Data.Maybe (fromJust)
 import Data.Text (toTitle)
-import Lib.Core.Domain.Uri (Uri (..))
+import Lib.Core.Domain.Uri (Uri (..), baseUri)
 import Network.Wai.Handler.Warp (Port)
 import System.FilePath (addTrailingPathSeparator)
-import qualified Text.URI as U
 import UnliftIO.Directory (XdgDirectory (XdgData), getXdgDirectory)
 import UnliftIO.Environment (lookupEnv)
 
@@ -103,14 +101,10 @@ loadConfig mConfPath = do
     getBaseUrl :: (MonadIO m) => Port -> m Uri
     getBaseUrl port = do
       mBU <- lookupEnv "BASE_URL"
-      case mBU of
-        Nothing ->
-          pure . Uri . fromJust . U.mkURI $ "http://localhost:" <> show port <> "/"
-        Just bu ->
-          case U.mkURI $ toText bu of
-            Left err ->
-              error . toText $ "Invalid base url: " <> displayException err
-            Right uri -> pure $ Uri uri
+      let url = case mBU of
+            Nothing -> "http://localhost:" <> show port <> "/"
+            Just bu -> toText bu
+      pure $ baseUri url
 
     getHttps :: (MonadIO m) => m Bool
     getHttps = do

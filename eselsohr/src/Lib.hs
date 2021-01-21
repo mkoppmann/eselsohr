@@ -26,6 +26,7 @@ runServer :: Config -> AppEnv -> IO ()
 runServer Config {..} env@Env {..} = do
   Init.datafolder envDataFolder
   Init.initialCap envDataFolder
+  Init.useRestrictedHttpManager
 
   let settings =
         setHost (fromString confListenAddr)

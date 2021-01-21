@@ -17,7 +17,7 @@ import qualified Lib.Core.Domain.Article as Article
 import Lib.Core.Domain.Capability (Capability (..))
 import Lib.Core.Domain.ExpirationDate (ExpirationDate, expDateToText)
 import Lib.Core.Domain.Frontend (ResourceOverviewAccess (..), ShowArticleAccess (..), ShowArticlesAccess (..))
-import Lib.Core.Domain.Uri (Uri (..))
+import Lib.Core.Domain.Uri (Uri, render, unUri)
 import qualified Lib.Web.View.Form as Form
 import Lucid
 import qualified Text.URI as URI
@@ -172,7 +172,7 @@ showArticle art saAcc = do
   h1_ . toHtml $ Article.title art
   p_ . toHtml $ "Created: " <> prettyDate (Article.creation art)
   p_ . toHtml $ "State: " <> show @Text (Article.state art)
-  p_ . a_ [urlHref_ aUrl] . toHtml $ renderUrl aUrl
+  p_ . a_ [urlHref_ aUrl] . toHtml $ render aUrl
   case Article.state art of
     Archived -> case saAccUnreadArticle saAcc of
       Nothing -> pure ()
@@ -192,8 +192,5 @@ showArticle art saAcc = do
 prettyDate :: UTCTime -> Text
 prettyDate = toText . formatTime defaultTimeLocale "%Y-%m-%d %H:%M"
 
-renderUrl :: Uri -> Text
-renderUrl = URI.render . unUri
-
 urlHref_ :: Uri -> Attribute
-urlHref_ = href_ . renderUrl
+urlHref_ = href_ . render

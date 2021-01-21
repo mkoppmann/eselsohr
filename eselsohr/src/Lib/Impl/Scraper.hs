@@ -3,9 +3,8 @@ module Lib.Impl.Scraper
   )
 where
 
-import Lib.Core.Domain (Uri (unUri))
+import Lib.Core.Domain.Uri (Uri, render)
 import qualified Text.HTML.Scalpel as SC
-import Text.URI (render)
 
 type WithScraper m = MonadIO m
 
@@ -15,7 +14,7 @@ scrapWebsite uri =
 
 scrapWebsiteDirect :: WithScraper m => Uri -> m (Maybe Text)
 scrapWebsiteDirect uri =
-  let sUrl = toString . render $ unUri uri
+  let sUrl = toString $ render uri
    in liftIO $ SC.scrapeURL sUrl titleScraper
 
 titleScraper :: SC.Scraper Text Text
