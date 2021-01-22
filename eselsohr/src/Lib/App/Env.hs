@@ -3,6 +3,8 @@
 
 module Lib.App.Env
   ( DataPath,
+    Https (..),
+    Hsts (..),
     Env (..),
     Has (..),
     grab,
@@ -14,10 +16,16 @@ import Lib.Core.Domain.Uri (Uri)
 
 type DataPath = FilePath
 
+data Https = HttpsOn | HttpsOff
+
+data Hsts = HstsOn | HstsOff
+
 data Env (m :: Type -> Type) = Env
   { envDataFolder :: !DataPath,
     envLogAction :: !(LogAction m Message),
-    envBaseUrl :: !Uri
+    envBaseUrl :: !Uri,
+    envHttps :: !Https,
+    envHsts :: !Hsts
   }
 
 instance HasLog (Env m) Message m where
@@ -37,6 +45,10 @@ instance Has DataPath (Env m) where obtain = envDataFolder
 instance Has (LogAction m Message) (Env m) where obtain = envLogAction
 
 instance Has Uri (Env m) where obtain = envBaseUrl
+
+instance Has Https (Env m) where obtain = envHttps
+
+instance Has Hsts (Env m) where obtain = envHsts
 
 grab :: forall field env m. (MonadReader env m, Has field env) => m field
 grab = asks $ obtain @field

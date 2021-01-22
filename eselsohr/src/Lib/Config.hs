@@ -16,12 +16,38 @@ import qualified Text.URI as U
 import UnliftIO.Directory (XdgDirectory (XdgData), getXdgDirectory)
 import UnliftIO.Environment (lookupEnv)
 
+-- | Configuration options for Eselsohr.
+-- Can be configured via environment variables or config file.
 data Config = Config
-  { confDataFolder :: !FilePath,
+  { -- | File path to the data folder, where all collection are getting stored.
+    -- Defaults to: 'XdgData'
+    confDataFolder :: !FilePath,
+    -- | Severity level for the logger component.
+    -- Defaults to: 'Error'
     confLogSeverity :: !Severity,
+    -- | Port number on which the web server will listen.
+    -- Defaults to: @6979@
     confServerPort :: !Port,
+    -- | Address where the web server will listen.
+    -- Defaults to: @127.0.0.1@
     confListenAddr :: !String,
-    confBaseUrl :: !Uri
+    -- | Base URL to generate HTML links.
+    -- Defaults to @http://localhost@
+    confBaseUrl :: !Uri,
+    -- | Send @HSTS@ HTTP header.
+    -- Automatically enabled when @X-Forwarded-Proto@ HTTP header is set to
+    -- @https@.
+    -- Defaults to: 'False'
+    confHttps :: !Bool,
+    -- | Do not send @HSTS@ HTTP header, when @HTTPS@ is set.
+    -- Defaults to: 'False'
+    confDisableHsts :: !Bool,
+    -- | File path to the TLS certificate file.
+    -- Defaults to: 'certificate.pem'
+    confCertFile :: !FilePath,
+    -- | File path to the TLS key file.
+    -- Defaults to: 'key.pem'
+    confKeyFile :: !FilePath
   }
 
 loadConfig :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m Config
@@ -31,8 +57,12 @@ loadConfig mConfPath = do
   sp <- getPort
   la <- getListenAddr
   bu <- getBaseUrl sp
+  hs <- getHttps
+  dh <- getDisableHsts
+  cf <- getCertFile
+  kf <- getKeyFile
   ls <- getLogLevel
-  pure $ Config df ls sp la bu
+  pure $ Config df ls sp la bu hs dh cf kf
   where
     loadEnvFile :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m ()
     loadEnvFile = \case
@@ -41,7 +71,7 @@ loadConfig mConfPath = do
         let config = defaultConfig {configPath = [fp]}
         void $ loadFile config
 
-    getDataFolder :: (MonadIO m) => m String
+    getDataFolder :: (MonadIO m) => m FilePath
     getDataFolder = do
       mDF <- lookupEnv "DATA_FOLDER"
       case mDF of
@@ -81,3 +111,25 @@ loadConfig mConfPath = do
             Left err ->
               error . toText $ "Invalid base url: " <> displayException err
             Right uri -> pure $ Uri uri
+
+    getHttps :: (MonadIO m) => m Bool
+    getHttps = do
+      mHS <- lookupEnv "HTTPS"
+      case mHS of
+        Nothing -> pure False
+        Just hs ->
+          pure . fromMaybe False . readMaybe . toString . toTitle $ toText hs
+
+    getDisableHsts :: (MonadIO m) => m Bool
+    getDisableHsts = do
+      mDH <- lookupEnv "DISABLE_HSTS"
+      case mDH of
+        Nothing -> pure False
+        Just dh ->
+          pure . fromMaybe False . readMaybe . toString . toTitle $ toText dh
+
+    getCertFile :: (MonadIO m) => m FilePath
+    getCertFile = maybe (pure "certificate.pem") pure =<< lookupEnv "CERT_FILE"
+
+    getKeyFile :: (MonadIO m) => m FilePath
+    getKeyFile = maybe (pure "key.pem") pure =<< lookupEnv "KEY_FILE"

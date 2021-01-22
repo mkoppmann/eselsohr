@@ -33,11 +33,25 @@ By default it looks for an `.env` file in the current working directory.
 
 The following values can be set:
 
-* `DATA_FOLDER`: File path where data is getting persisted. Defaults to [XdgData](https://hackage.haskell.org/package/directory-1.3.6.1/docs/System-Directory.html#v:XdgData).
-* `LOG_LEVEL`: Level for the built-in logger. Defaults to [Error](https://hackage.haskell.org/package/co-log-core-0.2.1.1/docs/Colog-Core-Severity.html#t:Severity).
-* `PORT`: Port number on which the web server will listen. Defaults to `6979`.
-* `LISTEN_ADDR`: Address where the web server will listen. Defaults to `127.0.0.1`.
-* `BASE_URL`: Base URL to generate HTML links. Defaults to `http://localhost`.
+* `DATA_FOLDER`: File path where data is getting persisted.
+    Defaults to [XdgData](https://hackage.haskell.org/package/directory-1.3.6.1/docs/System-Directory.html#v:XdgData).
+* `LOG_LEVEL`: Level for the built-in logger.
+    Defaults to [Error](https://hackage.haskell.org/package/co-log-core-0.2.1.1/docs/Colog-Core-Severity.html#t:Severity).
+* `PORT`: Port number on which the web server will listen.
+    Defaults to `6979`.
+* `LISTEN_ADDR`: Address where the web server will listen.
+    Defaults to `127.0.0.1`.
+* `BASE_URL`: Base URL to generate HTML links.
+    Defaults to `http://localhost`.
+* `HTTPS`: Send `HSTS` HTTP header.
+    Automatically enabled when `X-Forwarded-Proto` HTTP header is set to `https`.
+    Defaults to `False`.
+* `DISABLE_HSTS`: Do not send `HSTS` HTTP header, when `HTTPS` is set.
+    Defaults to `False`.
+* `CERT_FILE`: File path to the TLS certificate file.
+    Not set by default.
+* `KEY_FILE`: File path to the TLS key file.
+    Not set by default.
 
 Currently, all configuration parameters are optional, so starting Eselsohr can be as simple as executing the Eselsohr binary.
 The `dist` directory in this repository provides deployment relevant files, like an example `rc` file for FreeBSD or a service file for systemd-based Linux distributions.

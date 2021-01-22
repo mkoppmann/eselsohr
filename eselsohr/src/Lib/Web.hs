@@ -4,12 +4,17 @@ module Lib.Web
   )
 where
 
-import Lib.App (AppEnv, runAppAsHandler)
+import Lib.App (AppEnv, Env (..), Hsts (..), Https (..), runAppAsHandler)
 import qualified Lib.Web.Controller as Controller (command, frontend, query)
 import Lib.Web.Route (Command, Frontend, Query)
+import Network.Wai.Handler.Warp (Port)
 import Network.Wai.Middleware.AddHeaders (addHeaders)
+import Network.Wai.Middleware.AddHsts (addHsts)
+import qualified Network.Wai.Middleware.EnforceHTTPS as EnforceHTTPS
 import Network.Wai.Middleware.Gzip (def, gzip)
 import Network.Wai.Middleware.MyMethodOverride (methodOverride)
+import Network.Wai.Middleware.NoOp (noOp)
+import Network.Wai.Middleware.RealIp (realIpHeader)
 import Servant.API ((:<|>) (..))
 import Servant.API.Generic (toServant)
 import Servant.Server (Application, Server, hoistServer, serve)
@@ -25,12 +30,27 @@ server env =
       :<|> toServant Controller.query
       :<|> toServant Controller.command
 
-application :: AppEnv -> Application
-application env =
+application :: Port -> AppEnv -> Application
+application port env@Env {..} =
+  -- Response middlewares
   gzip def
+    . hstsHeader
+    . realIpHeader "X-Forwarded-Proto"
     . addHeaders securityHeaders
+    -- Request middlewares
+    . enforceHttps
     . methodOverride
     $ serve (Proxy @Api) (server env)
+  where
+    enforceHttps = case envHttps of
+      HttpsOn ->
+        let config = EnforceHTTPS.defaultConfig {EnforceHTTPS.httpsPort = port}
+         in EnforceHTTPS.withConfig config
+      HttpsOff -> noOp
+
+    hstsHeader = case envHsts of
+      HstsOn -> addHsts
+      HstsOff -> noOp
 
 securityHeaders :: [(ByteString, ByteString)]
 securityHeaders =
