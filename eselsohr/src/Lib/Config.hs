@@ -8,6 +8,7 @@ import Colog (Severity (Error))
 import Configuration.Dotenv (configPath, defaultConfig, loadFile, onMissingFile)
 import Control.Monad.Catch (MonadCatch)
 import Data.Text (toTitle)
+import Lib.App.Env (DataPath, MaxConcurrentWrites)
 import Lib.Core.Domain.Uri (Uri (..), baseUri)
 import Network.Wai.Handler.Warp (Port)
 import System.FilePath (addTrailingPathSeparator)
@@ -19,7 +20,12 @@ import UnliftIO.Environment (lookupEnv)
 data Config = Config
   { -- | File path to the data folder, where all collection are getting stored.
     -- Defaults to: 'XdgData'
-    confDataFolder :: !FilePath,
+    confDataFolder :: !DataPath,
+    -- | Number of max concurrently run write operations.
+    -- Set a limit to avoid resource exhaustion.
+    -- Must be larger or equal than 1.
+    -- Defaults to: 'Nothing'
+    confMaxConcurrentWrites :: !(Maybe MaxConcurrentWrites),
     -- | Severity level for the logger component.
     -- Defaults to: 'Error'
     confLogSeverity :: !Severity,
@@ -52,6 +58,7 @@ loadConfig :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m Config
 loadConfig mConfPath = do
   loadEnvFile mConfPath
   df <- getDataFolder
+  mw <- getMaxConcurrentWrites
   sp <- getPort
   la <- getListenAddr
   bu <- getBaseUrl sp
@@ -60,7 +67,7 @@ loadConfig mConfPath = do
   cf <- getCertFile
   kf <- getKeyFile
   ls <- getLogLevel
-  pure $ Config df ls sp la bu hs dh cf kf
+  pure $ Config df mw ls sp la bu hs dh cf kf
   where
     loadEnvFile :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m ()
     loadEnvFile = \case
@@ -69,12 +76,21 @@ loadConfig mConfPath = do
         let config = defaultConfig {configPath = [fp]}
         void $ loadFile config
 
-    getDataFolder :: (MonadIO m) => m FilePath
+    getDataFolder :: (MonadIO m) => m DataPath
     getDataFolder = do
       mDF <- lookupEnv "DATA_FOLDER"
       case mDF of
         Nothing -> getXdgDirectory XdgData $ addTrailingPathSeparator "eselsohr"
         Just df -> pure $ addTrailingPathSeparator df
+
+    getMaxConcurrentWrites :: (MonadIO m) => m (Maybe MaxConcurrentWrites)
+    getMaxConcurrentWrites = do
+      mMW <- lookupEnv "MAX_CONCURRENT_WRITES"
+      case mMW of
+        Nothing -> pure Nothing
+        Just mw -> pure $ case readMaybe mw of
+          Nothing -> Nothing
+          Just maxWrites -> if maxWrites > 0 then Just maxWrites else Nothing
 
     getLogLevel :: (MonadIO m) => m Severity
     getLogLevel = do

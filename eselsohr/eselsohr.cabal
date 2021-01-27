@@ -31,6 +31,7 @@ library
         Lib.Core.Domain.Frontend
         Lib.Core.Domain.Id
         Lib.Core.Domain.Resource
+        Lib.Core.Domain.StoreEvent
         Lib.Core.Domain.Uri
         Lib.Core.Effect
         Lib.Core.Effect.Repository
@@ -46,6 +47,7 @@ library
         Lib.Impl.Scraper
         Lib.Impl.Time
         Lib.Init
+        Lib.Persistence
         Lib.Web
         Lib.Web.Controller
         Lib.Web.Controller.Command
@@ -95,7 +97,6 @@ library
         containers >=0.6.2 && <0.7,
         dotenv >=0.8.0 && <0.9,
         exceptions >=0.10.4 && <0.11,
-        filelock >=0.1.1 && <0.2,
         filepath >=1.4.2 && <1.5,
         http-api-data >=0.4.2 && <0.5,
         http-client >=0.7.4 && <0.8,

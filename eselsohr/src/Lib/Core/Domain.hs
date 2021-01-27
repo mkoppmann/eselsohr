@@ -8,6 +8,7 @@ module Lib.Core.Domain
     module Lib.Core.Domain.Id,
     module Lib.Core.Domain.Context,
     module Lib.Core.Domain.Resource,
+    module Lib.Core.Domain.StoreEvent,
     module Lib.Core.Domain.Uri,
   )
 where
@@ -21,4 +22,5 @@ import Lib.Core.Domain.ExpirationDate
 import Lib.Core.Domain.Frontend
 import Lib.Core.Domain.Id
 import Lib.Core.Domain.Resource
+import Lib.Core.Domain.StoreEvent
 import Lib.Core.Domain.Uri

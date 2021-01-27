@@ -15,11 +15,11 @@ import qualified Lib.Core.Domain.Entity as Entity
 import Lib.Core.Domain.ExpirationDate (ExpirationDate)
 import Lib.Core.Domain.Uri (Uri)
 import Lib.Core.Effect.Random (MonadRandom)
-import Lib.Core.Effect.Repository (RWEntity, WriteEntity)
+import Lib.Core.Effect.Repository (Persist, RWEntity)
 import Lib.Core.Effect.Scraper (MonadScraper)
 import Lib.Core.Effect.Time (MonadTime)
 
-deleteAction :: (WriteEntity Article m) => Context -> m ()
+deleteAction :: (Persist m) => Context -> m ()
 deleteAction ctx = case Entity.val $ Context.ctxAct ctx of
   Command cAction -> case cAction of
     Delete delAction -> case delAction of
@@ -50,7 +50,7 @@ postAction ctx mUri unlockPetname expDate =
     Command cAction -> case cAction of
       Post posAction -> case posAction of
         CreateArticle aId -> Action.createArticle ctx aId mUri >> pure Nothing
-        CreateResource -> Just <$> Action.createResource ctx
+        CreateResource -> Just <$> Action.createResource
         CreateGetArticlesCap cgacActions ->
           Action.createGetArticlesCap ctx unlockPetname expDate cgacActions >> pure Nothing
       _nonPostAction -> pure Nothing

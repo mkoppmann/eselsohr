@@ -1,47 +1,160 @@
 module Lib.Impl.Repository
-  ( -- * Generic implementations
+  ( commit,
+
+    -- * Generic implementations
     getOne,
     getMany,
+    getAll,
     lookup,
     init,
-    insert,
-    update,
-    delete,
-    getAll,
-    getCapIdForActId,
 
-    -- * 'Resource' specific getters and setters
+    -- * Specific implementations
+    insertCap,
+    updateCap,
+    deleteCap,
+    insertAct,
+    updateAct,
+    deleteAct,
+    insertArt,
+    updateArt,
+    deleteArt,
+    getCapIdForActId,
     articleGetter,
-    articleSetter,
-    artUpdater,
     articleColInit,
     capabilityGetter,
-    capabilitySetter,
     capabilityColInit,
-    capUpdater,
     actionGetter,
-    actionSetter,
-    actUpdater,
     -- Error helper
     asSingleEntry,
   )
 where
 
 import qualified Data.Map.Strict as Map
-import Lib.App (AppErrorType, WithError, storeError, throwOnNothing)
+import Lib.App (AppErrorType, WithError, WriteQueue, grab, storeError, throwOnNothing)
 import Lib.Core.Domain.Article (Article (..))
 import qualified Lib.Core.Domain.Article as Article
 import Lib.Core.Domain.Capability (Action, Capability (..))
 import Lib.Core.Domain.Entity (Entity (..))
 import Lib.Core.Domain.Id (Id)
 import Lib.Core.Domain.Resource (ArticleCollection (..), CapabilityCollection (..), Resource (..))
+import Lib.Core.Domain.StoreEvent (StoreData (..), StoreEvent (..), SynchronizedStoreEvent (..))
 import Lib.Impl.Repository.File (WithFile)
 import qualified Lib.Impl.Repository.File as File
+import UnliftIO.STM (writeTQueue)
 import Prelude hiding (getAll, init)
 
 type CollectionGetter a = (Resource -> Maybe (Map (Id a) a))
 
 type CollectionSetter a = (Resource -> Map (Id a) a -> Resource)
+
+commit ::
+  (WithError m, WithFile env m) => Id Resource -> Seq StoreEvent -> m ()
+commit resId storeEvents = do
+  queue <- grab @WriteQueue
+  syncVar <- newEmptyTMVarIO
+  let sse = SynchronizedStoreEvent resId storeEvents syncVar
+  atomically $ writeTQueue queue sse
+  -- Waiting for store action to finish.
+  -- This needs to be in a separate atomic operation, because else we get a
+  -- live lock.
+  atomically $ takeTMVar syncVar
+
+insertCap :: Id Capability -> Capability -> StoreEvent
+insertCap entId newEnt =
+  SeInsertCapability $
+    StoreData
+      (insertSetter capabilityGetter capabilitySetter)
+      (entId, newEnt)
+
+updateCap :: Id Capability -> Capability -> StoreEvent
+updateCap entId newEnt =
+  SeUpdateCapability $
+    StoreData
+      (updateSetter capabilityGetter capabilitySetter capUpdater entId)
+      newEnt
+  where
+    capUpdater :: Capability -> Capability
+    capUpdater _ = newEnt
+
+deleteCap :: Id Capability -> StoreEvent
+deleteCap entId =
+  SeDeleteCapability $
+    StoreData
+      (deleteSetter capabilityGetter capabilitySetter)
+      entId
+
+insertAct :: Id Action -> Action -> StoreEvent
+insertAct entId newEnt =
+  SeInsertAction $
+    StoreData
+      (insertSetter actionGetter actionSetter)
+      (entId, newEnt)
+
+updateAct :: Id Action -> Action -> StoreEvent
+updateAct entId newEnt = do
+  SeUpdateAction $
+    StoreData
+      (updateSetter actionGetter actionSetter actUpdater entId)
+      newEnt
+  where
+    actUpdater :: Action -> Action
+    actUpdater _ = newEnt
+
+deleteAct :: Id Action -> StoreEvent
+deleteAct entId =
+  SeDeleteAction $
+    StoreData
+      (deleteSetter actionGetter actionSetter)
+      entId
+
+insertArt :: Id Article -> Article -> StoreEvent
+insertArt entId newEnt =
+  SeInsertArticle $
+    StoreData
+      (insertSetter articleGetter articleSetter)
+      (entId, newEnt)
+
+updateArt :: Id Article -> Article -> StoreEvent
+updateArt entId newEnt =
+  SeUpdateArticle $
+    StoreData
+      (updateSetter articleGetter articleSetter artUpdater entId)
+      newEnt
+  where
+    -- Only the title and the state of an 'Article' can be changed.
+    artUpdater :: Article -> Article
+    artUpdater oldArt =
+      oldArt
+        { Article.title = Article.title newEnt,
+          Article.state = Article.state newEnt
+        }
+
+deleteArt :: Id Article -> StoreEvent
+deleteArt entId =
+  SeDeleteArticle $
+    StoreData
+      (deleteSetter articleGetter articleSetter)
+      entId
+
+insertSetter ::
+  CollectionGetter a -> CollectionSetter a -> Resource -> (Id a, a) -> Resource
+insertSetter getter setter = gsetter getter setter (uncurry Map.insert)
+
+updateSetter ::
+  CollectionGetter a ->
+  CollectionSetter a ->
+  (a -> a) ->
+  Id a ->
+  Resource ->
+  a ->
+  Resource
+updateSetter getter setter updater entId = gsetter getter setter setter'
+  where
+    setter' _ oldRes = Map.adjust updater entId oldRes
+
+deleteSetter ::
+  CollectionGetter a -> CollectionSetter a -> Resource -> Id a -> Resource
+deleteSetter getter setter = gsetter getter setter Map.delete
 
 getOne ::
   (WithError m, WithFile env m) =>
@@ -79,40 +192,6 @@ init ::
   m ()
 init = File.init
 
-insert ::
-  (WithError m, WithFile env m) =>
-  CollectionGetter a ->
-  CollectionSetter a ->
-  Id Resource ->
-  Id a ->
-  a ->
-  m ()
-insert getter setter resId entId newEnt = do
-  File.save resId (gsetter getter setter (uncurry Map.insert)) (entId, newEnt)
-
-update ::
-  (WithError m, WithFile env m) =>
-  CollectionGetter a ->
-  CollectionSetter a ->
-  (a -> a) ->
-  Id Resource ->
-  Id a ->
-  a ->
-  m ()
-update getter setter updater resId entId =
-  File.save resId (gsetter getter setter setter')
-  where
-    setter' _ oldRes = Map.adjust updater entId oldRes
-
-delete ::
-  (WithError m, WithFile env m) =>
-  CollectionGetter a ->
-  CollectionSetter a ->
-  Id Resource ->
-  Id a ->
-  m ()
-delete getter setter resId = File.save resId (gsetter getter setter Map.delete)
-
 getAll ::
   (WithError m, WithFile env m) =>
   CollectionGetter a ->
@@ -140,42 +219,6 @@ gsetter ::
   Resource
 gsetter fromCol toCol setter oldRes val =
   maybe oldRes (toCol oldRes . setter val) $ fromCol oldRes
-
--- | Only the title and the state of an 'Article' can be changed.
-artUpdater ::
-  (WithError m, WithFile env m) =>
-  Id Resource ->
-  Id Article ->
-  Article ->
-  m ()
-artUpdater resId artId newArt =
-  update articleGetter articleSetter updateArt resId artId newArt
-  where
-    updateArt oldArt = oldArt {Article.title = newTitle, Article.state = newState}
-    newTitle = Article.title newArt
-    newState = Article.state newArt
-
-capUpdater ::
-  (WithError m, WithFile env m) =>
-  Id Resource ->
-  Id Capability ->
-  Capability ->
-  m ()
-capUpdater resId capId newCap =
-  update capabilityGetter capabilitySetter updateCap resId capId newCap
-  where
-    updateCap _ = newCap
-
-actUpdater ::
-  (WithError m, WithFile env m) =>
-  Id Resource ->
-  Id Action ->
-  Action ->
-  m ()
-actUpdater resId actId newAct =
-  update actionGetter actionSetter updateAct resId actId newAct
-  where
-    updateAct _ = newAct
 
 -- * 'Resource' specific getters and setters
 

@@ -8,7 +8,6 @@ module Lib.Core.Action.Query
 where
 
 import qualified Data.Map.Strict as Map
-import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import Lib.App.Error (WithError, serverError, throwError)
 import Lib.App.Log (WithLog, log, pattern E)
@@ -59,9 +58,8 @@ getShowArticlesAccess ctx GetArticlesActions {..} = do
 
   ca <- mActIdToAcc resId gaaFrontCreateArticle
   sas <-
-    Seq.reverse
-      . Seq.sortBy expDateCmp
-      . Seq.fromList
+    fromList
+      . sortBy (flip expDateCmp)
       . catMaybes
       <$> mapConcurrently (getArtAndSAAccess resId) (Set.toList gaaShowArticles)
 
@@ -146,9 +144,9 @@ getRevMap ctx capIdsSet = do
   -- The sequence is sorted based on the expiration date of the capability.
   pure
     . fmap (second (bimap (capIdToAcc resId) (capIdToAcc resId)))
-    . Seq.sortBy expDateCmp
-    . Seq.filter (expDateFilter currTime)
-    . Seq.fromList
+    . fromList
+    . sortBy expDateCmp
+    . filter (expDateFilter currTime)
     . zip (snd <$> capList)
     $ filter (flip elem (fst <$> capList) . uncurry const) capIdsList
   where

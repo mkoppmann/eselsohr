@@ -1,13 +1,21 @@
 module Lib.Core.Effect.Repository
-  ( -- * Access to the 'Capability's and 'Action's in a 'Resource'.
+  ( -- * Access to data in a 'Resource'.
     ReadCapabilities (..),
-    WriteCapabilities (..),
-    RWCapabilities,
-
-    -- * Access to the 'Entity' of a type @a@ in a 'Resource'.
     ReadEntity (..),
-    WriteEntity (..),
+    Persist (..),
+    RWCapabilities,
     RWEntity,
+
+    -- * Pure setters
+    Impl.insertCap,
+    Impl.updateCap,
+    Impl.deleteCap,
+    Impl.insertAct,
+    Impl.updateAct,
+    Impl.deleteAct,
+    Impl.insertArt,
+    Impl.updateArt,
+    Impl.deleteArt,
 
     -- * Init helpers
     systemColId,
@@ -27,6 +35,7 @@ import Lib.Core.Domain.Entity (Entity (..))
 import qualified Lib.Core.Domain.Entity as Entity
 import Lib.Core.Domain.Id (Id, mkNilId)
 import Lib.Core.Domain.Resource (Resource)
+import Lib.Core.Domain.StoreEvent (StoreEvent)
 import qualified Lib.Impl.Repository as Impl
 import UnliftIO (MonadUnliftIO)
 
@@ -44,16 +53,11 @@ class (MonadUnliftIO m) => ReadCapabilities m where
 
   getCapIdForActId :: Id Resource -> Id Action -> m (Id Capability)
 
-class (MonadUnliftIO m) => WriteCapabilities m where
-  insertCap :: Id Resource -> Id Capability -> Capability -> m ()
-  updateCap :: Id Resource -> Id Capability -> Capability -> m ()
-  deleteCap :: Id Resource -> Id Capability -> m ()
+class (MonadUnliftIO m) => Persist m where
+  init :: Id Resource -> m ()
+  commit :: Id Resource -> Seq StoreEvent -> m ()
 
-  insertAct :: Id Resource -> Id Action -> Action -> m ()
-  updateAct :: Id Resource -> Id Action -> Action -> m ()
-  deleteAct :: Id Resource -> Id Action -> m ()
-
-type RWCapabilities m = (ReadCapabilities m, WriteCapabilities m)
+type RWCapabilities m = (ReadCapabilities m, Persist m)
 
 instance ReadCapabilities App where
   getOneCap = Impl.getOne Impl.capabilityGetter
@@ -69,60 +73,43 @@ instance ReadCapabilities App where
 
   getCapIdForActId = Impl.getCapIdForActId
 
-instance WriteCapabilities App where
-  insertCap = Impl.insert Impl.capabilityGetter Impl.capabilitySetter
-  updateCap = Impl.capUpdater
-  deleteCap = Impl.delete Impl.capabilityGetter Impl.capabilitySetter
-
-  insertAct = Impl.insert Impl.actionGetter Impl.actionSetter
-  updateAct = Impl.actUpdater
-  deleteAct = Impl.delete Impl.actionGetter Impl.actionSetter
+instance Persist App where
+  init colId = Impl.init colId Impl.articleColInit
+  commit = Impl.commit
 
 class (ReadCapabilities m) => ReadEntity a m where
   getOneEnt :: Id Resource -> Id a -> m (Entity a)
   getAllEnt :: Id Resource -> m (Map (Id a) a)
   lookupEnt :: Id Resource -> Id a -> m (Maybe (Entity a))
 
-class (WriteCapabilities m) => WriteEntity a m where
-  initRes :: Id Resource -> Maybe a -> m ()
-  insertEnt :: Id Resource -> Id a -> a -> m ()
-  updateEnt :: Id Resource -> Id a -> a -> m ()
-  deleteEnt :: Id Resource -> Id a -> m ()
-
-type RWEntity a m = (ReadEntity a m, WriteEntity a m)
+type RWEntity a m = (ReadEntity a m, Persist m)
 
 instance ReadEntity Article App where
   getOneEnt = Impl.getOne Impl.articleGetter
   getAllEnt = Impl.getAll Impl.articleGetter
   lookupEnt = Impl.lookup Impl.articleGetter
 
-instance WriteEntity Article App where
-  initRes colId _ = Impl.init colId Impl.articleColInit
-  insertEnt = Impl.insert Impl.articleGetter Impl.articleSetter
-  updateEnt = Impl.artUpdater
-  deleteEnt = Impl.delete Impl.articleGetter Impl.articleSetter
-
 -- Helper
 
 artUpdateTitle ::
-  (RWEntity Article m) =>
+  (ReadEntity Article m) =>
   Id Resource ->
   Id Article ->
   Text ->
-  m ()
+  m StoreEvent
 artUpdateTitle resId aId aTitle = do
   art <- Entity.val <$> getOneEnt resId aId
-  updateEnt resId aId $ art {Article.title = aTitle}
+  pure . Impl.updateArt aId $ art {Article.title = aTitle}
 
 artUpdateState ::
-  (RWEntity Article m) =>
+  (ReadEntity Article m) =>
   Id Resource ->
   Id Article ->
   ArticleState ->
-  m ()
+  m StoreEvent
 artUpdateState resId aId aState = do
   art <- Entity.val <$> getOneEnt resId aId
-  updateEnt resId aId $ art {Article.state = aState}
+  pure . Impl.updateArt aId $ art {Article.state = aState}
 
 -- * System access
 
