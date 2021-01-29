@@ -17,10 +17,6 @@ module Lib.Core.Effect.Repository
     Impl.updateArt,
     Impl.deleteArt,
 
-    -- * Init helpers
-    systemColId,
-    initialCapId,
-
     -- * 'Article' helpers
     artUpdateTitle,
     artUpdateState,
@@ -33,7 +29,7 @@ import qualified Lib.Core.Domain.Article as Article
 import Lib.Core.Domain.Capability (Action (..), Capability (..))
 import Lib.Core.Domain.Entity (Entity (..))
 import qualified Lib.Core.Domain.Entity as Entity
-import Lib.Core.Domain.Id (Id, mkNilId)
+import Lib.Core.Domain.Id (Id)
 import Lib.Core.Domain.Resource (Resource)
 import Lib.Core.Domain.StoreEvent (StoreEvent)
 import qualified Lib.Impl.Repository as Impl
@@ -47,9 +43,6 @@ class (MonadUnliftIO m) => ReadCapabilities m where
   getOneAct :: Id Resource -> Id Action -> m (Entity Action)
   getManyAct :: Id Resource -> [Id Action] -> m (Map (Id Action) Action)
   lookupAct :: Id Resource -> Id Action -> m (Maybe (Entity Action))
-
-  getAllCap :: Id Resource -> m (Map (Id Capability) Capability)
-  getAllAct :: Id Resource -> m (Map (Id Action) Action)
 
   getCapIdForActId :: Id Resource -> Id Action -> m (Id Capability)
 
@@ -68,9 +61,6 @@ instance ReadCapabilities App where
   getManyAct = Impl.getMany Impl.actionGetter
   lookupAct = Impl.lookup Impl.actionGetter
 
-  getAllCap = Impl.getAll Impl.capabilityGetter
-  getAllAct = Impl.getAll Impl.actionGetter
-
   getCapIdForActId = Impl.getCapIdForActId
 
 instance Persist App where
@@ -79,14 +69,14 @@ instance Persist App where
 
 class (ReadCapabilities m) => ReadEntity a m where
   getOneEnt :: Id Resource -> Id a -> m (Entity a)
-  getAllEnt :: Id Resource -> m (Map (Id a) a)
+  getManyEnt :: Id Resource -> [Id a] -> m (Map (Id a) a)
   lookupEnt :: Id Resource -> Id a -> m (Maybe (Entity a))
 
 type RWEntity a m = (ReadEntity a m, Persist m)
 
 instance ReadEntity Article App where
   getOneEnt = Impl.getOne Impl.articleGetter
-  getAllEnt = Impl.getAll Impl.articleGetter
+  getManyEnt = Impl.getMany Impl.articleGetter
   lookupEnt = Impl.lookup Impl.articleGetter
 
 -- Helper
@@ -110,11 +100,3 @@ artUpdateState ::
 artUpdateState resId aId aState = do
   art <- Entity.val <$> getOneEnt resId aId
   pure . Impl.updateArt aId $ art {Article.state = aState}
-
--- * System access
-
-systemColId :: Id Resource
-systemColId = mkNilId
-
-initialCapId :: Id Capability
-initialCapId = mkNilId

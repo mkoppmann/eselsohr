@@ -10,7 +10,12 @@ import Servant (DeleteNoContent, Header, PatchNoContent, PostNoContent, (:>))
 import Servant.API.Generic (GenericMode ((:-)))
 
 data CommandSite route = CommandSite
-  { deleteApi ::
+  { createResourceApi ::
+      route
+        :- "api"
+        :> "new-resource"
+        :> PostNoContent,
+    deleteApi ::
       route
         :- "api"
         :> "cap"

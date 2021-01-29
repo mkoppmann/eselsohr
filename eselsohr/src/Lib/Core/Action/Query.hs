@@ -1,6 +1,5 @@
 module Lib.Core.Action.Query
-  ( getCreateCollectionAcc,
-    getShowArticlesAccess,
+  ( getShowArticlesAccess,
     getShowArticleAccess,
     getResourceOverviewAccs,
     getRevMap,
@@ -25,12 +24,6 @@ import Lib.Core.Effect.Repository (ReadCapabilities (..), ReadEntity (..))
 import qualified Lib.Core.Effect.Repository as R
 import Lib.Core.Effect.Time (MonadTime (..))
 import UnliftIO.Async (mapConcurrently)
-
-getCreateCollectionAcc :: (ReadCapabilities m) => m Accesstoken
-getCreateCollectionAcc =
-  capIdToAcc R.systemColId
-    . Entity.id
-    <$> R.getOneCap R.systemColId R.initialCapId
 
 getResourceOverviewAccs ::
   (ReadCapabilities m, WithError m, WithLog env m) =>

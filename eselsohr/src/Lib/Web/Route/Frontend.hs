@@ -47,6 +47,11 @@ data FrontendSite route = FrontendSite
         :- "static"
         :> "style.css"
         :> Get '[CSS] Css,
+    createResource ::
+      route
+        :- "api"
+        :> "new-resource"
+        :> Post '[HTML] Redirection,
     deleteFrontend ::
       route
         :- "api"

@@ -72,9 +72,7 @@ data CreateGetArticlesCapActions = CreateGetArticlesCapActions
   deriving anyclass (Binary)
 
 data PostAction
-  = -- | Creates a new 'Resource'.
-    CreateResource
-  | -- | Unlocks 'Resource' and creates new 'Capability' for 'GetArticles',
+  = -- | Unlocks 'Resource' and creates new 'Capability' for 'GetArticles',
     -- and all 'Action's contained in it.
     CreateGetArticlesCap !CreateGetArticlesCapActions
   | -- | Creates a new 'Article' and store it in a 'Resource'.

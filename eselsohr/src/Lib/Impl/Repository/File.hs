@@ -34,8 +34,8 @@ type WithFile env m =
     MonadUnliftIO m
   )
 
-load :: (Binary a, WithError m, WithFile env m) => Id a -> (a -> Maybe b) -> m b
-load resId getter = extractionError . getter =<< decodeFile =<< idToPath resId
+load :: (Binary a, WithError m, WithFile env m) => Id a -> (a -> b) -> m b
+load resId getter = getter <$> (decodeFile =<< idToPath resId)
 
 save :: (WithError m, WithFile env m) => Id a -> Seq StoreEvent -> m ()
 save resId updates = do

@@ -4,7 +4,6 @@ module Lib.Impl.Repository
     -- * Generic implementations
     getOne,
     getMany,
-    getAll,
     lookup,
     init,
 
@@ -22,7 +21,6 @@ module Lib.Impl.Repository
     articleGetter,
     articleColInit,
     capabilityGetter,
-    capabilityColInit,
     actionGetter,
     -- Error helper
     asSingleEntry,
@@ -36,14 +34,14 @@ import qualified Lib.Core.Domain.Article as Article
 import Lib.Core.Domain.Capability (Action, Capability (..))
 import Lib.Core.Domain.Entity (Entity (..))
 import Lib.Core.Domain.Id (Id)
-import Lib.Core.Domain.Resource (ArticleCollection (..), CapabilityCollection (..), Resource (..))
+import Lib.Core.Domain.Resource (ArticleCollection (..), Resource (..))
 import Lib.Core.Domain.StoreEvent (StoreData (..), StoreEvent (..), SynchronizedStoreEvent (..))
 import Lib.Impl.Repository.File (WithFile)
 import qualified Lib.Impl.Repository.File as File
 import UnliftIO.STM (writeTQueue)
 import Prelude hiding (getAll, init)
 
-type CollectionGetter a = (Resource -> Maybe (Map (Id a) a))
+type CollectionGetter a = (Resource -> Map (Id a) a)
 
 type CollectionSetter a = (Resource -> Map (Id a) a -> Resource)
 
@@ -218,46 +216,34 @@ gsetter ::
   b ->
   Resource
 gsetter fromCol toCol setter oldRes val =
-  maybe oldRes (toCol oldRes . setter val) $ fromCol oldRes
+  toCol oldRes . setter val $ fromCol oldRes
 
 -- * 'Resource' specific getters and setters
-
-articleGetter :: CollectionGetter Article
-articleGetter = \case
-  ArticleResource artCol -> Just $ artCollection artCol
-  CapOnlyResource _nonArticleResource -> Nothing
-
-articleSetter :: CollectionSetter Article
-articleSetter oldRes newVal = case oldRes of
-  ArticleResource artCol -> ArticleResource $ artCol {artCollection = newVal}
-  CapOnlyResource _nonArticleResource -> oldRes
 
 articleColInit :: Resource
 articleColInit =
   ArticleResource $ ArticleCollection Map.empty Map.empty Map.empty
 
+articleGetter :: CollectionGetter Article
+articleGetter (ArticleResource artCol) = artCollection artCol
+
+articleSetter :: CollectionSetter Article
+articleSetter (ArticleResource artCol) newVal =
+  ArticleResource $ artCol {artCollection = newVal}
+
 capabilityGetter :: CollectionGetter Capability
-capabilityGetter = \case
-  ArticleResource artCol -> Just $ artCapCollection artCol
-  CapOnlyResource capCol -> Just $ capCollection capCol
+capabilityGetter (ArticleResource artCol) = artCapCollection artCol
 
 capabilitySetter :: CollectionSetter Capability
-capabilitySetter oldRes newVal = case oldRes of
-  ArticleResource artCol -> ArticleResource $ artCol {artCapCollection = newVal}
-  CapOnlyResource capCol -> CapOnlyResource $ capCol {capCollection = newVal}
-
-capabilityColInit :: Resource
-capabilityColInit = CapOnlyResource $ CapabilityCollection Map.empty Map.empty
+capabilitySetter (ArticleResource artCol) newVal =
+  ArticleResource $ artCol {artCapCollection = newVal}
 
 actionGetter :: CollectionGetter Action
-actionGetter = \case
-  ArticleResource artCol -> Just $ artActCollection artCol
-  CapOnlyResource capCol -> Just $ capActCollection capCol
+actionGetter (ArticleResource artCol) = artActCollection artCol
 
 actionSetter :: CollectionSetter Action
-actionSetter oldRes newVal = case oldRes of
-  ArticleResource artCol -> ArticleResource $ artCol {artActCollection = newVal}
-  CapOnlyResource capCol -> CapOnlyResource $ capCol {capActCollection = newVal}
+actionSetter (ArticleResource artCol) newVal =
+  ArticleResource $ artCol {artActCollection = newVal}
 
 -- Error helpers
 

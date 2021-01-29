@@ -1,5 +1,6 @@
 module Lib.Web.Route.Common
   ( -- * Route helpers
+    createResourceR,
     collectionMainR,
     listArticlesR,
     showArticleR,
@@ -16,6 +17,9 @@ import Lib.Web.Route.Frontend (FrontendSite (..))
 import Servant (Link, fieldLink, linkURI)
 
 -- Route helpers
+
+createResourceR :: Link
+createResourceR = fieldLink createResource
 
 collectionMainR :: Maybe Accesstoken -> Link
 collectionMainR = fieldLink collectionMain

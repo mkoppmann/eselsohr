@@ -24,6 +24,13 @@ import qualified Lib.Web.Route.Common as Route
 import Lucid
 import Servant (Link, toUrlPiece)
 
+createCollection :: Html ()
+createCollection =
+  form_ [linkAbsAction_ Route.createResourceR, method_ "POST"] $ do
+    input_ [type_ "hidden", name_ "_commandMethod", value_ "POST"]
+    input_ [type_ "hidden", name_ "_queryMethod", value_ "GET"]
+    input_ [type_ "submit", value_ "Create new collection"]
+
 genPost :: Bool -> Text -> Link -> [Html ()] -> Text -> Accesstoken -> Html ()
 genPost asLink commandMethod route inputFields buttonName acc =
   form_ [linkAbsAction_ route, method_ "POST"] $ do
@@ -69,9 +76,6 @@ showArticle = getMethodLink (Route.showArticleR Nothing) []
 
 editArticle :: Text -> Accesstoken -> Html ()
 editArticle = getMethodLink (Route.editArticleR Nothing) []
-
-createCollection :: Accesstoken -> Html ()
-createCollection = postMethodButton [] "Create new collection"
 
 createGetArticlesCap :: (ExpirationDate, ExpirationDate) -> Accesstoken -> Html ()
 createGetArticlesCap (currTime, expTime) =

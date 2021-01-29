@@ -8,6 +8,7 @@ import qualified Data.Set as Set
 import Data.Time (UTCTime (..), addGregorianMonthsClip)
 import Lib.App.Error (WithError, invalid, notFound, redirect303, redirect307, serverError, throwError)
 import Lib.App.Log (WithLog, log, pattern E, pattern I)
+import qualified Lib.Core.Action as Action
 import qualified Lib.Core.Action.Query as Query
 import Lib.Core.Domain.Accesstoken (Accesstoken, Revocable, mkAccesstoken)
 import Lib.Core.Domain.Article (Article (..))
@@ -41,13 +42,14 @@ frontend =
       Route.editArticle = editArticle,
       Route.invalidToken = invalidToken,
       Route.stylesheet = stylesheet,
+      Route.createResource = createResource,
       Route.deleteFrontend = deleteFrontend,
       Route.patchFrontend = patchFrontend,
       Route.postFrontend = postFrontend
     }
 
 startpage :: (ReadCapabilities m) => m HtmlPage
-startpage = App.render . Page.root <$> Query.getCreateCollectionAcc
+startpage = pure $ App.render Page.root
 
 collectionMain ::
   (ReadEntity Article m, MonadTime m, WithError m, WithLog env m) =>
@@ -189,6 +191,13 @@ invalidToken = pure . App.render $ Page.invalidToken
 
 stylesheet :: (Monad m) => m Css
 stylesheet = return appStylesheet
+
+createResource ::
+  (RWEntity Article m, MonadRandom m, WithError m) =>
+  m Redirection
+createResource = do
+  url <- Action.createResource
+  redirect307To $ Just url
 
 deleteFrontend ::
   (RWEntity Article m, MonadTime m, WithError m, WithLog env m) =>

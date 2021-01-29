@@ -50,8 +50,8 @@ postAction ctx mUri unlockPetname expDate =
     Command cAction -> case cAction of
       Post posAction -> case posAction of
         CreateArticle aId -> Action.createArticle ctx aId mUri >> pure Nothing
-        CreateResource -> Just <$> Action.createResource
         CreateGetArticlesCap cgacActions ->
-          Action.createGetArticlesCap ctx unlockPetname expDate cgacActions >> pure Nothing
+          Action.createGetArticlesCap ctx unlockPetname expDate cgacActions
+            >> pure Nothing
       _nonPostAction -> pure Nothing
     _nonCommandAction -> pure Nothing
