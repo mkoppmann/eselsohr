@@ -125,13 +125,13 @@ library
         wai-enforce-https >=0.0.2 && <0.1,
         wai-extra >=3.1.4.0 && <3.2,
         warp >=3.3.13 && <3.4,
-        warp-tls >=3.3.0 && <3.4,
+        warp-tls >=3.3.0 && <3.4
 
     mixins:
         base hiding (Prelude),
         relude (Relude as Prelude, Relude.Extra.Bifunctor)
 
-executable eselsohr
+executable eselsohr-exe
     main-is:          Main.hs
     hs-source-dirs:   app
     default-language: Haskell2010
@@ -140,3 +140,43 @@ executable eselsohr
         base ^>=4.14.0.0,
         eselsohr -any,
         optparse-applicative >=0.16.1 && <0.17
+
+test-suite eselsohr-test
+    type:               exitcode-stdio-1.0
+    main-is:            Spec.hs
+    hs-source-dirs:     test
+    other-modules:
+        Test.Assert
+        Test.Common
+        Test.Core.Domain.Accesstoken
+        Test.Static
+
+    default-language:   Haskell2010
+    default-extensions:
+        DataKinds FlexibleContexts LambdaCase ScopedTypeVariables
+        TypeApplications TypeOperators TypeFamilies OverloadedStrings
+        MultiParamTypeClasses FlexibleInstances ConstraintKinds DerivingVia
+        DerivingStrategies RecordWildCards InstanceSigs DeriveGeneric
+        PatternSynonyms DeriveAnyClass DeriveTraversable
+
+    ghc-options:
+        -Wall -Wcompat -Widentities -Wincomplete-uni-patterns
+        -Wincomplete-record-updates -Wredundant-constraints
+        -fhide-source-paths -Wpartial-fields -Wmissing-deriving-strategies
+        -fwrite-ide-info -hiedir=.hie -Wunused-packages -j -freverse-errors
+        -threaded -rtsopts -with-rtsopts=-N
+
+    build-depends:
+        base ^>=4.14.0.0,
+        eselsohr -any,
+        hedgehog >=1.0.4 && <1.1,
+        hspec >=2.7.8 && <2.8,
+        hspec-core >=2.7.8 && <2.8,
+        http-api-data >=0.4.2 && <0.5,
+        relude >=0.7.0 && <0.8,
+        temporary -any,
+        unliftio >=0.2.13 && <0.3
+
+    mixins:
+        base hiding (Prelude),
+        relude (Relude as Prelude)

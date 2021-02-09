@@ -1,5 +1,9 @@
 module Lib.Web.Controller.Frontend
-  ( frontend,
+  ( -- * API
+    frontend,
+
+    -- * Handlers
+    startpage,
   )
 where
 

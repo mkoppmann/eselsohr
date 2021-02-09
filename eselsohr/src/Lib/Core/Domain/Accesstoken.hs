@@ -20,11 +20,11 @@ data Reference = Reference
   { resourceId :: !(Id Resource),
     capabilityId :: !(Id Capability)
   }
-  deriving stock (Generic, Show)
+  deriving stock (Generic, Show, Eq)
   deriving anyclass (Binary)
 
 newtype Accesstoken = Accesstoken {unAccesstoken :: LByteString}
-  deriving stock (Generic)
+  deriving stock (Generic, Eq)
   deriving anyclass (Binary)
 
 instance Show Accesstoken where
