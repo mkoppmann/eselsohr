@@ -6,8 +6,8 @@ module Lib.Core.Action.Query
   )
 where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
+import qualified Data.HashMap.Strict as Map
+import qualified Data.HashSet as Set
 import Lib.App.Error (WithError, serverError, throwError)
 import Lib.App.Log (WithLog, log, pattern E)
 import Lib.Core.Domain.Accesstoken (Accesstoken, Reference (..), Revocable, mkAccesstoken)
@@ -115,7 +115,7 @@ actIdToAcc resId = fmap (capIdToAcc resId) . R.getCapIdForActId resId
 getRevMap ::
   (ReadCapabilities m, MonadTime m) =>
   Context ->
-  Set (Id Capability, Id Capability) ->
+  HashSet (Id Capability, Id Capability) ->
   m (Seq (Capability, Revocable))
 getRevMap ctx capIdsSet = do
   let resId = resourceId $ ctxRef ctx
@@ -125,11 +125,11 @@ getRevMap ctx capIdsSet = do
   -- Convert the set to an ascending list; this will help later for the zipping
   -- process.
   -- Not all pairs in this set are still valid.
-  let capIdsList = Set.toAscList capIdsSet
+  let capIdsList = Set.toList capIdsSet
 
   -- Use the capability id from the GetArticles action to retrieve stored
   -- capabilities and convert it to an ascending list.
-  capList <- fmap Map.toAscList . getManyCap resId $ fst <$> capIdsList
+  capList <- fmap Map.toList . getManyCap resId $ fst <$> capIdsList
 
   -- Filter out all deleted pairs, zip the fetched capabilities with their
   -- capability id pairs, and then create the sequence with all capability

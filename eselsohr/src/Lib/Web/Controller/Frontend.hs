@@ -8,7 +8,7 @@ module Lib.Web.Controller.Frontend
 where
 
 import Clay (Css)
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import Data.Time (UTCTime (..), addGregorianMonthsClip)
 import Lib.App.Error (WithError, invalid, notFound, redirect303, redirect307, serverError, throwError)
 import Lib.App.Log (WithLog, log, pattern E, pattern I)
@@ -92,7 +92,7 @@ collectionMain mAcc = case mAcc of
       _wrongAction ->
         throwError $ serverError "The accesstoken did not include actions"
 
-    extractSet :: Action -> Set (Id Capability, Id Capability)
+    extractSet :: Action -> HashSet (Id Capability, Id Capability)
     extractSet = \case
       Query qAction -> case qAction of
         GetActiveGetArticlesCaps capIdsSet -> capIdsSet

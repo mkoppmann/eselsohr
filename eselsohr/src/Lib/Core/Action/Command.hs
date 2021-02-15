@@ -10,7 +10,7 @@ module Lib.Core.Action.Command
   )
 where
 
-import qualified Data.Set as Set
+import qualified Data.HashSet as Set
 import qualified Data.Text as Text
 import Lib.App.Error (WithError, missingParameter, serverError, throwError)
 import Lib.Core.Domain.Accesstoken (Accesstoken, Reference (..), mkAccesstoken)
@@ -397,7 +397,8 @@ createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..
         _wrongAction -> wrongAction
       _wrongAction -> wrongAction
 
-    getSet :: (WithError m) => Action -> m (Set (Id Capability, Id Capability))
+    getSet ::
+      (WithError m) => Action -> m (HashSet (Id Capability, Id Capability))
     getSet = \case
       Query qAction -> case qAction of
         GetActiveGetArticlesCaps set -> pure set

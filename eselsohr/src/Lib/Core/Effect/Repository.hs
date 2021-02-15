@@ -37,11 +37,11 @@ import UnliftIO (MonadUnliftIO)
 
 class (MonadUnliftIO m) => ReadCapabilities m where
   getOneCap :: Id Resource -> Id Capability -> m (Entity Capability)
-  getManyCap :: Id Resource -> [Id Capability] -> m (Map (Id Capability) Capability)
+  getManyCap :: Id Resource -> [Id Capability] -> m (HashMap (Id Capability) Capability)
   lookupCap :: Id Resource -> Id Capability -> m (Maybe (Entity Capability))
 
   getOneAct :: Id Resource -> Id Action -> m (Entity Action)
-  getManyAct :: Id Resource -> [Id Action] -> m (Map (Id Action) Action)
+  getManyAct :: Id Resource -> [Id Action] -> m (HashMap (Id Action) Action)
   lookupAct :: Id Resource -> Id Action -> m (Maybe (Entity Action))
 
   getCapIdForActId :: Id Resource -> Id Action -> m (Id Capability)
@@ -69,7 +69,7 @@ instance Persist App where
 
 class (ReadCapabilities m) => ReadEntity a m where
   getOneEnt :: Id Resource -> Id a -> m (Entity a)
-  getManyEnt :: Id Resource -> [Id a] -> m (Map (Id a) a)
+  getManyEnt :: Id Resource -> [Id a] -> m (HashMap (Id a) a)
   lookupEnt :: Id Resource -> Id a -> m (Maybe (Entity a))
 
 type RWEntity a m = (ReadEntity a m, Persist m)

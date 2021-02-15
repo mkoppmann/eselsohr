@@ -14,9 +14,9 @@ newtype Resource = ArticleResource ArticleCollection
   deriving anyclass (Serialise)
 
 data ArticleCollection = ArticleCollection
-  { artCapCollection :: !(Map (Id Capability) Capability),
-    artActCollection :: !(Map (Id Action) Action),
-    artCollection :: !(Map (Id Article) Article)
+  { artCapCollection :: !(HashMap (Id Capability) Capability),
+    artActCollection :: !(HashMap (Id Action) Action),
+    artCollection :: !(HashMap (Id Article) Article)
   }
   deriving stock (Generic, Show, Eq)
   deriving anyclass (Serialise)

@@ -94,7 +94,7 @@ data ResourceOverviewActions = ResourceOverviewActions
 data GetArticlesActions = GetArticlesActions
   { gaaCreateArticle :: !(Maybe (Id Action)),
     gaaFrontCreateArticle :: !(Maybe (Id Action)),
-    gaaShowArticles :: !(Set (Id Action))
+    gaaShowArticles :: !(HashSet (Id Action))
   }
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Serialise)
@@ -115,7 +115,7 @@ data QueryAction
     ResourceOverview !ResourceOverviewActions
   | -- | Get all open 'GetArticles' capabilities with their corresponding
     -- revoker.
-    GetActiveGetArticlesCaps !(Set (Id Capability, Id Capability))
+    GetActiveGetArticlesCaps !(HashSet (Id Capability, Id Capability))
   | -- | Get all 'Article's in the resource.
     GetArticles !GetArticlesActions
   | -- | Get 'Article' in the resource with this 'Id'.

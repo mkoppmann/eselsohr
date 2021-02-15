@@ -27,7 +27,7 @@ module Lib.Impl.Repository
   )
 where
 
-import qualified Data.Map.Strict as Map
+import qualified Data.HashMap.Strict as Map
 import Lib.App (AppErrorType, WithError, WriteQueue, grab, storeError, throwOnNothing)
 import Lib.Core.Domain.Article (Article (..))
 import qualified Lib.Core.Domain.Article as Article
@@ -41,9 +41,9 @@ import qualified Lib.Impl.Repository.File as File
 import UnliftIO.STM (writeTQueue)
 import Prelude hiding (getAll, init)
 
-type CollectionGetter a = (Resource -> Map (Id a) a)
+type CollectionGetter a = (Resource -> HashMap (Id a) a)
 
-type CollectionSetter a = (Resource -> Map (Id a) a -> Resource)
+type CollectionSetter a = (Resource -> HashMap (Id a) a -> Resource)
 
 commit ::
   (WithError m, WithFile env m) => Id Resource -> Seq StoreEvent -> m ()
@@ -167,7 +167,7 @@ getMany ::
   CollectionGetter a ->
   Id Resource ->
   [Id a] ->
-  m (Map (Id a) a)
+  m (HashMap (Id a) a)
 getMany getter resId entIds =
   Map.filterWithKey (\key _ -> key `elem` entIds) <$> getAll getter resId
 
@@ -179,8 +179,8 @@ lookup ::
   m (Maybe (Entity a))
 lookup getter resId entId = do
   aMap <- getAll getter resId
-  let mIx = Map.lookupIndex entId aMap
-  let mTuple = fmap (`Map.elemAt` aMap) mIx
+  let ent = Map.lookup entId aMap
+  let mTuple = (entId,) <$> ent
   pure $ fmap (uncurry Entity) mTuple
 
 init ::
@@ -194,7 +194,7 @@ getAll ::
   (WithError m, WithFile env m) =>
   CollectionGetter a ->
   Id Resource ->
-  m (Map (Id a) a)
+  m (HashMap (Id a) a)
 getAll = flip File.load
 
 getCapIdForActId ::
@@ -211,7 +211,7 @@ getCapIdForActId resId actId = do
 gsetter ::
   CollectionGetter a ->
   CollectionSetter a ->
-  (b -> Map (Id a) a -> Map (Id a) a) ->
+  (b -> HashMap (Id a) a -> HashMap (Id a) a) ->
   Resource ->
   b ->
   Resource
