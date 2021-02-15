@@ -4,14 +4,14 @@ module Lib.Core.Domain.Resource
   )
 where
 
-import Data.Binary (Binary)
+import Codec.Serialise.Class (Serialise)
 import Lib.Core.Domain.Article (Article)
 import Lib.Core.Domain.Capability (Action, Capability)
 import Lib.Core.Domain.Id (Id)
 
 newtype Resource = ArticleResource ArticleCollection
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 data ArticleCollection = ArticleCollection
   { artCapCollection :: !(Map (Id Capability) Capability),
@@ -19,4 +19,4 @@ data ArticleCollection = ArticleCollection
     artCollection :: !(Map (Id Article) Article)
   }
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)

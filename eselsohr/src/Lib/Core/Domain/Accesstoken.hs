@@ -7,8 +7,8 @@ module Lib.Core.Domain.Accesstoken
   )
 where
 
-import Data.Binary (Binary)
-import qualified Data.Binary as Bin
+import qualified Codec.Serialise as Ser
+import Codec.Serialise.Class (Serialise)
 import qualified Data.ByteString.Base64.URL.Lazy as B64
 import Lib.Core.Domain.Capability (Capability)
 import Lib.Core.Domain.Id (Id)
@@ -21,11 +21,11 @@ data Reference = Reference
     capabilityId :: !(Id Capability)
   }
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 newtype Accesstoken = Accesstoken {unAccesstoken :: LByteString}
   deriving stock (Generic, Eq)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 instance Show Accesstoken where
   show = toString . toUrlPiece
@@ -42,7 +42,7 @@ instance FromHttpApiData Accesstoken where
 type Revocable = (Accesstoken, Accesstoken)
 
 mkAccesstoken :: Reference -> Accesstoken
-mkAccesstoken = Accesstoken . Bin.encode
+mkAccesstoken = Accesstoken . Ser.serialise
 
 toReference :: Accesstoken -> Reference
-toReference = Bin.decode . unAccesstoken
+toReference = Ser.deserialise . unAccesstoken

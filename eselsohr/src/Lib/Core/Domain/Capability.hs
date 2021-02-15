@@ -14,7 +14,7 @@ module Lib.Core.Domain.Capability
   )
 where
 
-import Data.Binary (Binary)
+import Codec.Serialise.Class (Serialise)
 import Lib.Core.Domain.Article (Article)
 import Lib.Core.Domain.ExpirationDate (ExpirationDate)
 import Lib.Core.Domain.Id (Id)
@@ -28,21 +28,21 @@ data Capability = Capability
     actionId :: !(Id Action)
   }
   deriving stock (Eq, Generic, Ord, Show)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 data Action
   = Command !CommandAction
   | Query !QueryAction
   | Frontend !FrontendAction
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 data CommandAction
   = Delete !DeleteAction
   | Patch !PatchAction
   | Post !PostAction
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 data DeleteAction
   = -- | Delete the matching 'GetArticles' 'Capability' stored in the
@@ -51,7 +51,7 @@ data DeleteAction
   | -- | Delete the 'Article'.
     DeleteArticle !(Id Article)
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 data PatchAction
   = -- | Change the 'Article'’s 'title'.
@@ -61,7 +61,7 @@ data PatchAction
   | -- | Set the 'state' of the 'Article' to 'Unread'.
     UnreadArticle !(Id Article)
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 data CreateGetArticlesCapActions = CreateGetArticlesCapActions
   { cgacGetArticles :: !(Id Action),
@@ -69,7 +69,7 @@ data CreateGetArticlesCapActions = CreateGetArticlesCapActions
     cgacResourceOverview :: !(Id Action)
   }
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 data PostAction
   = -- | Unlocks 'Resource' and creates new 'Capability' for 'GetArticles',
@@ -80,7 +80,7 @@ data PostAction
     -- 'GetArticle' 'Action' needs to be added to the 'Set'.
     CreateArticle !(Id Action)
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 data ResourceOverviewActions = ResourceOverviewActions
   { roaGetActiveGetArticlesCap :: !(Id Action),
@@ -89,7 +89,7 @@ data ResourceOverviewActions = ResourceOverviewActions
     roaFrontCreateGetArticlesCap :: !(Maybe (Id Action))
   }
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 data GetArticlesActions = GetArticlesActions
   { gaaCreateArticle :: !(Maybe (Id Action)),
@@ -97,7 +97,7 @@ data GetArticlesActions = GetArticlesActions
     gaaShowArticles :: !(Set (Id Action))
   }
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 data GetArticleActions = GetArticleActions
   { gaaShowArticle :: !(Id Action),
@@ -108,7 +108,7 @@ data GetArticleActions = GetArticleActions
     gaaGetArticles :: !(Maybe (Id Action))
   }
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 data QueryAction
   = -- | Get data for showing the 'Resource' main page.
@@ -121,7 +121,7 @@ data QueryAction
   | -- | Get 'Article' in the resource with this 'Id'.
     GetArticle !(Id Article) !GetArticleActions
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)
 
 -- | Represents a flow in the HTML client.
 -- HTML forms point to the @api@ route which are handled by the frontend command
@@ -135,4 +135,4 @@ data FrontendAction = FrontendAction
     redirectTo :: !Text
   }
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Binary)
+  deriving anyclass (Serialise)

@@ -4,13 +4,12 @@ module Lib.Core.Domain.ExpirationDate
   )
 where
 
-import Data.Binary (Binary)
-import Data.Binary.Instances.Time ()
+import Codec.Serialise.Class (Serialise)
 import Data.Time (UTCTime, defaultTimeLocale, formatTime, parseTimeM)
 import Web.HttpApiData (FromHttpApiData (..))
 
 newtype ExpirationDate = ExpirationDate {unExpirationDate :: UTCTime}
-  deriving (Binary, Eq, Ord, Show) via UTCTime
+  deriving (Serialise, Eq, Ord, Show) via UTCTime
 
 instance FromHttpApiData ExpirationDate where
   parseUrlPiece = parseExpirationDate

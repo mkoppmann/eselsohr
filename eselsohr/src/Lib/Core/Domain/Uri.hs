@@ -7,9 +7,10 @@ module Lib.Core.Domain.Uri
   )
 where
 
+import Codec.Serialise (Serialise (..))
+import Codec.Serialise.Decoding (decodeListLen, decodeWord)
+import Codec.Serialise.Encoding (encodeListLen, encodeWord)
 import Data.Aeson (FromJSON (..), ToJSON (..), withText)
-import Data.Binary (Binary)
-import qualified Data.Binary as Bin
 import Lens.Micro ((^.), (^?), _Right)
 import qualified Net.IPv4 as IPv4
 import qualified Net.IPv6 as IPv6
@@ -24,9 +25,14 @@ import Web.HttpApiData (FromHttpApiData (..))
 newtype Uri = Uri {unUri :: U.URI}
   deriving (Eq, Show) via U.URI
 
-instance Binary Uri where
-  get = either (fail . toString) pure . mkUri =<< Bin.get
-  put (Uri uri) = Bin.put $ U.render uri
+instance Serialise Uri where
+  encode (Uri uri) = encodeListLen 2 <> encodeWord 0 <> encode (U.render uri)
+  decode = do
+    len <- decodeListLen
+    tag <- decodeWord
+    case (len, tag) of
+      (2, 0) -> either (fail . toString) pure . mkUri =<< decode
+      _invalid -> fail "invalid Uri encoding"
 
 instance FromHttpApiData Uri where
   parseUrlPiece = either Left pure . mkUri

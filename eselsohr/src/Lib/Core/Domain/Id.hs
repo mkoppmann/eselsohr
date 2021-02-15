@@ -5,15 +5,16 @@ module Lib.Core.Domain.Id
   )
 where
 
+import Codec.Serialise.Class (Serialise)
+import Codec.Serialise.UUID ()
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Binary (Binary)
 import Data.UUID (UUID, nil)
 import Web.HttpApiData (FromHttpApiData, ToHttpApiData)
 import Prelude hiding (toText)
 
 newtype Id a = Id {unId :: UUID}
   deriving
-    (Binary, Eq, Read, Show, Ord, FromHttpApiData, ToHttpApiData, FromJSON, ToJSON)
+    (Eq, Hashable, Serialise, Read, Show, Ord, FromHttpApiData, ToHttpApiData, FromJSON, ToJSON)
     via UUID
 
 mkNilId :: Id a
