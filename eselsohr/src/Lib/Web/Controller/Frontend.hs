@@ -199,9 +199,7 @@ stylesheet = return appStylesheet
 createResource ::
   (RWEntity Article m, MonadRandom m, WithError m) =>
   m Redirection
-createResource = do
-  url <- Action.createResource
-  redirect307To $ Just url
+createResource = throwError . redirect303 =<< Action.createResource
 
 deleteFrontend ::
   (RWEntity Article m, MonadTime m, WithError m, WithLog env m) =>
