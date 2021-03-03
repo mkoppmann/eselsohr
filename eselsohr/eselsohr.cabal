@@ -139,7 +139,7 @@ executable eselsohr-exe
     ghc-options:      -threaded -rtsopts -with-rtsopts=-N
     build-depends:
         base ^>=4.14.0.0,
-        eselsohr -any,
+        eselsohr,
         optparse-applicative >=0.16.1 && <0.17
 
 test-suite eselsohr-test
@@ -169,7 +169,7 @@ test-suite eselsohr-test
 
     build-depends:
         base ^>=4.14.0.0,
-        eselsohr -any,
+        eselsohr,
         hedgehog >=1.0.4 && <1.1,
         hspec >=2.7.8 && <2.8,
         hspec-core >=2.7.8 && <2.8,
