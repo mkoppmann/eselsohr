@@ -18,13 +18,13 @@ data StoreData a = StoreData
 
 data StoreEvent
   = SeInsertArticle !(StoreData (Id Article, Article))
-  | SeUpdateArticle !(StoreData Article)
+  | SeUpdateArticle !(StoreData (Article -> Article))
   | SeDeleteArticle !(StoreData (Id Article))
   | SeInsertCapability !(StoreData (Id Capability, Capability))
-  | SeUpdateCapability !(StoreData Capability)
+  | SeUpdateCapability !(StoreData (Capability -> Capability))
   | SeDeleteCapability !(StoreData (Id Capability))
   | SeInsertAction !(StoreData (Id Action, Action))
-  | SeUpdateAction !(StoreData Action)
+  | SeUpdateAction !(StoreData (Action -> Action))
   | SeDeleteAction !(StoreData (Id Action))
 
 data SynchronizedStoreEvent = SynchronizedStoreEvent

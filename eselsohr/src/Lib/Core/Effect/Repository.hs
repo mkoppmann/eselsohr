@@ -28,7 +28,6 @@ import Lib.Core.Domain.Article (Article, ArticleState)
 import qualified Lib.Core.Domain.Article as Article
 import Lib.Core.Domain.Capability (Action (..), Capability (..))
 import Lib.Core.Domain.Entity (Entity (..))
-import qualified Lib.Core.Domain.Entity as Entity
 import Lib.Core.Domain.Id (Id)
 import Lib.Core.Domain.Resource (Resource)
 import Lib.Core.Domain.StoreEvent (StoreEvent)
@@ -82,21 +81,15 @@ instance ReadEntity Article App where
 -- Helper
 
 artUpdateTitle ::
-  (ReadEntity Article m) =>
-  Id Resource ->
   Id Article ->
   Text ->
-  m StoreEvent
-artUpdateTitle resId aId aTitle = do
-  art <- Entity.val <$> getOneEnt resId aId
-  pure . Impl.updateArt aId $ art {Article.title = aTitle}
+  StoreEvent
+artUpdateTitle aId aTitle =
+  Impl.updateArt aId $ \oldArt -> oldArt {Article.title = aTitle}
 
 artUpdateState ::
-  (ReadEntity Article m) =>
-  Id Resource ->
   Id Article ->
   ArticleState ->
-  m StoreEvent
-artUpdateState resId aId aState = do
-  art <- Entity.val <$> getOneEnt resId aId
-  pure . Impl.updateArt aId $ art {Article.state = aState}
+  StoreEvent
+artUpdateState aId aState =
+  Impl.updateArt aId $ \oldArt -> oldArt {Article.state = aState}

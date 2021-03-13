@@ -30,7 +30,6 @@ where
 import qualified Data.HashMap.Strict as Map
 import Lib.App (AppErrorType, WithError, WriteQueue, grab, storeError, throwOnNothing)
 import Lib.Core.Domain.Article (Article (..))
-import qualified Lib.Core.Domain.Article as Article
 import Lib.Core.Domain.Capability (Action, Capability (..))
 import Lib.Core.Domain.Entity (Entity (..))
 import Lib.Core.Domain.Id (Id)
@@ -64,15 +63,12 @@ insertCap entId newEnt =
       (insertSetter capabilityGetter capabilitySetter)
       (entId, newEnt)
 
-updateCap :: Id Capability -> Capability -> StoreEvent
-updateCap entId newEnt =
+updateCap :: Id Capability -> (Capability -> Capability) -> StoreEvent
+updateCap entId capUpdater =
   SeUpdateCapability $
     StoreData
       (updateSetter capabilityGetter capabilitySetter capUpdater entId)
-      newEnt
-  where
-    capUpdater :: Capability -> Capability
-    capUpdater _ = newEnt
+      Prelude.id
 
 deleteCap :: Id Capability -> StoreEvent
 deleteCap entId =
@@ -88,15 +84,12 @@ insertAct entId newEnt =
       (insertSetter actionGetter actionSetter)
       (entId, newEnt)
 
-updateAct :: Id Action -> Action -> StoreEvent
-updateAct entId newEnt = do
+updateAct :: Id Action -> (Action -> Action) -> StoreEvent
+updateAct entId actUpdater = do
   SeUpdateAction $
     StoreData
       (updateSetter actionGetter actionSetter actUpdater entId)
-      newEnt
-  where
-    actUpdater :: Action -> Action
-    actUpdater _ = newEnt
+      Prelude.id
 
 deleteAct :: Id Action -> StoreEvent
 deleteAct entId =
@@ -112,20 +105,12 @@ insertArt entId newEnt =
       (insertSetter articleGetter articleSetter)
       (entId, newEnt)
 
-updateArt :: Id Article -> Article -> StoreEvent
-updateArt entId newEnt =
+updateArt :: Id Article -> (Article -> Article) -> StoreEvent
+updateArt entId artUpdater =
   SeUpdateArticle $
     StoreData
       (updateSetter articleGetter articleSetter artUpdater entId)
-      newEnt
-  where
-    -- Only the title and the state of an 'Article' can be changed.
-    artUpdater :: Article -> Article
-    artUpdater oldArt =
-      oldArt
-        { Article.title = Article.title newEnt,
-          Article.state = Article.state newEnt
-        }
+      Prelude.id
 
 deleteArt :: Id Article -> StoreEvent
 deleteArt entId =
@@ -144,7 +129,7 @@ updateSetter ::
   (a -> a) ->
   Id a ->
   Resource ->
-  a ->
+  (a -> a) ->
   Resource
 updateSetter getter setter updater entId = gsetter getter setter setter'
   where

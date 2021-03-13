@@ -21,11 +21,10 @@ import Lib.Core.Domain.Entity (Entity (..))
 import qualified Lib.Core.Domain.Entity as Entity
 import Lib.Core.Domain.ExpirationDate (ExpirationDate)
 import Lib.Core.Domain.Id (Id)
-import Lib.Core.Domain.Resource (Resource)
 import Lib.Core.Domain.StoreEvent (StoreEvent)
 import Lib.Core.Domain.Uri (Uri)
 import Lib.Core.Effect.Random (MonadRandom (..))
-import Lib.Core.Effect.Repository (Persist (..), RWCapabilities, RWEntity, ReadCapabilities)
+import Lib.Core.Effect.Repository (Persist (..), RWCapabilities, RWEntity)
 import qualified Lib.Core.Effect.Repository as R
 import Lib.Core.Effect.Scraper (MonadScraper (..))
 import Lib.Core.Effect.Time (MonadTime (..))
@@ -57,18 +56,18 @@ changeArticleTitle ctx artId mTitle = do
   case mTitle of
     Nothing -> pure ()
     Just title ->
-      R.commit resId . one =<< R.artUpdateTitle resId artId title
+      R.commit resId . one $ R.artUpdateTitle artId title
 
 archiveArticle ::
   (RWEntity Article m) => Context -> Id Article -> m ()
 archiveArticle ctx artId = do
   let resId = resourceId $ ctxRef ctx
-  R.commit resId . one =<< R.artUpdateState resId artId Archived
+  R.commit resId . one $ R.artUpdateState artId Archived
 
 unreadArticle :: (RWEntity Article m) => Context -> Id Article -> m ()
 unreadArticle ctx artId = do
   let resId = resourceId $ ctxRef ctx
-  R.commit resId . one =<< R.artUpdateState resId artId Unread
+  R.commit resId . one $ R.artUpdateState artId Unread
 
 data ArticleAction a = ArticleAction
   { _aaCat :: !a,
@@ -155,7 +154,7 @@ createArticle ctx getArticlesId mUri = do
             [actEnts, actFrontEnts, actFrontEnts']
 
       -- Update existing GetArticles action with new data.
-      getArticlesActionEvent <- updateGetArticlesAction resId getArticleActId'
+      let getArticlesActionEvent = updateGetArticlesAction getArticleActId'
 
       -- Commit all StoreEvents
       R.commit resId $
@@ -209,22 +208,17 @@ createArticle ctx getArticlesId mUri = do
       Maybe ExpirationDate -> [Id Action] -> [Capability]
     createArticleCapabilities mExpDate = fmap (Capability Nothing mExpDate)
 
-    updateGetArticlesAction ::
-      (ReadCapabilities m, WithError m) => Id Resource -> Id Action -> m StoreEvent
-    updateGetArticlesAction resId getArticleId = do
-      actEnt <- R.getOneAct resId getArticlesId
-      case Entity.val actEnt of
+    updateGetArticlesAction :: Id Action -> StoreEvent
+    updateGetArticlesAction getArticleId =
+      R.updateAct getArticlesId $ \oldActEnt -> case oldActEnt of
         Query qAction -> case qAction of
-          GetArticles oldGetArticlesAct -> do
+          GetArticles oldGetArticlesAct ->
             let oldGetArticlesSet = gaaShowArticles oldGetArticlesAct
-            let newGetArticlesSet = Set.insert getArticleId oldGetArticlesSet
-            let newGetArticlesAct = oldGetArticlesAct {gaaShowArticles = newGetArticlesSet}
-            let newGetArticles = Query $ GetArticles newGetArticlesAct
-            pure $ R.updateAct getArticlesId newGetArticles
-          _wrongQuery ->
-            throwError $ serverError "Could not add new article to GetArticles"
-        _nonQuery ->
-          throwError $ serverError "Could not add new article to GetArticles"
+                newGetArticlesSet = Set.insert getArticleId oldGetArticlesSet
+                newGetArticlesAct = oldGetArticlesAct {gaaShowArticles = newGetArticlesSet}
+             in Query $ GetArticles newGetArticlesAct
+          _wrongAction -> oldActEnt
+        _wrongAction -> oldActEnt
 
 createResource :: (Persist m, MonadRandom m) => m Text
 createResource = do
@@ -284,9 +278,9 @@ createResource = do
   let acc = mkAccesstoken . Reference resId $ Entity.id roaCapEnt
 
   -- Create FrontendAction for GetArticles and ResourceOverview and store them.
-  (cafaSe, _cafaEnt) <- createFga caaActId (Entity.id gaaEnt) gaActions
+  (cafaSe, _cafaEnt) <- createFga caaActId (Entity.id gaaEnt)
   (cgafaSe, cgafaEnt) <-
-    createFro acc (Entity.id cgaaEnt) (Entity.id roaEnt) roaActions
+    createFro acc (Entity.id cgaaEnt) (Entity.id roaEnt)
 
   -- Create capabilitiy for CreateGetArticlesCap and store it.
   (cgacSe, _cgacEnt) <-
@@ -309,22 +303,38 @@ createResource = do
   -- Return the ResourceOverview accesstoken.
   pure . linkAsText . collectionMainR $ Just acc
   where
-    createFga caaId gaaId gaActs = do
+    createFga caaId gaaId = do
       let cafaRoute = linkAsText $ listArticlesR Nothing
       let cafa = Frontend $ FrontendAction caaId gaaId cafaRoute
       (cafaSe, cafaEnt) <- insertAction cafa
-      let newGaActions = gaActs {gaaFrontCreateArticle = Just $ Entity.id cafaEnt}
-      let newGaa = Query $ GetArticles newGaActions
-      let updateSe = R.updateAct gaaId newGaa
+
+      let updateSe =
+            R.updateAct gaaId $ \oldAct -> case oldAct of
+              Query qAction -> case qAction of
+                GetArticles oldGaActs ->
+                  Query
+                    . GetArticles
+                    $ oldGaActs {gaaFrontCreateArticle = Just $ Entity.id cafaEnt}
+                _wrongAction -> oldAct
+              _wrongAction -> oldAct
+
       pure (one cafaSe <> one updateSe, cafaEnt)
 
-    createFro acc cgaaId roaId roaActs = do
+    createFro acc cgaaId roaId = do
       let cgafRoute = linkAsText . collectionMainR $ Just acc
       let cgafa = Frontend $ FrontendAction cgaaId roaId cgafRoute
       (cgafaSe, cgafaEnt) <- insertAction cgafa
-      let newRoaActions = roaActs {roaFrontCreateGetArticlesCap = Just $ Entity.id cgafaEnt}
-      let newRoa = Query $ ResourceOverview newRoaActions
-      let updateSe = R.updateAct roaId newRoa
+
+      let updateSe =
+            R.updateAct roaId $ \oldAct -> case oldAct of
+              Query qAction -> case qAction of
+                ResourceOverview oldRoaActions ->
+                  Query
+                    . ResourceOverview
+                    $ oldRoaActions {roaFrontCreateGetArticlesCap = Just $ Entity.id cgafaEnt}
+                _wrongAction -> oldAct
+              _wrongAction -> oldAct
+
       pure (one cgafaSe <> one updateSe, cgafaEnt)
 
 createGetArticlesCap ::
@@ -375,11 +385,15 @@ createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..
 
   -- Lookup 'GetActiveGetArticlesCaps' and update the 'Set' of revocable
   -- links to the 'GetArticles' 'Action'.
-  gagaa <- R.getOneAct resId cgacGetActiveGetArticlesCap
-  gagaSet <- getSet $ Entity.val gagaa
-  let newGagaSet = Set.insert (Entity.id gaCapEnt, Entity.id dgaFCapEnt) gagaSet
-  let newGagac = Query $ GetActiveGetArticlesCaps newGagaSet
-  let cgacSe = R.updateAct cgacGetActiveGetArticlesCap newGagac
+  let cgacSe = R.updateAct cgacGetActiveGetArticlesCap $ \oldAct ->
+        case oldAct of
+          Query qAction -> case qAction of
+            GetActiveGetArticlesCaps gagaSet ->
+              Query
+                . GetActiveGetArticlesCaps
+                $ Set.insert (Entity.id gaCapEnt, Entity.id dgaFCapEnt) gagaSet
+            _wrongAction -> oldAct
+          _wrongAction -> oldAct
 
   R.commit resId $
     gaSe
@@ -394,14 +408,6 @@ createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..
     getGaActions = \case
       Query qAction -> case qAction of
         GetArticles gaActions -> pure gaActions
-        _wrongAction -> wrongAction
-      _wrongAction -> wrongAction
-
-    getSet ::
-      (WithError m) => Action -> m (HashSet (Id Capability, Id Capability))
-    getSet = \case
-      Query qAction -> case qAction of
-        GetActiveGetArticlesCaps set -> pure set
         _wrongAction -> wrongAction
       _wrongAction -> wrongAction
 
