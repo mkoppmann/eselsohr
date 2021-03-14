@@ -1,10 +1,24 @@
 module Lib.Core.Effect.Repository
-  ( -- * Access to data in a 'Resource'.
-    ReadCapabilities (..),
-    ReadEntity (..),
-    Persist (..),
-    RWCapabilities,
-    RWEntity,
+  ( -- * Access to a 'Resource'.
+    SealedResource,
+    ContextState (..),
+    ReadState (..),
+    WriteState (..),
+    RWState,
+
+    -- * Getters with exceptions
+    getOneCap,
+    getOneAct,
+    getOneArt,
+    getCapIdForActId,
+
+    -- * Pure getters
+    getManyCap,
+    lookupCap,
+    getManyAct,
+    lookupAct,
+    getManyArt,
+    lookupArt,
 
     -- * Pure setters
     Impl.insertCap,
@@ -23,10 +37,11 @@ module Lib.Core.Effect.Repository
   )
 where
 
-import Lib.App (App)
+import Lib.App (App, WithError)
 import Lib.Core.Domain.Article (Article, ArticleState)
 import qualified Lib.Core.Domain.Article as Article
 import Lib.Core.Domain.Capability (Action (..), Capability (..))
+import Lib.Core.Domain.Context (Context)
 import Lib.Core.Domain.Entity (Entity (..))
 import Lib.Core.Domain.Id (Id)
 import Lib.Core.Domain.Resource (Resource)
@@ -34,62 +49,75 @@ import Lib.Core.Domain.StoreEvent (StoreEvent)
 import qualified Lib.Impl.Repository as Impl
 import UnliftIO (MonadUnliftIO)
 
-class (MonadUnliftIO m) => ReadCapabilities m where
-  getOneCap :: Id Resource -> Id Capability -> m (Entity Capability)
-  getManyCap :: Id Resource -> [Id Capability] -> m (HashMap (Id Capability) Capability)
-  lookupCap :: Id Resource -> Id Capability -> m (Maybe (Entity Capability))
+newtype SealedResource = SealedResource {unSealResource :: Resource}
 
-  getOneAct :: Id Resource -> Id Action -> m (Entity Action)
-  getManyAct :: Id Resource -> [Id Action] -> m (HashMap (Id Action) Action)
-  lookupAct :: Id Resource -> Id Action -> m (Maybe (Entity Action))
+data ContextState = ContextState
+  { csContext :: !Context,
+    csResource :: !SealedResource
+  }
 
-  getCapIdForActId :: Id Resource -> Id Action -> m (Id Capability)
+class (MonadUnliftIO m) => ReadState m where
+  load :: Id Resource -> m SealedResource
 
-class (MonadUnliftIO m) => Persist m where
+class (MonadUnliftIO m) => WriteState m where
   init :: Id Resource -> m ()
   commit :: Id Resource -> Seq StoreEvent -> m ()
 
-type RWCapabilities m = (ReadCapabilities m, Persist m)
+type RWState m = (ReadState m, WriteState m)
 
-instance ReadCapabilities App where
-  getOneCap = Impl.getOne Impl.capabilityGetter
-  getManyCap = Impl.getMany Impl.capabilityGetter
-  lookupCap = Impl.lookup Impl.capabilityGetter
+instance ReadState App where
+  load = pure . SealedResource <=< Impl.load
 
-  getOneAct = Impl.getOne Impl.actionGetter
-  getManyAct = Impl.getMany Impl.actionGetter
-  lookupAct = Impl.lookup Impl.actionGetter
-
-  getCapIdForActId = Impl.getCapIdForActId
-
-instance Persist App where
+instance WriteState App where
   init colId = Impl.init colId Impl.articleColInit
   commit = Impl.commit
 
-class (ReadCapabilities m) => ReadEntity a m where
-  getOneEnt :: Id Resource -> Id a -> m (Entity a)
-  getManyEnt :: Id Resource -> [Id a] -> m (HashMap (Id a) a)
-  lookupEnt :: Id Resource -> Id a -> m (Maybe (Entity a))
+getOneCap ::
+  (WithError m) => SealedResource -> Id Capability -> m (Entity Capability)
+getOneCap sRes = Impl.getOne Impl.capabilityGetter (unSealResource sRes)
 
-type RWEntity a m = (ReadEntity a m, Persist m)
+getManyCap ::
+  SealedResource -> HashSet (Id Capability) -> HashMap (Id Capability) Capability
+getManyCap sRes = Impl.getMany Impl.capabilityGetter (unSealResource sRes)
 
-instance ReadEntity Article App where
-  getOneEnt = Impl.getOne Impl.articleGetter
-  getManyEnt = Impl.getMany Impl.articleGetter
-  lookupEnt = Impl.lookup Impl.articleGetter
+lookupCap ::
+  SealedResource -> Id Capability -> Maybe (Entity Capability)
+lookupCap sRes = Impl.lookup Impl.capabilityGetter (unSealResource sRes)
+
+getOneAct ::
+  (WithError m) => SealedResource -> Id Action -> m (Entity Action)
+getOneAct sRes = Impl.getOne Impl.actionGetter (unSealResource sRes)
+
+getManyAct ::
+  SealedResource -> HashSet (Id Action) -> HashMap (Id Action) Action
+getManyAct sRes = Impl.getMany Impl.actionGetter (unSealResource sRes)
+
+lookupAct ::
+  SealedResource -> Id Action -> Maybe (Entity Action)
+lookupAct sRes = Impl.lookup Impl.actionGetter (unSealResource sRes)
+
+getCapIdForActId ::
+  (WithError m) => SealedResource -> Id Action -> m (Id Capability)
+getCapIdForActId sRes = Impl.getCapIdForActId (unSealResource sRes)
+
+getOneArt ::
+  (WithError m) => SealedResource -> Id Article -> m (Entity Article)
+getOneArt sRes = Impl.getOne Impl.articleGetter (unSealResource sRes)
+
+getManyArt ::
+  SealedResource -> HashSet (Id Article) -> HashMap (Id Article) Article
+getManyArt sRes = Impl.getMany Impl.articleGetter (unSealResource sRes)
+
+lookupArt ::
+  SealedResource -> Id Article -> Maybe (Entity Article)
+lookupArt sRes = Impl.lookup Impl.articleGetter (unSealResource sRes)
 
 -- Helper
 
-artUpdateTitle ::
-  Id Article ->
-  Text ->
-  StoreEvent
+artUpdateTitle :: Id Article -> Text -> StoreEvent
 artUpdateTitle aId aTitle =
   Impl.updateArt aId $ \oldArt -> oldArt {Article.title = aTitle}
 
-artUpdateState ::
-  Id Article ->
-  ArticleState ->
-  StoreEvent
+artUpdateState :: Id Article -> ArticleState -> StoreEvent
 artUpdateState aId aState =
   Impl.updateArt aId $ \oldArt -> oldArt {Article.state = aState}

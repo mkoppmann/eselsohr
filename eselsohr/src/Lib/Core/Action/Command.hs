@@ -24,7 +24,7 @@ import Lib.Core.Domain.Id (Id)
 import Lib.Core.Domain.StoreEvent (StoreEvent)
 import Lib.Core.Domain.Uri (Uri)
 import Lib.Core.Effect.Random (MonadRandom (..))
-import Lib.Core.Effect.Repository (Persist (..), RWCapabilities, RWEntity)
+import Lib.Core.Effect.Repository (ContextState (..), WriteState (..))
 import qualified Lib.Core.Effect.Repository as R
 import Lib.Core.Effect.Scraper (MonadScraper (..))
 import Lib.Core.Effect.Time (MonadTime (..))
@@ -32,41 +32,42 @@ import Lib.Web.Route.Common (collectionMainR, linkAsText, listArticlesR, showArt
 import Servant (Link)
 import UnliftIO.Async (concurrently)
 
-deleteGetArticles :: (Persist m) => Context -> Id Capability -> m ()
+deleteGetArticles :: (WriteState m) => ContextState -> Id Capability -> m ()
 deleteGetArticles ctx gaCapId = do
-  let resId = resourceId $ ctxRef ctx
+  let resId = resourceId . ctxRef $ csContext ctx
+      capEnt = ctxCap $ csContext ctx
+      actEnt = ctxAct $ csContext ctx
 
   R.commit resId $
     -- Delete the stored capability id for the GetArticles action
     one (R.deleteCap gaCapId)
       -- Delete the capability and action for this DeleteGetArticles
-      <> one (R.deleteCap (Entity.id $ ctxCap ctx))
-      <> one (R.deleteAct (Entity.id $ ctxAct ctx))
+      <> one (R.deleteCap (Entity.id capEnt))
+      <> one (R.deleteAct (Entity.id actEnt))
 
-deleteArticle :: (Persist m) => Context -> Id Article -> m ()
-deleteArticle ctx =
-  R.commit (resourceId $ ctxRef ctx) . one . R.deleteArt
+deleteArticle :: (WriteState m) => ContextState -> Id Article -> m ()
+deleteArticle ctx artId = do
+  let resId = resourceId . ctxRef $ csContext ctx
+  R.commit resId . one $ R.deleteArt artId
 
 changeArticleTitle ::
-  (RWEntity Article m) => Context -> Id Article -> Maybe Text -> m ()
+  (WriteState m) => ContextState -> Id Article -> Maybe Text -> m ()
 changeArticleTitle ctx artId mTitle = do
-  let resId = resourceId $ ctxRef ctx
+  let resId = resourceId . ctxRef $ csContext ctx
   -- Update title of the article when it was part of the request, and do nothing
   -- if it’s missing.
   case mTitle of
     Nothing -> pure ()
-    Just title ->
-      R.commit resId . one $ R.artUpdateTitle artId title
+    Just title -> R.commit resId . one $ R.artUpdateTitle artId title
 
-archiveArticle ::
-  (RWEntity Article m) => Context -> Id Article -> m ()
+archiveArticle :: (WriteState m) => ContextState -> Id Article -> m ()
 archiveArticle ctx artId = do
-  let resId = resourceId $ ctxRef ctx
+  let resId = resourceId . ctxRef $ csContext ctx
   R.commit resId . one $ R.artUpdateState artId Archived
 
-unreadArticle :: (RWEntity Article m) => Context -> Id Article -> m ()
+unreadArticle :: (WriteState m) => ContextState -> Id Article -> m ()
 unreadArticle ctx artId = do
-  let resId = resourceId $ ctxRef ctx
+  let resId = resourceId . ctxRef $ csContext ctx
   R.commit resId . one $ R.artUpdateState artId Unread
 
 data ArticleAction a = ArticleAction
@@ -78,19 +79,19 @@ data ArticleAction a = ArticleAction
   deriving stock (Functor, Foldable, Traversable)
 
 createArticle ::
-  ( RWCapabilities m,
+  ( WriteState m,
     MonadRandom m,
     MonadScraper m,
     MonadTime m,
     WithError m
   ) =>
-  Context ->
+  ContextState ->
   Id Action ->
   Maybe Uri ->
   m ()
 createArticle ctx getArticlesId mUri = do
-  let resId = resourceId $ ctxRef ctx
-  let mExpDate = capExpirationDate . Entity.val $ ctxCap ctx
+  let resId = resourceId . ctxRef $ csContext ctx
+      mExpDate = capExpirationDate . Entity.val . ctxCap $ csContext ctx
   case mUri of
     Nothing -> throwError $ missingParameter "The parameter `uri` is missing."
     Just uri -> do
@@ -220,7 +221,7 @@ createArticle ctx getArticlesId mUri = do
           _wrongAction -> oldActEnt
         _wrongAction -> oldActEnt
 
-createResource :: (Persist m, MonadRandom m) => m Text
+createResource :: (WriteState m, MonadRandom m) => m Text
 createResource = do
   -- Generate a new resource.
   resId <- getRandomId
@@ -338,15 +339,17 @@ createResource = do
       pure (one cgafaSe <> one updateSe, cgafaEnt)
 
 createGetArticlesCap ::
-  (RWCapabilities m, MonadRandom m, WithError m) =>
-  Context ->
+  (WriteState m, MonadRandom m, WithError m) =>
+  ContextState ->
   Maybe Text ->
   Maybe ExpirationDate ->
   CreateGetArticlesCapActions ->
   m ()
 createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..} = do
-  let resId = resourceId $ ctxRef ctx
-  gaActEnt <- R.getOneAct resId cgacGetArticles
+  let resId = resourceId . ctxRef $ csContext ctx
+      res = csResource ctx
+
+  gaActEnt <- R.getOneAct res cgacGetArticles
   (GetArticlesActions mId1 mId2 showArticleIds) <-
     getGaActions $ Entity.val gaActEnt
   let saIds = Just <$> Set.toList showArticleIds
@@ -372,7 +375,7 @@ createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..
   roaAcc <-
     mkAccesstoken
       . Reference resId
-      <$> R.getCapIdForActId resId cgacResourceOverview
+      <$> R.getCapIdForActId res cgacResourceOverview
 
   let dgaF =
         Frontend
@@ -419,8 +422,7 @@ createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..
     wrongAction :: (WithError m) => m a
     wrongAction = throwError $ serverError "Wrong action called"
 
-insertAction ::
-  (MonadRandom m) => Action -> m (StoreEvent, Entity Action)
+insertAction :: (MonadRandom m) => Action -> m (StoreEvent, Entity Action)
 insertAction act = do
   actId <- getRandomId
   pure (R.insertAct actId act, Entity actId act)

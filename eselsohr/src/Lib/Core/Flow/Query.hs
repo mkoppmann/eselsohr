@@ -5,7 +5,7 @@ where
 
 import Data.Aeson (Value)
 import Lib.App.Error (WithError, serverError, throwError)
-import Lib.Core.Domain.Context (Context)
+import Lib.Core.Effect.Repository (ContextState)
 
-queryAction :: (WithError m) => Context -> m Value
+queryAction :: (WithError m) => ContextState -> m Value
 queryAction _ = throwError $ serverError "Not implemented yet"

@@ -1,5 +1,6 @@
 module Lib.Impl.Repository
-  ( commit,
+  ( load,
+    commit,
 
     -- * Generic implementations
     getOne,
@@ -28,6 +29,7 @@ module Lib.Impl.Repository
 where
 
 import qualified Data.HashMap.Strict as Map
+import qualified Data.HashSet as Set
 import Lib.App (AppErrorType, WithError, WriteQueue, grab, storeError, throwOnNothing)
 import Lib.Core.Domain.Article (Article (..))
 import Lib.Core.Domain.Capability (Action, Capability (..))
@@ -139,59 +141,30 @@ deleteSetter ::
   CollectionGetter a -> CollectionSetter a -> Resource -> Id a -> Resource
 deleteSetter getter setter = gsetter getter setter Map.delete
 
-getOne ::
-  (WithError m, WithFile env m) =>
-  CollectionGetter a ->
-  Id Resource ->
-  Id a ->
-  m (Entity a)
-getOne getter resId = asSingleEntry <=< lookup getter resId
+getOne :: (WithError m) => CollectionGetter a -> Resource -> Id a -> m (Entity a)
+getOne getter res = asSingleEntry . lookup getter res
 
-getMany ::
-  (WithError m, WithFile env m) =>
-  CollectionGetter a ->
-  Id Resource ->
-  [Id a] ->
-  m (HashMap (Id a) a)
-getMany getter resId entIds =
-  Map.filterWithKey (\key _ -> key `elem` entIds) <$> getAll getter resId
+getMany :: CollectionGetter a -> Resource -> HashSet (Id a) -> HashMap (Id a) a
+getMany getter res entIds =
+  Map.filterWithKey (\key _ -> key `Set.member` entIds) $ getter res
 
-lookup ::
-  (WithError m, WithFile env m) =>
-  CollectionGetter a ->
-  Id Resource ->
-  Id a ->
-  m (Maybe (Entity a))
-lookup getter resId entId = do
-  aMap <- getAll getter resId
-  let ent = Map.lookup entId aMap
-  let mTuple = (entId,) <$> ent
-  pure $ fmap (uncurry Entity) mTuple
+lookup :: CollectionGetter a -> Resource -> Id a -> Maybe (Entity a)
+lookup getter res entId =
+  fmap (uncurry Entity . (entId,)) . Map.lookup entId $ getter res
 
-init ::
-  (WithFile env m) =>
-  Id Resource ->
-  Resource ->
-  m ()
+init :: (WithFile env m) => Id Resource -> Resource -> m ()
 init = File.init
 
-getAll ::
-  (WithError m, WithFile env m) =>
-  CollectionGetter a ->
-  Id Resource ->
-  m (HashMap (Id a) a)
-getAll = flip File.load
+load :: (WithError m, WithFile env m) => Id Resource -> m Resource
+load = flip File.load Prelude.id
 
-getCapIdForActId ::
-  (WithError m, WithFile env m) =>
-  Id Resource ->
-  Id Action ->
-  m (Id Capability)
-getCapIdForActId resId actId = do
-  allCaps <- getAll capabilityGetter resId
-  let capList = Map.toList $ Map.filter ((==) actId . actionId) allCaps
-  let capIdList = fst <$> capList
-  asSingleEntry $ viaNonEmpty head capIdList
+getCapIdForActId :: (WithError m) => Resource -> Id Action -> m (Id Capability)
+getCapIdForActId res actId =
+  asSingleEntry
+    . viaNonEmpty head
+    . Map.keys
+    . Map.filter ((==) actId . actionId)
+    $ capabilityGetter res
 
 gsetter ::
   CollectionGetter a ->

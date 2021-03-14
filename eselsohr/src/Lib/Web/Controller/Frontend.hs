@@ -23,7 +23,7 @@ import Lib.Core.Domain.ExpirationDate (ExpirationDate (..))
 import Lib.Core.Domain.Frontend (ResourceOverviewAccess, ShowArticleAccess (..))
 import Lib.Core.Domain.Id (Id)
 import Lib.Core.Effect.Random (MonadRandom)
-import Lib.Core.Effect.Repository (RWEntity, ReadCapabilities, ReadEntity)
+import Lib.Core.Effect.Repository (ContextState (..), RWState, ReadState, WriteState)
 import Lib.Core.Effect.Scraper (MonadScraper)
 import Lib.Core.Effect.Time (MonadTime (..))
 import qualified Lib.Core.Flow as Flow
@@ -33,7 +33,6 @@ import Lib.Web.Types (AppServer, DeleteActionForm (..), HtmlPage, PatchActionFor
 import qualified Lib.Web.View.App as App
 import qualified Lib.Web.View.Page as Page
 import Lib.Web.View.Style (appStylesheet)
-import Lucid (Html)
 import UnliftIO (concurrently)
 
 frontend :: Route.FrontendSite AppServer
@@ -52,37 +51,42 @@ frontend =
       Route.postFrontend = postFrontend
     }
 
-startpage :: (ReadCapabilities m) => m HtmlPage
+startpage :: (Monad m) => m HtmlPage
 startpage = pure $ App.render Page.root
 
 collectionMain ::
-  (ReadEntity Article m, MonadTime m, WithError m, WithLog env m) =>
+  (ReadState m, MonadTime m, WithError m, WithLog env m) =>
   Maybe Accesstoken ->
   m HtmlPage
 collectionMain mAcc = case mAcc of
   Nothing -> pure notAuthorized
   Just acc -> do
-    mOrigCtx <- CC.getContext acc
+    mOrigCtx <- CC.getContextState acc
     case mOrigCtx of
       Left err -> do
         log I err
         throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
       Right origCtx -> do
         ctx <- CC.getQuery origCtx
-        let viewAcc = mkAccesstoken $ ctxRef ctx
-        currTime@UTCTime {..} <- getCurrentTime
-        let expDate = addGregorianMonthsClip 1 utctDay
-        let dates =
-              ( ExpirationDate currTime,
-                ExpirationDate $ currTime {utctDay = expDate}
-              )
-        roaActs <- getActions . Entity.val $ ctxAct ctx
+        dates <- getExpirationDates
+
+        roaActs <- getActions . Entity.val . ctxAct $ csContext ctx
         let gagacId = roaGetActiveGetArticlesCap roaActs
         gagac <- CC.getAction ctx gagacId
         let capIdsSet = extractSet gagac
         (accMap, revMap) <- fetchData ctx roaActs capIdsSet
-        pure $ renderPage viewAcc dates accMap revMap
+
+        let viewAcc = mkAccesstoken . ctxRef $ csContext ctx
+        pure
+          . App.render
+          $ Page.resourceOverview viewAcc dates accMap revMap
   where
+    getExpirationDates :: (MonadTime m) => m (ExpirationDate, ExpirationDate)
+    getExpirationDates = do
+      currTime@UTCTime {..} <- getCurrentTime
+      let expDate = currTime {utctDay = addGregorianMonthsClip 1 utctDay}
+      pure (ExpirationDate currTime, ExpirationDate expDate)
+
     getActions :: (WithError m) => Action -> m ResourceOverviewActions
     getActions = \case
       Query qAction -> case qAction of
@@ -99,34 +103,38 @@ collectionMain mAcc = case mAcc of
         _wrongQueryAction -> Set.empty
       _wrongAction -> Set.empty
 
+    fetchData ::
+      (MonadTime m, WithError m, WithLog env m) =>
+      ContextState ->
+      ResourceOverviewActions ->
+      HashSet (Id Capability, Id Capability) ->
+      m (ResourceOverviewAccess, Seq (Capability, Revocable))
     fetchData ctx roActs capIdsSet =
       concurrently
         (Query.getResourceOverviewAccs ctx roActs)
         (Query.getRevMap ctx capIdsSet)
 
-    renderPage :: Accesstoken -> (ExpirationDate, ExpirationDate) -> ResourceOverviewAccess -> Seq (Capability, Revocable) -> Html ()
-    renderPage viewAcc dates x y = App.render $ Page.resourceOverview viewAcc dates x y
-
 notAuthorized :: HtmlPage
 notAuthorized = App.render Page.notAuthorized
 
 listArticles ::
-  (ReadEntity Article m, MonadTime m, WithError m, WithLog env m) =>
+  (ReadState m, MonadTime m, WithError m, WithLog env m) =>
   Maybe Accesstoken ->
   m HtmlPage
 listArticles mAcc = case mAcc of
   Nothing -> pure notAuthorized
   Just acc -> do
-    mOrigCtx <- CC.getContext acc
+    mOrigCtx <- CC.getContextState acc
     case mOrigCtx of
       Left err -> do
         log I err
         throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
       Right origCtx -> do
         ctx <- CC.getQuery origCtx
-        let viewAcc = mkAccesstoken $ ctxRef ctx
-        laActs <- getActions . Entity.val $ ctxAct ctx
+        laActs <- getActions . Entity.val . ctxAct $ csContext ctx
         laAcc <- Query.getShowArticlesAccess ctx laActs
+
+        let viewAcc = mkAccesstoken . ctxRef $ csContext ctx
         pure . App.render $ Page.articleList viewAcc laAcc
   where
     getActions :: (WithError m) => Action -> m GetArticlesActions
@@ -139,20 +147,20 @@ listArticles mAcc = case mAcc of
         throwError $ serverError "The accesstoken did not include actions"
 
 showArticle ::
-  (ReadEntity Article m, MonadTime m, WithError m, WithLog env m) =>
+  (ReadState m, MonadTime m, WithError m, WithLog env m) =>
   Maybe Accesstoken ->
   m HtmlPage
 showArticle = \case
   Nothing -> pure notAuthorized
   Just acc -> do
-    mOrigCtx <- CC.getContext acc
+    mOrigCtx <- CC.getContextState acc
     case mOrigCtx of
       Left err -> do
         log I err
         throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
       Right origCtx -> do
         ctx <- CC.getQuery origCtx
-        saQAction <- getGetArticleAction . Entity.val $ ctxAct ctx
+        saQAction <- getGetArticleAction . Entity.val . ctxAct $ csContext ctx
         mSaAcc <- Query.getShowArticleAccess ctx saQAction
         case mSaAcc of
           Nothing -> throwError notFound
@@ -168,20 +176,20 @@ getGetArticleAction = \case
     throwError $ serverError "The accesstoken did not include actions"
 
 editArticle ::
-  (ReadEntity Article m, MonadTime m, WithError m, WithLog env m) =>
+  (ReadState m, MonadTime m, WithError m, WithLog env m) =>
   Maybe Accesstoken ->
   m HtmlPage
 editArticle = \case
   Nothing -> pure notAuthorized
   Just acc -> do
-    mOrigCtx <- CC.getContext acc
+    mOrigCtx <- CC.getContextState acc
     case mOrigCtx of
       Left err -> do
         log I err
         throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
       Right origCtx -> do
         ctx <- CC.getQuery origCtx
-        edQAction <- getGetArticleAction . Entity.val $ ctxAct ctx
+        edQAction <- getGetArticleAction . Entity.val . ctxAct $ csContext ctx
         mEdAcc <- Query.getShowArticleAccess ctx edQAction
         case mEdAcc of
           Nothing -> throwError notFound
@@ -196,39 +204,37 @@ invalidToken = pure . App.render $ Page.invalidToken
 stylesheet :: (Monad m) => m Css
 stylesheet = return appStylesheet
 
-createResource ::
-  (RWEntity Article m, MonadRandom m, WithError m) =>
-  m Redirection
+createResource :: (WriteState m, MonadRandom m, WithError m) => m Redirection
 createResource = throwError . redirect303 =<< Action.createResource
 
 deleteFrontend ::
-  (RWEntity Article m, MonadTime m, WithError m, WithLog env m) =>
+  (RWState m, MonadTime m, WithError m, WithLog env m) =>
   DeleteActionForm ->
   m Redirection
 deleteFrontend (DeleteActionForm accId) = do
-  mOrigCtx <- CC.getContext accId
+  mOrigCtx <- CC.getContextState accId
   case mOrigCtx of
     Left err -> log E err >> throwError (serverError err)
     Right origCtx -> do
       ctx <- CC.getCommand origCtx
       Flow.deleteAction ctx
-      redirect307To . CC.getRedirectTo . Entity.val $ ctxAct origCtx
+      redirect307To . CC.getRedirectTo . Entity.val . ctxAct $ csContext origCtx
 
 patchFrontend ::
-  (RWEntity Article m, MonadTime m, WithError m, WithLog env m) =>
+  (RWState m, MonadTime m, WithError m, WithLog env m) =>
   PatchActionForm ->
   m Redirection
 patchFrontend (PatchActionForm accId artTitle) = do
-  mOrigCtx <- CC.getContext accId
+  mOrigCtx <- CC.getContextState accId
   case mOrigCtx of
     Left err -> log E err >> throwError (serverError err)
     Right origCtx -> do
       ctx <- CC.getCommand origCtx
       Flow.patchAction ctx artTitle
-      redirect307To . CC.getRedirectTo . Entity.val $ ctxAct origCtx
+      redirect307To . CC.getRedirectTo . Entity.val . ctxAct $ csContext origCtx
 
 postFrontend ::
-  ( RWEntity Article m,
+  ( RWState m,
     MonadRandom m,
     MonadScraper m,
     MonadTime m,
@@ -238,7 +244,7 @@ postFrontend ::
   PostActionForm ->
   m Redirection
 postFrontend (PostActionForm accId artUri unlockPetname expirationDate) = do
-  mOrigCtx <- CC.getContext accId
+  mOrigCtx <- CC.getContextState accId
   case mOrigCtx of
     Left err -> log E err >> throwError (serverError err)
     Right origCtx -> do
@@ -246,7 +252,7 @@ postFrontend (PostActionForm accId artUri unlockPetname expirationDate) = do
       mUrl <- Flow.postAction ctx artUri unlockPetname expirationDate
       case mUrl of
         Nothing ->
-          redirect307To . CC.getRedirectTo . Entity.val $ ctxAct origCtx
+          redirect307To . CC.getRedirectTo . Entity.val . ctxAct $ csContext origCtx
         Just url -> redirect307To $ Just url
 
 redirect307To :: (WithError m) => Maybe Text -> m Redirection

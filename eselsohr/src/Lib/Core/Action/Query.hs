@@ -20,51 +20,49 @@ import Lib.Core.Domain.ExpirationDate (ExpirationDate (..))
 import Lib.Core.Domain.Frontend (ResourceOverviewAccess (..), ShowArticleAccess (..), ShowArticlesAccess (..))
 import Lib.Core.Domain.Id (Id)
 import Lib.Core.Domain.Resource (Resource)
-import Lib.Core.Effect.Repository (ReadCapabilities (..), ReadEntity (..))
+import Lib.Core.Effect.Repository (ContextState (..), SealedResource)
 import qualified Lib.Core.Effect.Repository as R
 import Lib.Core.Effect.Time (MonadTime (..))
-import UnliftIO.Async (mapConcurrently)
 
 getResourceOverviewAccs ::
-  (ReadCapabilities m, WithError m, WithLog env m) =>
-  Context ->
+  (WithError m, WithLog env m) =>
+  ContextState ->
   ResourceOverviewActions ->
   m ResourceOverviewAccess
 getResourceOverviewAccs ctx roActs = do
-  let resId = resourceId $ ctxRef ctx
+  let resId = resourceId . ctxRef $ csContext ctx
+      res = csResource ctx
   case roaFrontCreateGetArticlesCap roActs of
     Nothing -> do
       log E "roaFrontCreateGetArticlesCap is missing"
       throwError $ serverError "A system error occured."
     Just fcgacId -> do
-      fcgacCapId <- R.getCapIdForActId resId fcgacId
-      let acc = mkAccesstoken $ Reference resId fcgacCapId
+      acc <- actIdToAcc resId res fcgacId
       pure . ResourceOverviewAccess $ Just acc
 
 getShowArticlesAccess ::
-  (ReadEntity Article m, WithError m) =>
-  Context ->
+  (WithError m) =>
+  ContextState ->
   GetArticlesActions ->
   m ShowArticlesAccess
 getShowArticlesAccess ctx GetArticlesActions {..} = do
-  let resId = resourceId $ ctxRef ctx
-
-  ca <- mActIdToAcc resId gaaFrontCreateArticle
+  let resId = resourceId . ctxRef $ csContext ctx
+      res = csResource ctx
+  ca <- mActIdToAcc resId res gaaFrontCreateArticle
   sas <-
     fromList
       . sortBy (flip expDateCmp)
       . catMaybes
-      <$> mapConcurrently (getArtAndSAAccess resId) (Set.toList gaaShowArticles)
-
+      <$> traverse (getArtAndSAAccess res) (Set.toList gaaShowArticles)
   pure $ ShowArticlesAccess ca sas
   where
     getArtAndSAAccess ::
-      (ReadEntity Article m, WithError m) =>
-      Id Resource ->
+      (WithError m) =>
+      SealedResource ->
       Id Action ->
       m (Maybe (Article, ShowArticleAccess))
-    getArtAndSAAccess resId actId = do
-      actEnt <- R.getOneAct resId actId
+    getArtAndSAAccess res actId = do
+      actEnt <- R.getOneAct res actId
       case Entity.val actEnt of
         Query qAction -> getShowArticleAccess ctx qAction
         _wrongAction -> throwError $ serverError "Wrong action"
@@ -74,24 +72,25 @@ getShowArticlesAccess ctx GetArticlesActions {..} = do
     expDateCmp (art1, _) (art2, _) = compare (creation art1) (creation art2)
 
 getShowArticleAccess ::
-  (ReadEntity Article m, WithError m) =>
-  Context ->
+  (WithError m) =>
+  ContextState ->
   QueryAction ->
   m (Maybe (Article, ShowArticleAccess))
 getShowArticleAccess ctx act =
   case act of
     GetArticle artId GetArticleActions {..} -> do
-      let resId = resourceId $ ctxRef ctx
-      mEntity <- R.lookupEnt resId artId
-      case mEntity of
+      let resId = resourceId . ctxRef $ csContext ctx
+          res = csResource ctx
+
+      case R.lookupArt res artId of
         Nothing -> pure Nothing
         Just (Entity _ art) -> do
-          showArticleAcc <- actIdToAcc resId gaaShowArticle
-          changeArticleTitleAcc <- mActIdToAcc resId gaaChangeArticleTitle
-          archiveArticleAcc <- mActIdToAcc resId gaaArchiveArticle
-          unreadArticleAcc <- mActIdToAcc resId gaaUnreadArticle
-          deleteArticleAcc <- mActIdToAcc resId gaaDeleteArticle
-          getArticlesAcc <- mActIdToAcc resId gaaGetArticles
+          showArticleAcc <- actIdToAcc resId res gaaShowArticle
+          changeArticleTitleAcc <- mActIdToAcc resId res gaaChangeArticleTitle
+          archiveArticleAcc <- mActIdToAcc resId res gaaArchiveArticle
+          unreadArticleAcc <- mActIdToAcc resId res gaaUnreadArticle
+          deleteArticleAcc <- mActIdToAcc resId res gaaDeleteArticle
+          getArticlesAcc <- mActIdToAcc resId res gaaGetArticles
 
           let saAccess =
                 ShowArticleAccess
@@ -105,31 +104,24 @@ getShowArticleAccess ctx act =
           pure $ Just (art, saAccess)
     _wrongAction -> throwError $ serverError "Wrong action"
 
-mActIdToAcc ::
-  (ReadCapabilities m) => Id Resource -> Maybe (Id Action) -> m (Maybe Accesstoken)
-mActIdToAcc resId = maybe (pure Nothing) (fmap Just . actIdToAcc resId)
-
-actIdToAcc :: (ReadCapabilities m) => Id Resource -> Id Action -> m Accesstoken
-actIdToAcc resId = fmap (capIdToAcc resId) . R.getCapIdForActId resId
-
 getRevMap ::
-  (ReadCapabilities m, MonadTime m) =>
-  Context ->
+  (MonadTime m) =>
+  ContextState ->
   HashSet (Id Capability, Id Capability) ->
   m (Seq (Capability, Revocable))
 getRevMap ctx capIdsSet = do
-  let resId = resourceId $ ctxRef ctx
+  let resId = resourceId . ctxRef $ csContext ctx
+      res = csResource ctx
 
   currTime <- getCurrentTime
 
-  -- Convert the set to an ascending list; this will help later for the zipping
-  -- process.
-  -- Not all pairs in this set are still valid.
+  -- Convert the set to a list; this will help later for the zipping
+  -- process. Not all pairs in this set are still valid.
   let capIdsList = Set.toList capIdsSet
 
   -- Use the capability id from the GetArticles action to retrieve stored
   -- capabilities and convert it to an ascending list.
-  capList <- fmap Map.toList . getManyCap resId $ fst <$> capIdsList
+  let capList = Map.toList . R.getManyCap res $ Set.map fst capIdsSet
 
   -- Filter out all deleted pairs, zip the fetched capabilities with their
   -- capability id pairs, and then create the sequence with all capability
@@ -148,6 +140,18 @@ getRevMap ctx capIdsSet = do
       Just expDate -> unExpirationDate expDate > currTime
     expDateCmp (cap1, _) (cap2, _) =
       compare (capExpirationDate cap1) (capExpirationDate cap2)
+
+mActIdToAcc ::
+  (WithError m) =>
+  Id Resource ->
+  SealedResource ->
+  Maybe (Id Action) ->
+  m (Maybe Accesstoken)
+mActIdToAcc resId res = maybe (pure Nothing) (fmap Just . actIdToAcc resId res)
+
+actIdToAcc ::
+  (WithError m) => Id Resource -> SealedResource -> Id Action -> m Accesstoken
+actIdToAcc resId res actId = capIdToAcc resId <$> R.getCapIdForActId res actId
 
 capIdToAcc :: Id Resource -> Id Capability -> Accesstoken
 capIdToAcc resId = mkAccesstoken . Reference resId

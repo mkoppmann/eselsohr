@@ -7,7 +7,7 @@ import Lib.App.Error (WithError)
 import qualified Lib.Core.Action as Action
 import Lib.Core.Domain.Accesstoken (Accesstoken)
 import Lib.Core.Effect.Random (MonadRandom)
-import Lib.Core.Effect.Repository (Persist)
+import Lib.Core.Effect.Repository (WriteState)
 import qualified Lib.Web.Controller.Common as CC
 import qualified Lib.Web.Route.Command as Route
 import Lib.Web.Types (AppServer)
@@ -22,7 +22,7 @@ command =
       Route.postApi = postApi
     }
 
-createResourceApi :: (Persist m, MonadRandom m) => m NoContent
+createResourceApi :: (WriteState m, MonadRandom m) => m NoContent
 createResourceApi = Action.createResource >> pure NoContent
 
 deleteApi :: (WithError m) => Maybe Accesstoken -> m NoContent

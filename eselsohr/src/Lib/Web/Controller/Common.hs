@@ -1,5 +1,5 @@
 module Lib.Web.Controller.Common
-  ( getContext,
+  ( getContextState,
     getCommand,
     getQuery,
     getRedirectTo,
@@ -16,69 +16,59 @@ import Lib.Core.Domain.Entity (Entity)
 import qualified Lib.Core.Domain.Entity as Entity
 import Lib.Core.Domain.ExpirationDate (ExpirationDate (..))
 import Lib.Core.Domain.Id (Id)
-import Lib.Core.Domain.Resource (Resource)
-import Lib.Core.Effect (MonadTime (..), ReadCapabilities (..))
+import Lib.Core.Effect.Repository (ContextState (..), ReadState (..), SealedResource)
 import qualified Lib.Core.Effect.Repository as R
+import Lib.Core.Effect.Time (MonadTime (..))
 
-getContext ::
-  (ReadCapabilities m, MonadTime m) =>
-  Accesstoken ->
-  m (Either Text Context)
-getContext acc = do
+getContextState ::
+  (ReadState m, MonadTime m) => Accesstoken -> m (Either Text ContextState)
+getContextState acc = do
   let ref = toReference acc
-  let resId = resourceId ref
-  let capId = capabilityId ref
-  mCap <- R.lookupCap resId capId
-  case mCap of
+  res <- R.load $ resourceId ref
+
+  case R.lookupCap res $ capabilityId ref of
     Nothing -> pure $ Left "Could not find capability"
     Just capEnt -> do
       case capExpirationDate $ Entity.val capEnt of
-        Nothing -> fetchAction ref resId capEnt
+        Nothing -> pure $ fetchAction ref res capEnt
         Just expDate -> do
           currTime <- getCurrentTime
           if unExpirationDate expDate < currTime
             then pure $ Left "Capability has expired"
-            else fetchAction ref resId capEnt
+            else pure $ fetchAction ref res capEnt
   where
     fetchAction ::
-      (ReadCapabilities m) =>
-      Reference ->
-      Id Resource ->
-      Entity Capability ->
-      m (Either Text Context)
-    fetchAction ref resId capEnt = do
+      Reference -> SealedResource -> Entity Capability -> Either Text ContextState
+    fetchAction ref res capEnt =
       let actId = actionId $ Entity.val capEnt
-      mAct <- R.lookupAct resId actId
-      case mAct of
-        Nothing -> pure $ Left "Could not find action"
-        Just act -> pure . Right $ Context ref capEnt act
+       in case R.lookupAct res actId of
+            Nothing -> Left "Could not find action"
+            Just act -> Right $ ContextState (Context ref capEnt act) res
 
-getCommand :: (ReadCapabilities m) => Context -> m Context
-getCommand ctx = do
-  let resId = resourceId $ ctxRef ctx
-  let act = Entity.val $ ctxAct ctx
-  case act of
-    Frontend fAction -> do
-      actEnt <- R.getOneAct resId $ command fAction
-      let newCtx = ctx {ctxAct = actEnt}
-      pure newCtx
-    _nonFrontendAction -> pure ctx
+getCommand :: (WithError m) => ContextState -> m ContextState
+getCommand ctx =
+  let context = csContext ctx
+   in case Entity.val $ ctxAct context of
+        Frontend fAction -> do
+          actEnt <- R.getOneAct (csResource ctx) $ command fAction
+          pure $ ctx {csContext = context {ctxAct = actEnt}}
+        Command _cAction -> pure ctx
+        Query _qAction ->
+          throwError $ serverError "Expected Command but Query was given"
 
-getQuery :: (ReadCapabilities m) => Context -> m Context
-getQuery ctx = do
-  let resId = resourceId $ ctxRef ctx
-  let act = Entity.val $ ctxAct ctx
-  case act of
-    Frontend fAction -> do
-      actEnt <- R.getOneAct resId $ query fAction
-      let newCtx = ctx {ctxAct = actEnt}
-      pure newCtx
-    _nonFrontendAction -> pure ctx
+getQuery :: (WithError m) => ContextState -> m ContextState
+getQuery ctx =
+  let context = csContext ctx
+   in case Entity.val $ ctxAct context of
+        Frontend fAction -> do
+          actEnt <- R.getOneAct (csResource ctx) $ query fAction
+          pure $ ctx {csContext = context {ctxAct = actEnt}}
+        Query _qAction -> pure ctx
+        Command _cAction ->
+          throwError $ serverError "Expected Query but Command was given"
 
-getAction :: (ReadCapabilities m) => Context -> Id Action -> m Action
-getAction ctx actId = do
-  let resId = resourceId $ ctxRef ctx
-  Entity.val <$> R.getOneAct resId actId
+getAction :: (WithError m) => ContextState -> Id Action -> m Action
+getAction ctx actId = Entity.val <$> R.getOneAct (csResource ctx) actId
 
 getRedirectTo :: Action -> Maybe Text
 getRedirectTo = \case
