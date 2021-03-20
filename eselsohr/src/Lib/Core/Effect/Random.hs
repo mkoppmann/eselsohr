@@ -4,7 +4,6 @@ module Lib.Core.Effect.Random
 where
 
 import Lib.Core.Domain (Id)
-import UnliftIO (MonadUnliftIO)
 
-class (MonadUnliftIO m) => MonadRandom m where
+class (Monad m) => MonadRandom m where
   getRandomId :: m (Id a)

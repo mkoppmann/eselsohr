@@ -33,7 +33,6 @@ import Lib.Web.Types (AppServer, DeleteActionForm (..), HtmlPage, PatchActionFor
 import qualified Lib.Web.View.App as App
 import qualified Lib.Web.View.Page as Page
 import Lib.Web.View.Style (appStylesheet)
-import UnliftIO (concurrently)
 
 frontend :: Route.FrontendSite AppServer
 frontend =
@@ -109,10 +108,10 @@ collectionMain mAcc = case mAcc of
       ResourceOverviewActions ->
       HashSet (Id Capability, Id Capability) ->
       m (ResourceOverviewAccess, Seq (Capability, Revocable))
-    fetchData ctx roActs capIdsSet =
-      concurrently
-        (Query.getResourceOverviewAccs ctx roActs)
-        (Query.getRevMap ctx capIdsSet)
+    fetchData ctx roActs capIdsSet = do
+      accMap <- Query.getResourceOverviewAccs ctx roActs
+      revMap <- Query.getRevMap ctx capIdsSet
+      pure (accMap, revMap)
 
 notAuthorized :: HtmlPage
 notAuthorized = App.render Page.notAuthorized

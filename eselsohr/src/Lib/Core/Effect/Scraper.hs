@@ -4,7 +4,6 @@ module Lib.Core.Effect.Scraper
 where
 
 import Lib.Core.Domain (Uri)
-import UnliftIO (MonadUnliftIO)
 
-class (MonadUnliftIO m) => MonadScraper m where
+class (Monad m) => MonadScraper m where
   scrapWebsite :: Uri -> m Text

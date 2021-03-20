@@ -30,7 +30,6 @@ import Lib.Core.Effect.Scraper (MonadScraper (..))
 import Lib.Core.Effect.Time (MonadTime (..))
 import Lib.Web.Route.Common (collectionMainR, linkAsText, listArticlesR, showArticleR)
 import Servant (Link)
-import UnliftIO.Async (concurrently)
 
 deleteGetArticles :: (WriteState m) => ContextState -> Id Capability -> m ()
 deleteGetArticles ctx gaCapId = do
@@ -172,7 +171,8 @@ createArticle ctx getArticlesId mUri = do
       (MonadRandom m, MonadScraper m, MonadTime m) => Uri -> m (Entity Article)
     createArticleEnt uri = do
       aId <- getRandomId
-      (aTitle, aCreated) <- concurrently (scrapWebsite uri) getCurrentTime
+      aTitle <- scrapWebsite uri
+      aCreated <- getCurrentTime
       let aState = Unread
       pure . Entity aId $ Article aTitle uri aState aCreated
 

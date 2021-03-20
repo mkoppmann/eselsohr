@@ -47,7 +47,6 @@ import Lib.Core.Domain.Id (Id)
 import Lib.Core.Domain.Resource (Resource)
 import Lib.Core.Domain.StoreEvent (StoreEvent)
 import qualified Lib.Impl.Repository as Impl
-import UnliftIO (MonadUnliftIO)
 
 newtype SealedResource = SealedResource {unSealResource :: Resource}
 
@@ -56,10 +55,10 @@ data ContextState = ContextState
     csResource :: !SealedResource
   }
 
-class (MonadUnliftIO m) => ReadState m where
+class (Monad m) => ReadState m where
   load :: Id Resource -> m SealedResource
 
-class (MonadUnliftIO m) => WriteState m where
+class (Monad m) => WriteState m where
   init :: Id Resource -> m ()
   commit :: Id Resource -> Seq StoreEvent -> m ()
 
