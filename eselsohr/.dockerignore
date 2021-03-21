@@ -1,0 +1,11 @@
+*
+!app/
+!src/
+!test/
+!cabal.project
+!CHANGELOG.md
+!Dockerfile
+!eselsohr.cabal
+!LICENSE
+!README.md
+!Setup.hs

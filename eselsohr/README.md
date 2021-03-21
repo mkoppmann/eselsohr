@@ -60,6 +60,16 @@ The following values can be set:
 Currently, all configuration parameters are optional, so starting Eselsohr can be as simple as executing the Eselsohr binary.
 The `dist` directory in this repository provides deployment relevant files, like an example `rc` file for FreeBSD or a service file for systemd-based Linux distributions.
 
+### Docker-based
+
+Alternatively, a Dockerimage is provided.
+You can build and run it like so:
+
+```shell
+sudo docker build -t eselsohr .
+sudo docker run -p 6979:6979 -v eselsohr-data:/data eselsohr
+```
+
 ## Architecture
 
 The app is based on the [Three Layer Cake architecture](https://www.parsonsmatt.org/2018/03/22/three_layer_haskell_cake.html).
