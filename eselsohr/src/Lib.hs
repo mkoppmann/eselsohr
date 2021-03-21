@@ -15,6 +15,7 @@ import Network.Wai.Handler.Warp (defaultSettings, runSettings, setHost, setPort,
 import Network.Wai.Handler.WarpTLS (OnInsecure (..), TLSSettings (..), runTLS, tlsSettings)
 import UnliftIO.Async (race_)
 import UnliftIO.STM (newTQueueIO)
+import System.IO (hSetBuffering, BufferMode (..))
 
 mkAppEnv :: Config -> IO AppEnv
 mkAppEnv Config {..} = do
@@ -76,5 +77,7 @@ runServer Config {..} env@Env {..} = do
     protocolText HttpsOff = "Access it on: http://"
 
 main :: Maybe FilePath -> IO ()
-main mConfPath =
+main mConfPath = do
+  hSetBuffering stdout NoBuffering
+  hSetBuffering stderr NoBuffering
   loadConfig mConfPath >>= \conf -> mkAppEnv conf >>= runServer conf
