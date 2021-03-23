@@ -8,10 +8,21 @@ LABEL maintainer="mkoppmann <me@mkoppmann.at>"
 # Build image #
 ###############
 FROM utdemir/ghc-musl:v18-ghc8104 AS build
-WORKDIR /build
 
 # Install upx for shrinking the binary
 RUN apk --no-cache add upx=~3.96
+
+# Create the data folder for the deployment stage here, because there is no
+# shell in distroless images available.
+RUN mkdir -p /data
+
+# Create a new user so we don’t run the build process as root. Also create the
+# folder for the files.
+RUN adduser -D builder && \
+        mkdir -p /build && \
+        chown -R builder:builder /build
+USER builder
+WORKDIR /build
 
 # Update cabal package database
 RUN cabal update
@@ -35,12 +46,8 @@ RUN cabal install \
         --overwrite-policy=always \
         -O2
 
-# Create the data folder here, because there is no shell in distroless images
-# available.
-RUN mkdir -p /data
-
 # Shrink binary
-RUN upx --best /root/.cabal/bin/eselsohr-exe
+RUN upx --best "${HOME}"/.cabal/bin/eselsohr-exe
 
 ####################
 # Deployment image #
@@ -48,7 +55,7 @@ RUN upx --best /root/.cabal/bin/eselsohr-exe
 FROM gcr.io/distroless/static:nonroot
 
 # Copy executable from build stage
-COPY --from=build /root/.cabal/bin/eselsohr-exe /app/eselsohr
+COPY --from=build /home/builder/.cabal/bin/eselsohr-exe /app/eselsohr
 
 # Copy data folder from build stage with correct permissions
 COPY --from=build --chown=nonroot:nonroot /data /data
