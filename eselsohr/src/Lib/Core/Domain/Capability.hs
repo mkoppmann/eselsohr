@@ -6,7 +6,6 @@ module Lib.Core.Domain.Capability
     PatchAction (..),
     PostAction (..),
     QueryAction (..),
-    FrontendAction (..),
     ResourceOverviewActions (..),
     GetArticlesActions (..),
     GetArticleActions (..),
@@ -33,7 +32,6 @@ data Capability = Capability
 data Action
   = Command !CommandAction
   | Query !QueryAction
-  | Frontend !FrontendAction
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Serialise)
 
@@ -85,15 +83,13 @@ data PostAction
 data ResourceOverviewActions = ResourceOverviewActions
   { roaGetActiveGetArticlesCap :: !(Id Action),
     roaGetArticles :: !(Id Action),
-    roaCreateGetArticlesCap :: !(Maybe (Id Action)),
-    roaFrontCreateGetArticlesCap :: !(Maybe (Id Action))
+    roaCreateGetArticlesCap :: !(Maybe (Id Action))
   }
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Serialise)
 
 data GetArticlesActions = GetArticlesActions
   { gaaCreateArticle :: !(Maybe (Id Action)),
-    gaaFrontCreateArticle :: !(Maybe (Id Action)),
     gaaShowArticles :: !(HashSet (Id Action))
   }
   deriving stock (Eq, Generic, Show)
@@ -120,19 +116,5 @@ data QueryAction
     GetArticles !GetArticlesActions
   | -- | Get 'Article' in the resource with this 'Id'.
     GetArticle !(Id Article) !GetArticleActions
-  deriving stock (Eq, Generic, Show)
-  deriving anyclass (Serialise)
-
--- | Represents a flow in the HTML client.
--- HTML forms point to the @api@ route which are handled by the frontend command
--- controller, which then executes the stored 'CommandAction' and then redirects
--- to the link specified in the 'redirectTo' field.
--- The 'redirectTo' field points to a frontend route where the query controller
--- will then execute the 'QueryAction' and render the page with that data.
-data FrontendAction = FrontendAction
-  { command :: !(Id Action),
-    query :: !(Id Action),
-    redirectTo :: !Text
-  }
   deriving stock (Eq, Generic, Show)
   deriving anyclass (Serialise)

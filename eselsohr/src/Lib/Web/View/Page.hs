@@ -18,8 +18,11 @@ import Lib.Core.Domain.Capability (Capability (..))
 import Lib.Core.Domain.ExpirationDate (ExpirationDate, expDateToText)
 import Lib.Core.Domain.Frontend (ResourceOverviewAccess (..), ShowArticleAccess (..), ShowArticlesAccess (..))
 import Lib.Core.Domain.Uri (Uri, render, unUri)
+import qualified Lib.Web.Route.Common as Route
 import qualified Lib.Web.View.Form as Form
 import Lucid
+import Lucid.Servant (linkAbsHref_)
+import Servant.Links (Link)
 import qualified Text.URI as URI
 import qualified Text.URI.Lens as UL
 
@@ -48,9 +51,14 @@ root = do
     \ Start your collection by clicking on the button."
   Form.createCollection
 
-resourceOverview :: Foldable t => Accesstoken -> (ExpirationDate, ExpirationDate) -> ResourceOverviewAccess -> t (Capability, Revocable) -> Html ()
+resourceOverview ::
+  Foldable t =>
+  Accesstoken ->
+  (ExpirationDate, ExpirationDate) ->
+  ResourceOverviewAccess ->
+  t (Capability, Revocable) ->
+  Html ()
 resourceOverview viewAcc dates roAcc activeLinks = do
-  Form.refreshResourceOverview viewAcc
   h1_ "Collection Main Page"
   p_
     "Welcome to the main page of this collection.\
@@ -66,43 +74,48 @@ resourceOverview viewAcc dates roAcc activeLinks = do
   if null activeLinks
     then noActiveLinks
     else ul_ $ traverse_ renderActiveLinks activeLinks
-
   h2_ "Unlock article list"
   p_
     "Here you can generate a new token for accessing your article list.\
     \ They are valid for one month, unless you choose something else."
   case roAccCreateGetArticlesCap roAcc of
     Nothing -> p_ "You do not have the permission to create new access links."
-    Just acc -> Form.createGetArticlesCap dates acc
+    Just acc -> Form.createGetArticlesCap dates acc $ collectionMainLink viewAcc
   where
+    renderActiveLinks :: (Capability, Revocable) -> Html ()
     renderActiveLinks (Capability mPetname mExpDate _, (accId, delAcc)) =
       li_ $ do
         let petname = fromMaybe (show accId) mPetname
-        let expDate = maybe "Never" (toHtml . expDateToText) mExpDate
-        Form.showArticles petname accId
+            expDate = maybe "Never" (toHtml . expDateToText) mExpDate
+        activeLinkA accId petname
         small_ $ "Expires on: " <> expDate
-        Form.deleteUnlockLink delAcc
+        Form.deleteUnlockLink delAcc $ collectionMainLink viewAcc
+
+    activeLinkA :: Accesstoken -> Text -> Html ()
+    activeLinkA acc = a_ [linkAbsHref_ . Route.listArticlesR $ Just acc] . toHtml
+
+    collectionMainLink :: Accesstoken -> Link
+    collectionMainLink = Route.collectionMainR . Just
 
     noActiveLinks :: Html ()
     noActiveLinks = p_ "You have no active access links for this collection"
 
 articleList :: Accesstoken -> ShowArticlesAccess -> Html ()
 articleList viewAcc sasAcc = do
-  Form.refreshShowArticles viewAcc
   case sasAccCreateArticle sasAcc of
     Nothing -> pure ()
-    Just acc -> newArticle acc
+    Just acc -> newArticle acc . Route.listArticlesR $ Just viewAcc
   h1_ "Your articles"
   div_ $
-    traverse_ articleItem $ sasAccArticleAccs sasAcc
+    traverse_ (`articleItem` viewAcc) $ sasAccArticleAccs sasAcc
 
-newArticle :: Accesstoken -> Html ()
-newArticle acc = do
+newArticle :: Accesstoken -> Link -> Html ()
+newArticle acc goto = do
   h2_ "Add a new article"
-  Form.createArticle acc
+  Form.createArticle acc goto
 
-articleItem :: (Article, ShowArticleAccess) -> Html ()
-articleItem (art, saAcc) =
+articleItem :: (Article, ShowArticleAccess) -> Accesstoken -> Html ()
+articleItem (art, saAcc) viewAcc =
   article_ [class_ "item"] $ do
     itemHeader
     itemMeta
@@ -111,7 +124,10 @@ articleItem (art, saAcc) =
     itemHeader =
       div_ [class_ "item-header"] $ do
         span_ [class_ "item-title"] $ do
-          Form.showArticle (Article.title art) $ saAccShowArticle saAcc
+          a_
+            [linkAbsHref_ . Route.showArticleR . Just $ saAccShowArticle saAcc]
+            . toHtml
+            $ Article.title art
 
     itemMeta :: Html ()
     itemMeta =
@@ -135,21 +151,24 @@ articleItem (art, saAcc) =
           Archived ->
             case saAccUnreadArticle saAcc of
               Nothing -> pure ()
-              Just acc -> li_ $ Form.unreadArticle acc
+              Just acc -> li_ $ Form.unreadArticle acc listArticlesLink
           Unread ->
             case saAccArchiveArticle saAcc of
               Nothing -> pure ()
-              Just acc -> li_ $ Form.archiveArticle acc
+              Just acc -> li_ $ Form.archiveArticle acc listArticlesLink
         case saAccChangeArticleTitle saAcc of
           Nothing -> pure ()
           Just _ -> do
             li_ "|"
-            li_ . Form.editArticle "Edit Article" $ saAccShowArticle saAcc
+            li_ . editArticleA $ saAccShowArticle saAcc
         case saAccDeleteArticle saAcc of
           Nothing -> pure ()
           Just acc -> do
             li_ "|"
-            li_ $ Form.deleteArticle acc
+            li_ $ Form.deleteArticle acc listArticlesLink
+
+    listArticlesLink :: Link
+    listArticlesLink = Route.listArticlesR $ Just viewAcc
 
     renderHostUrl :: Uri -> Html ()
     renderHostUrl = toHtml . URI.render . getDomainHost . unUri
@@ -159,16 +178,18 @@ articleItem (art, saAcc) =
       let host = URI.unRText <$> url ^? UL.uriAuthority . _Right . UL.authHost
        in fromMaybe URI.emptyURI $ URI.mkURI =<< host
 
-editArticle :: Text -> Accesstoken -> Html ()
-editArticle aTitle acc = do
+editArticle :: Text -> Accesstoken -> Link -> Html ()
+editArticle aTitle acc goto = do
   h1_ "Edit article title"
-  Form.changeArticleTitle aTitle acc
+  Form.changeArticleTitle aTitle acc goto
 
 showArticle :: Article -> ShowArticleAccess -> Html ()
 showArticle art saAcc = do
-  maybe (pure ()) Form.backToGetArticlesButton $ saAccGetArticles saAcc
-  Form.refreshShowArticle $ saAccShowArticle saAcc
   let aUrl = Article.uri art
+      showArtAcc = saAccShowArticle saAcc
+
+  maybe (pure ()) getArticlesA $ saAccGetArticles saAcc
+
   h1_ . toHtml $ Article.title art
   p_ . toHtml $ "Created: " <> prettyDate (Article.creation art)
   p_ . toHtml $ "State: " <> show @Text (Article.state art)
@@ -176,16 +197,30 @@ showArticle art saAcc = do
   case Article.state art of
     Archived -> case saAccUnreadArticle saAcc of
       Nothing -> pure ()
-      Just acc -> Form.unreadArticle acc
+      Just acc -> Form.unreadArticle acc $ showArticleLink showArtAcc
     Unread -> case saAccArchiveArticle saAcc of
       Nothing -> pure ()
-      Just acc -> Form.archiveArticle acc
+      Just acc -> Form.archiveArticle acc $ showArticleLink showArtAcc
   case saAccChangeArticleTitle saAcc of
     Nothing -> pure ()
-    Just _ -> Form.editArticle "Edit" $ saAccShowArticle saAcc
+    Just _ -> editArticleA showArtAcc
   case saAccDeleteArticle saAcc of
     Nothing -> pure ()
-    Just acc -> Form.deleteArticle acc
+    Just acc -> case saAccGetArticles saAcc of
+      Nothing -> root
+      Just gaAcc -> Form.deleteArticle acc $ getArticlesLink gaAcc
+  where
+    showArticleLink :: Accesstoken -> Link
+    showArticleLink = Route.showArticleR . Just
+
+    getArticlesLink :: Accesstoken -> Link
+    getArticlesLink = Route.listArticlesR . Just
+
+    getArticlesA :: Accesstoken -> Html ()
+    getArticlesA acc = a_ [linkAbsHref_ $ getArticlesLink acc] "Back to overview"
+
+editArticleA :: Accesstoken -> Html ()
+editArticleA acc = a_ [linkAbsHref_ . Route.editArticleR $ Just acc] "Edit"
 
 -- Helpers
 

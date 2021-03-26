@@ -1,8 +1,5 @@
 module Lib.Web.Controller.Common
   ( getContextState,
-    getCommand,
-    getQuery,
-    getRedirectTo,
     getAction,
     notImplemented,
   )
@@ -10,7 +7,7 @@ where
 
 import Lib.App.Error (WithError, serverError, throwError)
 import Lib.Core.Domain.Accesstoken (Accesstoken, Reference (..), toReference)
-import Lib.Core.Domain.Capability (Action (..), Capability (..), FrontendAction (..))
+import Lib.Core.Domain.Capability (Action (..), Capability (..))
 import Lib.Core.Domain.Context (Context (..))
 import Lib.Core.Domain.Entity (Entity)
 import qualified Lib.Core.Domain.Entity as Entity
@@ -45,35 +42,8 @@ getContextState acc = do
             Nothing -> Left "Could not find action"
             Just act -> Right $ ContextState (Context ref capEnt act) res
 
-getCommand :: (WithError m) => ContextState -> m ContextState
-getCommand ctx =
-  let context = csContext ctx
-   in case Entity.val $ ctxAct context of
-        Frontend fAction -> do
-          actEnt <- R.getOneAct (csResource ctx) $ command fAction
-          pure $ ctx {csContext = context {ctxAct = actEnt}}
-        Command _cAction -> pure ctx
-        Query _qAction ->
-          throwError $ serverError "Expected Command but Query was given"
-
-getQuery :: (WithError m) => ContextState -> m ContextState
-getQuery ctx =
-  let context = csContext ctx
-   in case Entity.val $ ctxAct context of
-        Frontend fAction -> do
-          actEnt <- R.getOneAct (csResource ctx) $ query fAction
-          pure $ ctx {csContext = context {ctxAct = actEnt}}
-        Query _qAction -> pure ctx
-        Command _cAction ->
-          throwError $ serverError "Expected Query but Command was given"
-
 getAction :: (WithError m) => ContextState -> Id Action -> m Action
 getAction ctx actId = Entity.val <$> R.getOneAct (csResource ctx) actId
-
-getRedirectTo :: Action -> Maybe Text
-getRedirectTo = \case
-  Frontend fAction -> Just $ redirectTo fAction
-  _nonFrontendAction -> Nothing
 
 notImplemented :: (WithError m) => m a
 notImplemented = throwError $ serverError "Not implemented yet"

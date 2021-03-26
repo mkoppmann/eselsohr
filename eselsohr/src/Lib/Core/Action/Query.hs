@@ -32,9 +32,9 @@ getResourceOverviewAccs ::
 getResourceOverviewAccs ctx roActs = do
   let resId = resourceId . ctxRef $ csContext ctx
       res = csResource ctx
-  case roaFrontCreateGetArticlesCap roActs of
+  case roaCreateGetArticlesCap roActs of
     Nothing -> do
-      log E "roaFrontCreateGetArticlesCap is missing"
+      log E "roaCreateGetArticlesCap is missing"
       throwError $ serverError "A system error occured."
     Just fcgacId -> do
       acc <- actIdToAcc resId res fcgacId
@@ -48,7 +48,7 @@ getShowArticlesAccess ::
 getShowArticlesAccess ctx GetArticlesActions {..} = do
   let resId = resourceId . ctxRef $ csContext ctx
       res = csResource ctx
-  ca <- mActIdToAcc resId res gaaFrontCreateArticle
+  ca <- mActIdToAcc resId res gaaCreateArticle
   sas <-
     fromList
       . sortBy (flip expDateCmp)

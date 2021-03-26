@@ -2,19 +2,11 @@ module Lib.Web.View.Form
   ( createCollection,
     createGetArticlesCap,
     createArticle,
-    showArticles,
-    showArticle,
-    editArticle,
     changeArticleTitle,
     archiveArticle,
     unreadArticle,
     deleteArticle,
     deleteUnlockLink,
-    refreshButton,
-    refreshResourceOverview,
-    refreshShowArticles,
-    refreshShowArticle,
-    backToGetArticlesButton,
   )
 where
 
@@ -27,57 +19,46 @@ import Servant (Link, toUrlPiece)
 createCollection :: Html ()
 createCollection =
   form_ [linkAbsAction_ Route.createResourceR, method_ "POST"] $ do
-    input_ [type_ "hidden", name_ "_commandMethod", value_ "POST"]
-    input_ [type_ "hidden", name_ "_queryMethod", value_ "GET"]
+    input_ [type_ "hidden", name_ "_method", value_ "POST"]
     input_ [type_ "submit", value_ "Create new collection"]
 
-genPost :: Bool -> Text -> Link -> [Html ()] -> Text -> Accesstoken -> Html ()
-genPost asLink commandMethod route inputFields buttonName acc =
+genPost ::
+  Bool -> Text -> Link -> [Html ()] -> Text -> Accesstoken -> Link -> Html ()
+genPost asLink commandMethod route inputFields buttonName acc gotoUrl =
   form_ [linkAbsAction_ route, method_ "POST"] $ do
-    input_ [type_ "hidden", name_ "_commandMethod", value_ commandMethod]
-    input_ [type_ "hidden", name_ "_queryMethod", value_ "GET"]
+    input_ [type_ "hidden", name_ "_method", value_ commandMethod]
     input_ [type_ "hidden", name_ "acc", value_ $ toUrlPiece acc]
+    input_ [type_ "hidden", name_ "goto", linkAbsValue_ gotoUrl]
     sequenceA_ inputFields
     if asLink
       then button_ [type_ "submit", class_ "link"] . span_ $ toHtml buttonName
       else input_ [type_ "submit", value_ buttonName]
 
-postMethodButton :: [Html ()] -> Text -> Accesstoken -> Html ()
+postMethodButton :: [Html ()] -> Text -> Accesstoken -> Link -> Html ()
 postMethodButton = genPost False "POST" Route.actionR
 
-patchMethodButton :: [Html ()] -> Text -> Accesstoken -> Html ()
+patchMethodButton :: [Html ()] -> Text -> Accesstoken -> Link -> Html ()
 patchMethodButton = genPost False "PATCH" Route.actionR
 
-patchMethodLink :: [Html ()] -> Text -> Accesstoken -> Html ()
+patchMethodLink :: [Html ()] -> Text -> Accesstoken -> Link -> Html ()
 patchMethodLink = genPost True "PATCH" Route.actionR
 
-deleteMethodLink :: Text -> Accesstoken -> Html ()
+deleteMethodLink :: Text -> Accesstoken -> Link -> Html ()
 deleteMethodLink = genPost True "DELETE" Route.actionR []
 
-getMethodLink :: Link -> [Html ()] -> Text -> Accesstoken -> Html ()
-getMethodLink = genPost True "GET"
-
-createArticle :: Accesstoken -> Html ()
+createArticle :: Accesstoken -> Link -> Html ()
 createArticle = postMethodButton [urlInput] "Save article"
   where
     urlInput = input_ [type_ "text", name_ "articleUri", placeholder_ "URL"]
 
-deleteUnlockLink :: Accesstoken -> Html ()
+deleteUnlockLink :: Accesstoken -> Link -> Html ()
 deleteUnlockLink = deleteMethodLink "Delete unlock link"
 
-deleteArticle :: Accesstoken -> Html ()
+deleteArticle :: Accesstoken -> Link -> Html ()
 deleteArticle = deleteMethodLink "Delete article"
 
-showArticles :: Text -> Accesstoken -> Html ()
-showArticles = getMethodLink (Route.listArticlesR Nothing) []
-
-showArticle :: Text -> Accesstoken -> Html ()
-showArticle = getMethodLink (Route.showArticleR Nothing) []
-
-editArticle :: Text -> Accesstoken -> Html ()
-editArticle = getMethodLink (Route.editArticleR Nothing) []
-
-createGetArticlesCap :: (ExpirationDate, ExpirationDate) -> Accesstoken -> Html ()
+createGetArticlesCap ::
+  (ExpirationDate, ExpirationDate) -> Accesstoken -> Link -> Html ()
 createGetArticlesCap (currTime, expTime) =
   postMethodButton [options] "Create access link"
   where
@@ -98,33 +79,20 @@ createGetArticlesCap (currTime, expTime) =
           value_ $ expDateToText expTime
         ]
 
-changeArticleTitle :: Text -> Accesstoken -> Html ()
+changeArticleTitle :: Text -> Accesstoken -> Link -> Html ()
 changeArticleTitle artTitle = patchMethodButton [changeTitle] "Change title"
   where
     changeTitle =
       input_ [type_ "text", name_ "articleTitle", value_ $ toText artTitle]
 
-archiveArticle :: Accesstoken -> Html ()
+archiveArticle :: Accesstoken -> Link -> Html ()
 archiveArticle = patchMethodLink [] "Mark as read"
 
-unreadArticle :: Accesstoken -> Html ()
+unreadArticle :: Accesstoken -> Link -> Html ()
 unreadArticle = patchMethodLink [] "Mark as unread"
-
-refreshButton :: Link -> Accesstoken -> Html ()
-refreshButton route = getMethodLink route [] "Refresh this page"
-
-refreshResourceOverview :: Accesstoken -> Html ()
-refreshResourceOverview acc = refreshButton (Route.collectionMainR $ Just acc) acc
-
-refreshShowArticles :: Accesstoken -> Html ()
-refreshShowArticles = refreshButton (Route.listArticlesR Nothing)
-
-refreshShowArticle :: Accesstoken -> Html ()
-refreshShowArticle = refreshButton (Route.showArticleR Nothing)
-
-backToGetArticlesButton :: Accesstoken -> Html ()
-backToGetArticlesButton =
-  getMethodLink (Route.listArticlesR Nothing) [] "Back to article list"
 
 linkAbsAction_ :: Link -> Attribute
 linkAbsAction_ = action_ . ("/" <>) . toUrlPiece
+
+linkAbsValue_ :: Link -> Attribute
+linkAbsValue_ = value_ . ("/" <>) . toUrlPiece

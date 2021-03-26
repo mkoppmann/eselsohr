@@ -26,14 +26,16 @@ type HtmlPage = Html ()
 
 type Redirection = HtmlPage
 
-newtype DeleteActionForm = DeleteActionForm
-  { acc :: Accesstoken
+data DeleteActionForm = DeleteActionForm
+  { acc :: !Accesstoken,
+    goto :: !Uri
   }
   deriving stock (Generic)
   deriving anyclass (FromForm)
 
 data PatchActionForm = PatchActionForm
   { acc :: !Accesstoken,
+    goto :: !Uri,
     articleTitle :: !(Maybe Text)
   }
   deriving stock (Generic)
@@ -41,6 +43,7 @@ data PatchActionForm = PatchActionForm
 
 data PostActionForm = PostActionForm
   { acc :: !Accesstoken,
+    goto :: !Uri,
     articleUri :: !(Maybe Uri),
     petname :: !(Maybe Text),
     expirationDate :: !(Maybe ExpirationDate)

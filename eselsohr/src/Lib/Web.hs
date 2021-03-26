@@ -12,7 +12,7 @@ import Network.Wai.Middleware.AddHeaders (addHeaders)
 import Network.Wai.Middleware.AddHsts (addHsts)
 import qualified Network.Wai.Middleware.EnforceHTTPS as EnforceHTTPS
 import Network.Wai.Middleware.Gzip (def, gzip)
-import Network.Wai.Middleware.MyMethodOverride (methodOverride)
+import Network.Wai.Middleware.MethodOverridePost (methodOverridePost)
 import Network.Wai.Middleware.NoOp (noOp)
 import Network.Wai.Middleware.RealIp (realIpHeader)
 import Servant.API ((:<|>) (..))
@@ -39,7 +39,7 @@ application port env@Env {..} =
     . addHeaders securityHeaders
     -- Request middlewares
     . enforceHttps
-    . methodOverride
+    . methodOverridePost
     $ serve (Proxy @Api) (server env)
   where
     enforceHttps = case envHttps of
