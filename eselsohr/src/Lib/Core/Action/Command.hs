@@ -55,7 +55,7 @@ changeArticleTitle ctx artId mTitle = do
   -- Update title of the article when it was part of the request, and do nothing
   -- if it’s missing.
   case mTitle of
-    Nothing -> pure ()
+    Nothing -> pass
     Just title -> R.commit resId . one $ R.artUpdateTitle artId title
 
 archiveArticle :: (WriteState m) => ContextState -> Id Article -> m ()

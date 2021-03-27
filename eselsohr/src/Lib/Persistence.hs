@@ -29,8 +29,8 @@ server = do
       (WithError m, WithFile env m) =>
       TQueue SynchronizedStoreEvent ->
       TVar (HashMap (Id Resource) (TQueue SynchronizedStoreEvent)) ->
-      m ()
-    fetchUpdates queue writeQueuesVar = forever $ do
+      m Void
+    fetchUpdates queue writeQueuesVar = infinitely $ do
       atomically $ do
         update <- readTQueue queue
         addToMap (syncStoreResId update) update writeQueuesVar
@@ -58,8 +58,8 @@ server = do
       (WithError m, WithLog env m, WithFile env m) =>
       TVar (HashMap (Id Resource) (TQueue SynchronizedStoreEvent)) ->
       Maybe MaxConcurrentWrites ->
-      m ()
-    processUpdates writeQueuesVar mMaxConcurrentWrites = forever $ do
+      m Void
+    processUpdates writeQueuesVar mMaxConcurrentWrites = infinitely $ do
       todoQueues <- atomically $ do
         activeList <- filterByActiveQueues writeQueuesVar
         if not $ null activeList then pure activeList else retrySTM
@@ -86,7 +86,7 @@ worker ::
 worker queue = join . atomically $ do
   mUpdate <- tryReadTQueue queue
   case mUpdate of
-    Nothing -> pure $ pure ()
+    Nothing -> pure pass
     Just update -> pure $ storeUpdate update >> worker queue
 
 storeUpdate ::

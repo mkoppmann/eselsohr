@@ -57,4 +57,4 @@ logMPErrorIO env err = do
     else runAppAsIO env $ log E $ show err
   where
     noLog :: App ()
-    noLog = return ()
+    noLog = pass

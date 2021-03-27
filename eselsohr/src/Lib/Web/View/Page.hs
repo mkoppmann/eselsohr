@@ -103,7 +103,7 @@ resourceOverview viewAcc dates roAcc activeLinks = do
 articleList :: Accesstoken -> ShowArticlesAccess -> Html ()
 articleList viewAcc sasAcc = do
   case sasAccCreateArticle sasAcc of
-    Nothing -> pure ()
+    Nothing -> pass
     Just acc -> newArticle acc . Route.listArticlesR $ Just viewAcc
   h1_ "Your articles"
   div_ $
@@ -150,19 +150,19 @@ articleItem (art, saAcc) viewAcc =
         case Article.state art of
           Archived ->
             case saAccUnreadArticle saAcc of
-              Nothing -> pure ()
+              Nothing -> pass
               Just acc -> li_ $ Form.unreadArticle acc listArticlesLink
           Unread ->
             case saAccArchiveArticle saAcc of
-              Nothing -> pure ()
+              Nothing -> pass
               Just acc -> li_ $ Form.archiveArticle acc listArticlesLink
         case saAccChangeArticleTitle saAcc of
-          Nothing -> pure ()
+          Nothing -> pass
           Just _ -> do
             li_ "|"
             li_ . editArticleA $ saAccShowArticle saAcc
         case saAccDeleteArticle saAcc of
-          Nothing -> pure ()
+          Nothing -> pass
           Just acc -> do
             li_ "|"
             li_ $ Form.deleteArticle acc listArticlesLink
@@ -188,7 +188,7 @@ showArticle art saAcc = do
   let aUrl = Article.uri art
       showArtAcc = saAccShowArticle saAcc
 
-  maybe (pure ()) getArticlesA $ saAccGetArticles saAcc
+  whenJust (saAccGetArticles saAcc) getArticlesA
 
   h1_ . toHtml $ Article.title art
   p_ . toHtml $ "Created: " <> prettyDate (Article.creation art)
@@ -196,16 +196,16 @@ showArticle art saAcc = do
   p_ . a_ [urlHref_ aUrl] . toHtml $ render aUrl
   case Article.state art of
     Archived -> case saAccUnreadArticle saAcc of
-      Nothing -> pure ()
+      Nothing -> pass
       Just acc -> Form.unreadArticle acc $ showArticleLink showArtAcc
     Unread -> case saAccArchiveArticle saAcc of
-      Nothing -> pure ()
+      Nothing -> pass
       Just acc -> Form.archiveArticle acc $ showArticleLink showArtAcc
   case saAccChangeArticleTitle saAcc of
-    Nothing -> pure ()
+    Nothing -> pass
     Just _ -> editArticleA showArtAcc
   case saAccDeleteArticle saAcc of
-    Nothing -> pure ()
+    Nothing -> pass
     Just acc -> case saAccGetArticles saAcc of
       Nothing -> root
       Just gaAcc -> Form.deleteArticle acc $ getArticlesLink gaAcc

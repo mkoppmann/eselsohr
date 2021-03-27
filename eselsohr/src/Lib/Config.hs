@@ -70,7 +70,7 @@ loadConfig mConfPath = do
   where
     loadEnvFile :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m ()
     loadEnvFile = \case
-      Nothing -> onMissingFile (void $ loadFile defaultConfig) (pure ())
+      Nothing -> onMissingFile (void $ loadFile defaultConfig) pass
       Just fp -> do
         let config = defaultConfig {configPath = [fp]}
         void $ loadFile config

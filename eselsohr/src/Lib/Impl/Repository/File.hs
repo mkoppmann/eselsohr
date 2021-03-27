@@ -12,8 +12,6 @@ where
 
 import qualified Codec.Serialise as Ser
 import Codec.Serialise.Class (Serialise)
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Lazy as L
 import qualified Data.Sequence as Seq
 import Lib.App.Env (DataPath, Has, MaxConcurrentWrites, WriteQueue, grab)
 import Lib.App.Error (AppErrorType, WithError, storeError, throwOnNothing)
@@ -51,11 +49,11 @@ init :: (Serialise a, WithFile env m) => Id a -> a -> m ()
 init resId val = flip encodeFile val =<< idToPath resId
 
 encodeFile :: (Serialise a, WithFile env m) => FilePath -> a -> m ()
-encodeFile fp = writeBinaryFileDurableAtomic fp . L.toStrict . Ser.serialise
+encodeFile fp = writeBinaryFileDurableAtomic fp . toStrict . Ser.serialise
 {-# INLINE encodeFile #-}
 
 decodeFile :: (Serialise a, WithFile env m) => FilePath -> m a
-decodeFile fp = Ser.deserialise . L.fromStrict <$> liftIO (B.readFile fp)
+decodeFile fp = Ser.deserialise . fromStrict <$> liftIO (readFileBS fp)
 {-# INLINE decodeFile #-}
 
 idToPath :: (WithFile env m) => Id a -> m FilePath

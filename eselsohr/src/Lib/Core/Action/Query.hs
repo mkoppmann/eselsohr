@@ -23,6 +23,7 @@ import Lib.Core.Domain.Resource (Resource)
 import Lib.Core.Effect.Repository (ContextState (..), SealedResource)
 import qualified Lib.Core.Effect.Repository as R
 import Lib.Core.Effect.Time (MonadTime (..))
+import Relude.Extra.Bifunctor (secondF)
 
 getResourceOverviewAccs ::
   (WithError m, WithLog env m) =>
@@ -128,7 +129,7 @@ getRevMap ctx capIdsSet = do
   -- ids converted to accesstoken.
   -- The sequence is sorted based on the expiration date of the capability.
   pure
-    . fmap (second (bimap (capIdToAcc resId) (capIdToAcc resId)))
+    . secondF (bimap (capIdToAcc resId) (capIdToAcc resId))
     . fromList
     . sortBy expDateCmp
     . filter (expDateFilter currTime)
