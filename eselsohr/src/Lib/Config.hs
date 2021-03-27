@@ -13,7 +13,6 @@ import Lib.Core.Domain.Uri (Uri (..), baseUri)
 import Network.Wai.Handler.Warp (Port)
 import System.FilePath (addTrailingPathSeparator)
 import UnliftIO.Directory (XdgDirectory (XdgData), getXdgDirectory)
-import UnliftIO.Environment (lookupEnv)
 
 -- | Configuration options for Eselsohr.
 -- Can be configured via environment variables or config file.

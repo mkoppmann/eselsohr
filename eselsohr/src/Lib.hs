@@ -15,7 +15,6 @@ import Network.Wai.Handler.Warp (defaultSettings, runSettings, setHost, setPort,
 import Network.Wai.Handler.WarpTLS (OnInsecure (..), TLSSettings (..), runTLS, tlsSettings)
 import UnliftIO.Async (race_)
 import UnliftIO.STM (newTQueueIO)
-import System.IO (hSetBuffering, BufferMode (..))
 
 mkAppEnv :: Config -> IO AppEnv
 mkAppEnv Config {..} = do
