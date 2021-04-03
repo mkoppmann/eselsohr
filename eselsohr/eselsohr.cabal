@@ -121,7 +121,7 @@ library
         wai-extra >=3.1.4.0 && <3.2,
         warp >=3.3.13 && <3.4,
         warp-tls >=3.3.0 && <3.4,
-        zstd >= 0.1.2 && < 0.2
+        zstd >=0.1.2 && <0.2
 
     mixins:
         base hiding (Prelude),
