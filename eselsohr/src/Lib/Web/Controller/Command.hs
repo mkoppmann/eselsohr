@@ -1,26 +1,23 @@
 module Lib.Web.Controller.Command
-  ( command,
-  )
-where
+  ( command
+  ) where
 
-import Lib.App.Error (WithError)
-import qualified Lib.Core.Action as Action
-import Lib.Core.Domain.Accesstoken (Accesstoken)
-import Lib.Core.Effect.Random (MonadRandom)
-import Lib.Core.Effect.Repository (WriteState)
-import qualified Lib.Web.Controller.Common as CC
-import qualified Lib.Web.Route.Command as Route
-import Lib.Web.Types (AppServer)
-import Servant.API (NoContent (..))
+import           Lib.App.Error                  ( WithError )
+import qualified Lib.Core.Action               as Action
+import           Lib.Core.Domain.Accesstoken    ( Accesstoken )
+import           Lib.Core.Effect.Random         ( MonadRandom )
+import           Lib.Core.Effect.Repository     ( WriteState )
+import qualified Lib.Web.Controller.Common     as CC
+import qualified Lib.Web.Route.Command         as Route
+import           Lib.Web.Types                  ( AppServer )
+import           Servant.API                    ( NoContent(..) )
 
 command :: Route.CommandSite AppServer
-command =
-  Route.CommandSite
-    { Route.createResourceApi = createResourceApi,
-      Route.deleteApi = deleteApi,
-      Route.patchApi = patchApi,
-      Route.postApi = postApi
-    }
+command = Route.CommandSite { Route.createResourceApi = createResourceApi
+                            , Route.deleteApi         = deleteApi
+                            , Route.patchApi          = patchApi
+                            , Route.postApi           = postApi
+                            }
 
 createResourceApi :: (WriteState m, MonadRandom m) => m NoContent
 createResourceApi = Action.createResource >> pure NoContent

@@ -1,14 +1,17 @@
 module Lib.Web.Route.Query
-  ( Query,
-    QuerySite (..),
-  )
-where
+  ( Query
+  , QuerySite(..)
+  ) where
 
-import Data.Aeson (Value)
-import Lib.Core.Domain (Accesstoken)
-import Lib.Web.Types (ToApi)
-import Servant (Get, Header, JSON, (:>))
-import Servant.API.Generic (GenericMode ((:-)))
+import           Data.Aeson                     ( Value )
+import           Lib.Core.Domain                ( Accesstoken )
+import           Lib.Web.Types                  ( ToApi )
+import           Servant                        ( (:>)
+                                                , Get
+                                                , Header
+                                                , JSON
+                                                )
+import           Servant.API.Generic            ( GenericMode((:-)) )
 
 newtype QuerySite route = QuerySite
   { query ::

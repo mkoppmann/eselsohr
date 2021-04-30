@@ -1,16 +1,21 @@
 module Lib.Core.Domain.Id
-  ( Id (Id),
-    mkNilId,
-    toText,
-  )
-where
+  ( Id(Id)
+  , mkNilId
+  , toText
+  ) where
 
-import Codec.Serialise.Class (Serialise)
-import Codec.Serialise.UUID ()
-import Data.Aeson (FromJSON, ToJSON)
-import Data.UUID (UUID, nil)
-import Web.HttpApiData (FromHttpApiData, ToHttpApiData)
-import Prelude hiding (toText)
+import           Codec.Serialise.Class          ( Serialise )
+import           Codec.Serialise.UUID           ( )
+import           Data.Aeson                     ( FromJSON
+                                                , ToJSON
+                                                )
+import           Data.UUID                      ( UUID
+                                                , nil
+                                                )
+import           Prelude                 hiding ( toText )
+import           Web.HttpApiData                ( FromHttpApiData
+                                                , ToHttpApiData
+                                                )
 
 newtype Id a = Id {unId :: UUID}
   deriving

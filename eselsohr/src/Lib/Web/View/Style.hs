@@ -1,10 +1,9 @@
 module Lib.Web.View.Style
-  ( appStylesheet,
-  )
-where
+  ( appStylesheet
+  ) where
 
-import Clay
-import qualified Clay.Flexbox as CF
+import           Clay
+import qualified Clay.Flexbox                  as CF
 
 appStylesheet :: Css
 appStylesheet = do
@@ -18,56 +17,50 @@ appStylesheet = do
   formButtonAsLink
 
 htmlStyle :: Css
-htmlStyle =
-  html ? do
-    height $ pct 100
-    fontSize $ pct 120
+htmlStyle = html ? do
+  height $ pct 100
+  fontSize $ pct 120
 
 bodyStyle :: Css
-bodyStyle =
-  body ? do
-    padding nil nil nil nil
-    margin nil nil nil nil
-    minHeight $ pct 100
-    textRendering optimizeLegibility
-    display grid
-    "grid-template-areas"
-      -: "            \n\
+bodyStyle = body ? do
+  padding nil nil nil nil
+  margin nil nil nil nil
+  minHeight $ pct 100
+  textRendering optimizeLegibility
+  display grid
+  "grid-template-areas"
+    -: "            \n\
          \ \"header\" \n\
          \ \"main\"   \n\
          \ \"footer\"   "
-    "grid-template-columns" -: "1fr"
-    "grid-template-rows" -: "auto 1fr auto"
+  "grid-template-columns" -: "1fr"
+  "grid-template-rows" -: "auto 1fr auto"
 
 headerStyle :: Css
-headerStyle =
-  header ? do
-    "grid-area" -: "header"
-    margin (em 2) auto nil auto
-    width $ pct 80
-    maxWidth $ em 34
+headerStyle = header ? do
+  "grid-area" -: "header"
+  margin (em 2) auto nil auto
+  width $ pct 80
+  maxWidth $ em 34
 
 mainStyle :: Css
-mainStyle =
-  main_ ? do
-    "grid-area" -: "main"
-    color $ rgb 51 51 51
-    width $ pct 80
-    maxWidth $ em 38
-    margin nil auto (em 2) auto
+mainStyle = main_ ? do
+  "grid-area" -: "main"
+  color $ rgb 51 51 51
+  width $ pct 80
+  maxWidth $ em 38
+  margin nil auto (em 2) auto
 
 footerStyle :: Css
-footerStyle =
-  footer ? do
-    "grid-area" -: "footer"
-    textAlign center
-    color white
-    backgroundColor $ rgb 17 17 17
+footerStyle = footer ? do
+  "grid-area" -: "footer"
+  textAlign center
+  color white
+  backgroundColor $ rgb 17 17 17
 
 pStyle :: Css
-pStyle =
-  p ? do
-    lineHeight $ unitless 1.2
+pStyle = p ? do
+  lineHeight $ unitless 1.2
 
 formButtonAsLink :: Css
 formButtonAsLink = do

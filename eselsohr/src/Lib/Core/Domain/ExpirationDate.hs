@@ -1,12 +1,15 @@
 module Lib.Core.Domain.ExpirationDate
-  ( ExpirationDate (..),
-    expDateToText,
-  )
-where
+  ( ExpirationDate(..)
+  , expDateToText
+  ) where
 
-import Codec.Serialise.Class (Serialise)
-import Data.Time (UTCTime, defaultTimeLocale, formatTime, parseTimeM)
-import Web.HttpApiData (FromHttpApiData (..))
+import           Codec.Serialise.Class          ( Serialise )
+import           Data.Time                      ( UTCTime
+                                                , defaultTimeLocale
+                                                , formatTime
+                                                , parseTimeM
+                                                )
+import           Web.HttpApiData                ( FromHttpApiData(..) )
 
 newtype ExpirationDate = ExpirationDate {unExpirationDate :: UTCTime}
   deriving (Serialise, Eq, Ord, Show) via UTCTime
@@ -17,9 +20,9 @@ instance FromHttpApiData ExpirationDate where
 parseExpirationDate :: Text -> Either Text ExpirationDate
 parseExpirationDate =
   pure
-    . ExpirationDate
+    .   ExpirationDate
     <=< parseTimeM True defaultTimeLocale "%Y-%m-%dT%H:%M"
-      . toString
+    .   toString
 
 expDateToText :: ExpirationDate -> Text
 expDateToText =

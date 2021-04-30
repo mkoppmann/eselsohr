@@ -1,11 +1,10 @@
 module Lib.Web.View.App
-  ( render,
-  )
-where
+  ( render
+  ) where
 
-import Lib.Web.Route.Common (stylesheetR)
-import Lucid
-import Lucid.Servant (linkAbsHref_)
+import           Lib.Web.Route.Common           ( stylesheetR )
+import           Lucid
+import           Lucid.Servant                  ( linkAbsHref_ )
 
 render :: Html () -> Html ()
 render page = doctypehtml_ $ do

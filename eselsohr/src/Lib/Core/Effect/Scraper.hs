@@ -1,9 +1,8 @@
 module Lib.Core.Effect.Scraper
-  ( MonadScraper (..),
-  )
-where
+  ( MonadScraper(..)
+  ) where
 
-import Lib.Core.Domain (Uri)
+import           Lib.Core.Domain                ( Uri )
 
 class (Monad m) => MonadScraper m where
   scrapWebsite :: Uri -> m Text

@@ -1,20 +1,23 @@
 module Lib.Web.Route.Common
-  ( -- * Route helpers
-    createResourceR,
-    collectionMainR,
-    listArticlesR,
-    showArticleR,
-    editArticleR,
-    invalidTokenR,
-    stylesheetR,
-    actionR,
-    linkAsText,
-  )
-where
+  (
+  -- * Route helpers
+    createResourceR
+  , collectionMainR
+  , listArticlesR
+  , showArticleR
+  , editArticleR
+  , invalidTokenR
+  , stylesheetR
+  , actionR
+  , linkAsText
+  ) where
 
-import Lib.Core.Domain (Accesstoken)
-import Lib.Web.Route.Frontend (FrontendSite (..))
-import Servant (Link, fieldLink, linkURI)
+import           Lib.Core.Domain                ( Accesstoken )
+import           Lib.Web.Route.Frontend         ( FrontendSite(..) )
+import           Servant                        ( Link
+                                                , fieldLink
+                                                , linkURI
+                                                )
 
 -- Route helpers
 

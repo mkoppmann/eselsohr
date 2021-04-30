@@ -1,33 +1,32 @@
 module Lib.Core.Domain.Capability
-  ( Capability (..),
-    Action (..),
-    CommandAction (..),
-    DeleteAction (..),
-    PatchAction (..),
-    PostAction (..),
-    QueryAction (..),
-    ResourceOverviewActions (..),
-    GetArticlesActions (..),
-    GetArticleActions (..),
-    CreateGetArticlesCapActions (..),
-  )
-where
+  ( Capability(..)
+  , Action(..)
+  , CommandAction(..)
+  , DeleteAction(..)
+  , PatchAction(..)
+  , PostAction(..)
+  , QueryAction(..)
+  , ResourceOverviewActions(..)
+  , GetArticlesActions(..)
+  , GetArticleActions(..)
+  , CreateGetArticlesCapActions(..)
+  ) where
 
-import Codec.Serialise.Class (Serialise)
-import Lib.Core.Domain.Article (Article)
-import Lib.Core.Domain.ExpirationDate (ExpirationDate)
-import Lib.Core.Domain.Id (Id)
+import           Codec.Serialise.Class          ( Serialise )
+import           Lib.Core.Domain.Article        ( Article )
+import           Lib.Core.Domain.ExpirationDate ( ExpirationDate )
+import           Lib.Core.Domain.Id             ( Id )
 
 data Capability = Capability
   { -- | A name like “GetArticles read-only for Alice”.
-    petname :: !(Maybe Text),
-    -- | Date and time at which this 'Capability' is no longer valid.
-    capExpirationDate :: !(Maybe ExpirationDate),
-    -- | 'Id' of the 'Action' this 'Capability' is pointing to.
-    actionId :: !(Id Action)
+    petname           :: !(Maybe Text)
+  , -- | Date and time at which this 'Capability' is no longer valid.
+    capExpirationDate :: !(Maybe ExpirationDate)
+  , -- | 'Id' of the 'Action' this 'Capability' is pointing to.
+    actionId          :: !(Id Action)
   }
   deriving stock (Eq, Generic, Ord, Show)
-  deriving anyclass (Serialise)
+  deriving anyclass Serialise
 
 data Action
   = Command !CommandAction
@@ -62,12 +61,12 @@ data PatchAction
   deriving anyclass (Serialise)
 
 data CreateGetArticlesCapActions = CreateGetArticlesCapActions
-  { cgacGetArticles :: !(Id Action),
-    cgacGetActiveGetArticlesCap :: !(Id Action),
-    cgacResourceOverview :: !(Id Action)
+  { cgacGetArticles             :: !(Id Action)
+  , cgacGetActiveGetArticlesCap :: !(Id Action)
+  , cgacResourceOverview        :: !(Id Action)
   }
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Serialise)
+  deriving anyclass Serialise
 
 data PostAction
   = -- | Unlocks 'Resource' and creates new 'Capability' for 'GetArticles',
@@ -81,30 +80,30 @@ data PostAction
   deriving anyclass (Serialise)
 
 data ResourceOverviewActions = ResourceOverviewActions
-  { roaGetActiveGetArticlesCap :: !(Id Action),
-    roaGetArticles :: !(Id Action),
-    roaCreateGetArticlesCap :: !(Maybe (Id Action))
+  { roaGetActiveGetArticlesCap :: !(Id Action)
+  , roaGetArticles             :: !(Id Action)
+  , roaCreateGetArticlesCap    :: !(Maybe (Id Action))
   }
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Serialise)
+  deriving anyclass Serialise
 
 data GetArticlesActions = GetArticlesActions
-  { gaaCreateArticle :: !(Maybe (Id Action)),
-    gaaShowArticles :: !(HashSet (Id Action))
+  { gaaCreateArticle :: !(Maybe (Id Action))
+  , gaaShowArticles  :: !(HashSet (Id Action))
   }
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Serialise)
+  deriving anyclass Serialise
 
 data GetArticleActions = GetArticleActions
-  { gaaShowArticle :: !(Id Action),
-    gaaChangeArticleTitle :: !(Maybe (Id Action)),
-    gaaArchiveArticle :: !(Maybe (Id Action)),
-    gaaUnreadArticle :: !(Maybe (Id Action)),
-    gaaDeleteArticle :: !(Maybe (Id Action)),
-    gaaGetArticles :: !(Maybe (Id Action))
+  { gaaShowArticle        :: !(Id Action)
+  , gaaChangeArticleTitle :: !(Maybe (Id Action))
+  , gaaArchiveArticle     :: !(Maybe (Id Action))
+  , gaaUnreadArticle      :: !(Maybe (Id Action))
+  , gaaDeleteArticle      :: !(Maybe (Id Action))
+  , gaaGetArticles        :: !(Maybe (Id Action))
   }
   deriving stock (Eq, Generic, Show)
-  deriving anyclass (Serialise)
+  deriving anyclass Serialise
 
 data QueryAction
   = -- | Get data for showing the 'Resource' main page.

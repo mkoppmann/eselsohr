@@ -1,55 +1,72 @@
 module Lib.Impl.Repository
-  ( load,
-    commit,
+  ( load
+  , commit
+  ,
 
-    -- * Generic implementations
-    getOne,
-    getMany,
-    lookup,
-    init,
+  -- * Generic implementations
+    getOne
+  , getMany
+  , lookup
+  , init
+  ,
 
-    -- * Specific implementations
-    insertCap,
-    updateCap,
-    deleteCap,
-    insertAct,
-    updateAct,
-    deleteAct,
-    insertArt,
-    updateArt,
-    deleteArt,
-    getCapIdForActId,
-    articleGetter,
-    articleColInit,
-    capabilityGetter,
-    actionGetter,
-    -- Error helper
-    asSingleEntry,
-  )
-where
+  -- * Specific implementations
+    insertCap
+  , updateCap
+  , deleteCap
+  , insertAct
+  , updateAct
+  , deleteAct
+  , insertArt
+  , updateArt
+  , deleteArt
+  , getCapIdForActId
+  , articleGetter
+  , articleColInit
+  , capabilityGetter
+  , actionGetter
+  ,
+  -- Error helper
+    asSingleEntry
+  ) where
 
-import qualified Data.HashMap.Strict as Map
-import qualified Data.HashSet as Set
-import Lib.App (AppErrorType, WithError, WriteQueue, grab, storeError, throwOnNothing)
-import Lib.Core.Domain.Article (Article (..))
-import Lib.Core.Domain.Capability (Action, Capability (..))
-import Lib.Core.Domain.Entity (Entity (..))
-import Lib.Core.Domain.Id (Id)
-import Lib.Core.Domain.Resource (ArticleCollection (..), Resource (..))
-import Lib.Core.Domain.StoreEvent (StoreData (..), StoreEvent (..), SynchronizedStoreEvent (..))
-import Lib.Impl.Repository.File (WithFile)
-import qualified Lib.Impl.Repository.File as File
-import UnliftIO.STM (writeTQueue)
-import Prelude hiding (getAll, init)
+import qualified Data.HashMap.Strict           as Map
+import qualified Data.HashSet                  as Set
+import           Lib.App                        ( AppErrorType
+                                                , WithError
+                                                , WriteQueue
+                                                , grab
+                                                , storeError
+                                                , throwOnNothing
+                                                )
+import           Lib.Core.Domain.Article        ( Article(..) )
+import           Lib.Core.Domain.Capability     ( Action
+                                                , Capability(..)
+                                                )
+import           Lib.Core.Domain.Entity         ( Entity(..) )
+import           Lib.Core.Domain.Id             ( Id )
+import           Lib.Core.Domain.Resource       ( ArticleCollection(..)
+                                                , Resource(..)
+                                                )
+import           Lib.Core.Domain.StoreEvent     ( StoreData(..)
+                                                , StoreEvent(..)
+                                                , SynchronizedStoreEvent(..)
+                                                )
+import           Lib.Impl.Repository.File       ( WithFile )
+import qualified Lib.Impl.Repository.File      as File
+import           Prelude                 hiding ( getAll
+                                                , init
+                                                )
+import           UnliftIO.STM                   ( writeTQueue )
 
 type CollectionGetter a = (Resource -> HashMap (Id a) a)
 
 type CollectionSetter a = (Resource -> HashMap (Id a) a -> Resource)
 
-commit ::
-  (WithError m, WithFile env m) => Id Resource -> Seq StoreEvent -> m ()
+commit
+  :: (WithError m, WithFile env m) => Id Resource -> Seq StoreEvent -> m ()
 commit resId storeEvents = do
-  queue <- grab @WriteQueue
+  queue   <- grab @WriteQueue
   syncVar <- newEmptyTMVarIO
   let sse = SynchronizedStoreEvent resId storeEvents syncVar
   atomically $ writeTQueue queue sse
@@ -59,89 +76,70 @@ commit resId storeEvents = do
   atomically $ takeTMVar syncVar
 
 insertCap :: Id Capability -> Capability -> StoreEvent
-insertCap entId newEnt =
-  SeInsertCapability $
-    StoreData
-      (insertSetter capabilityGetter capabilitySetter)
-      (entId, newEnt)
+insertCap entId newEnt = SeInsertCapability
+  $ StoreData (insertSetter capabilityGetter capabilitySetter) (entId, newEnt)
 
 updateCap :: Id Capability -> (Capability -> Capability) -> StoreEvent
-updateCap entId capUpdater =
-  SeUpdateCapability $
-    StoreData
-      (updateSetter capabilityGetter capabilitySetter capUpdater entId)
-      Prelude.id
+updateCap entId capUpdater = SeUpdateCapability $ StoreData
+  (updateSetter capabilityGetter capabilitySetter capUpdater entId)
+  Prelude.id
 
 deleteCap :: Id Capability -> StoreEvent
-deleteCap entId =
-  SeDeleteCapability $
-    StoreData
-      (deleteSetter capabilityGetter capabilitySetter)
-      entId
+deleteCap entId = SeDeleteCapability
+  $ StoreData (deleteSetter capabilityGetter capabilitySetter) entId
 
 insertAct :: Id Action -> Action -> StoreEvent
-insertAct entId newEnt =
-  SeInsertAction $
-    StoreData
-      (insertSetter actionGetter actionSetter)
-      (entId, newEnt)
+insertAct entId newEnt = SeInsertAction
+  $ StoreData (insertSetter actionGetter actionSetter) (entId, newEnt)
 
 updateAct :: Id Action -> (Action -> Action) -> StoreEvent
 updateAct entId actUpdater = do
-  SeUpdateAction $
-    StoreData
-      (updateSetter actionGetter actionSetter actUpdater entId)
-      Prelude.id
+  SeUpdateAction $ StoreData
+    (updateSetter actionGetter actionSetter actUpdater entId)
+    Prelude.id
 
 deleteAct :: Id Action -> StoreEvent
 deleteAct entId =
-  SeDeleteAction $
-    StoreData
-      (deleteSetter actionGetter actionSetter)
-      entId
+  SeDeleteAction $ StoreData (deleteSetter actionGetter actionSetter) entId
 
 insertArt :: Id Article -> Article -> StoreEvent
-insertArt entId newEnt =
-  SeInsertArticle $
-    StoreData
-      (insertSetter articleGetter articleSetter)
-      (entId, newEnt)
+insertArt entId newEnt = SeInsertArticle
+  $ StoreData (insertSetter articleGetter articleSetter) (entId, newEnt)
 
 updateArt :: Id Article -> (Article -> Article) -> StoreEvent
-updateArt entId artUpdater =
-  SeUpdateArticle $
-    StoreData
-      (updateSetter articleGetter articleSetter artUpdater entId)
-      Prelude.id
+updateArt entId artUpdater = SeUpdateArticle $ StoreData
+  (updateSetter articleGetter articleSetter artUpdater entId)
+  Prelude.id
 
 deleteArt :: Id Article -> StoreEvent
 deleteArt entId =
-  SeDeleteArticle $
-    StoreData
-      (deleteSetter articleGetter articleSetter)
-      entId
+  SeDeleteArticle $ StoreData (deleteSetter articleGetter articleSetter) entId
 
-insertSetter ::
-  CollectionGetter a -> CollectionSetter a -> Resource -> (Id a, a) -> Resource
+insertSetter
+  :: CollectionGetter a
+  -> CollectionSetter a
+  -> Resource
+  -> (Id a, a)
+  -> Resource
 insertSetter getter setter = gsetter getter setter (uncurry Map.insert)
 
-updateSetter ::
-  CollectionGetter a ->
-  CollectionSetter a ->
-  (a -> a) ->
-  Id a ->
-  Resource ->
-  (a -> a) ->
-  Resource
+updateSetter
+  :: CollectionGetter a
+  -> CollectionSetter a
+  -> (a -> a)
+  -> Id a
+  -> Resource
+  -> (a -> a)
+  -> Resource
 updateSetter getter setter updater entId = gsetter getter setter setter'
-  where
-    setter' _ oldRes = Map.adjust updater entId oldRes
+  where setter' _ oldRes = Map.adjust updater entId oldRes
 
-deleteSetter ::
-  CollectionGetter a -> CollectionSetter a -> Resource -> Id a -> Resource
+deleteSetter
+  :: CollectionGetter a -> CollectionSetter a -> Resource -> Id a -> Resource
 deleteSetter getter setter = gsetter getter setter Map.delete
 
-getOne :: (WithError m) => CollectionGetter a -> Resource -> Id a -> m (Entity a)
+getOne
+  :: (WithError m) => CollectionGetter a -> Resource -> Id a -> m (Entity a)
 getOne getter res = asSingleEntry . lookup getter res
 
 getMany :: CollectionGetter a -> Resource -> HashSet (Id a) -> HashMap (Id a) a
@@ -150,7 +148,7 @@ getMany getter res entIds =
 
 lookup :: CollectionGetter a -> Resource -> Id a -> Maybe (Entity a)
 lookup getter res entId =
-  fmap (uncurry Entity . (entId,)) . Map.lookup entId $ getter res
+  fmap (uncurry Entity . (entId, )) . Map.lookup entId $ getter res
 
 init :: (WithFile env m) => Id Resource -> Resource -> m ()
 init = File.init
@@ -166,13 +164,13 @@ getCapIdForActId res actId =
     . Map.filter ((==) actId . actionId)
     $ capabilityGetter res
 
-gsetter ::
-  CollectionGetter a ->
-  CollectionSetter a ->
-  (b -> HashMap (Id a) a -> HashMap (Id a) a) ->
-  Resource ->
-  b ->
-  Resource
+gsetter
+  :: CollectionGetter a
+  -> CollectionSetter a
+  -> (b -> HashMap (Id a) a -> HashMap (Id a) a)
+  -> Resource
+  -> b
+  -> Resource
 gsetter fromCol toCol setter oldRes val =
   toCol oldRes . setter val $ fromCol oldRes
 
@@ -187,21 +185,21 @@ articleGetter (ArticleResource artCol) = artCollection artCol
 
 articleSetter :: CollectionSetter Article
 articleSetter (ArticleResource artCol) newVal =
-  ArticleResource $ artCol {artCollection = newVal}
+  ArticleResource $ artCol { artCollection = newVal }
 
 capabilityGetter :: CollectionGetter Capability
 capabilityGetter (ArticleResource artCol) = artCapCollection artCol
 
 capabilitySetter :: CollectionSetter Capability
 capabilitySetter (ArticleResource artCol) newVal =
-  ArticleResource $ artCol {artCapCollection = newVal}
+  ArticleResource $ artCol { artCapCollection = newVal }
 
 actionGetter :: CollectionGetter Action
 actionGetter (ArticleResource artCol) = artActCollection artCol
 
 actionSetter :: CollectionSetter Action
 actionSetter (ArticleResource artCol) newVal =
-  ArticleResource $ artCol {artActCollection = newVal}
+  ArticleResource $ artCol { artActCollection = newVal }
 
 -- Error helpers
 

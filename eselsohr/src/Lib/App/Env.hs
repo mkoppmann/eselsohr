@@ -1,17 +1,16 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Lib.App.Env
-  ( DataPath,
-    WriteQueue,
-    MaxConcurrentWrites,
-    Https (..),
-    Hsts (..),
-    Env (..),
-    Has (..),
-    grab,
-  )
-where
+module Lib.App.Env (
+  DataPath,
+  WriteQueue,
+  MaxConcurrentWrites,
+  Https (..),
+  Hsts (..),
+  Env (..),
+  Has (..),
+  grab,
+) where
 
 import Colog (HasLog (..), LogAction, Message)
 import Lib.Core.Domain.StoreEvent (SynchronizedStoreEvent)
@@ -29,13 +28,13 @@ data Https = HttpsOn | HttpsOff
 data Hsts = HstsOn | HstsOff
 
 data Env (m :: Type -> Type) = Env
-  { envDataFolder :: !DataPath,
-    envWriteQueue :: !WriteQueue,
-    envMaxConcurrentWrites :: !(Maybe MaxConcurrentWrites),
-    envLogAction :: !(LogAction m Message),
-    envBaseUrl :: !Uri,
-    envHttps :: !Https,
-    envHsts :: !Hsts
+  { envDataFolder :: !DataPath
+  , envWriteQueue :: !WriteQueue
+  , envMaxConcurrentWrites :: !(Maybe MaxConcurrentWrites)
+  , envLogAction :: !(LogAction m Message)
+  , envBaseUrl :: !Uri
+  , envHttps :: !Https
+  , envHsts :: !Hsts
   }
 
 instance HasLog (Env m) Message m where
@@ -44,7 +43,7 @@ instance HasLog (Env m) Message m where
   {-# INLINE getLogAction #-}
 
   setLogAction :: LogAction m Message -> Env m -> Env m
-  setLogAction newAction env = env {envLogAction = newAction}
+  setLogAction newAction env = env{envLogAction = newAction}
   {-# INLINE setLogAction #-}
 
 class Has field env where

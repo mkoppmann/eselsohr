@@ -1,27 +1,30 @@
 module Lib.Core.Domain.Accesstoken
-  ( Accesstoken,
-    Reference (..),
-    Revocable,
-    mkAccesstoken,
-    toReference,
-  )
-where
+  ( Accesstoken
+  , Reference(..)
+  , Revocable
+  , mkAccesstoken
+  , toReference
+  ) where
 
-import qualified Codec.Serialise as Ser
-import Codec.Serialise.Class (Serialise)
-import Data.ByteString.Lazy.Base32 (decodeBase32, encodeBase32Unpadded')
-import Lib.Core.Domain.Capability (Capability)
-import Lib.Core.Domain.Id (Id)
-import Lib.Core.Domain.Resource (Resource)
+import qualified Codec.Serialise               as Ser
+import           Codec.Serialise.Class          ( Serialise )
+import           Data.ByteString.Lazy.Base32    ( decodeBase32
+                                                , encodeBase32Unpadded'
+                                                )
+import           Lib.Core.Domain.Capability     ( Capability )
+import           Lib.Core.Domain.Id             ( Id )
+import           Lib.Core.Domain.Resource       ( Resource )
 import qualified Text.Show
-import Web.HttpApiData (FromHttpApiData (..), ToHttpApiData (..))
+import           Web.HttpApiData                ( FromHttpApiData(..)
+                                                , ToHttpApiData(..)
+                                                )
 
 data Reference = Reference
-  { resourceId :: !(Id Resource),
-    capabilityId :: !(Id Capability)
+  { resourceId   :: !(Id Resource)
+  , capabilityId :: !(Id Capability)
   }
   deriving stock (Generic, Show, Eq)
-  deriving anyclass (Serialise)
+  deriving anyclass Serialise
 
 newtype Accesstoken = Accesstoken {unAccesstoken :: LByteString}
   deriving stock (Generic, Eq)

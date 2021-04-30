@@ -1,20 +1,37 @@
 -- | Logging action for the project. Currently just logs the output to terminal.
 module Lib.App.Log
-  ( mainLogAction,
-    runAppAsHandler,
-    runAppLogIO,
-    runAppLogIO_,
-    WithLog,
-    module Colog,
-  )
-where
+  ( mainLogAction
+  , runAppAsHandler
+  , runAppLogIO
+  , runAppLogIO_
+  , WithLog
+  , module Colog
+  ) where
 
-import Colog (LogAction (..), Severity (..), log, pattern D, pattern E, pattern I, pattern W)
-import qualified Colog (Message, Msg (..), WithLog, filterBySeverity, richMessageAction)
-import Control.Monad.Except (liftEither)
-import Lib.App.Error (AppError (appErrorType), isRedirect, toHttpError)
-import Lib.App.Monad (App, AppEnv, runAppAsIO)
-import Servant.Server (Handler)
+import           Colog                          ( pattern D
+                                                , pattern E
+                                                , pattern I
+                                                , LogAction(..)
+                                                , Severity(..)
+                                                , pattern W
+                                                , log
+                                                )
+import qualified Colog                          ( Message
+                                                , Msg(..)
+                                                , WithLog
+                                                , filterBySeverity
+                                                , richMessageAction
+                                                )
+import           Control.Monad.Except           ( liftEither )
+import           Lib.App.Error                  ( AppError(appErrorType)
+                                                , isRedirect
+                                                , toHttpError
+                                                )
+import           Lib.App.Monad                  ( App
+                                                , AppEnv
+                                                , runAppAsIO
+                                                )
+import           Servant.Server                 ( Handler )
 
 -- | 'Colog.WithLog' alias specialized to 'Message' data type.
 type WithLog env m = Colog.WithLog env Colog.Message m
@@ -55,6 +72,6 @@ logMPErrorIO env err = do
   if isRedirect $ appErrorType err
     then runAppAsIO env noLog
     else runAppAsIO env $ log E $ show err
-  where
-    noLog :: App ()
-    noLog = pass
+ where
+  noLog :: App ()
+  noLog = pass

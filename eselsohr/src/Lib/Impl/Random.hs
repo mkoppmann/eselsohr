@@ -1,10 +1,9 @@
 module Lib.Impl.Random
-  ( getRandomId,
-  )
-where
+  ( getRandomId
+  ) where
 
-import qualified Data.UUID.V4 as UUID
-import Lib.Core.Domain (Id (Id))
+import qualified Data.UUID.V4                  as UUID
+import           Lib.Core.Domain                ( Id(Id) )
 
 type WithRandom m = MonadIO m
 

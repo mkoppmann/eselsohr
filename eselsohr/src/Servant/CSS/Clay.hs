@@ -1,13 +1,18 @@
 module Servant.CSS.Clay
-  ( CSS,
-  )
-where
+  ( CSS
+  ) where
 
-import Clay (Css, compact, renderWith)
-import qualified Network.HTTP.Media as M
-import Servant.API (Accept (..), MimeRender (..))
+import           Clay                           ( Css
+                                                , compact
+                                                , renderWith
+                                                )
+import qualified Network.HTTP.Media            as M
+import           Servant.API                    ( Accept(..)
+                                                , MimeRender(..)
+                                                )
 
-data CSS deriving stock (Typeable)
+data CSS
+  deriving stock Typeable
 
 -- | @text/css; charset=utf-8@
 instance Accept CSS where
