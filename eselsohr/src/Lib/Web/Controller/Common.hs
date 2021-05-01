@@ -35,14 +35,12 @@ getContextState acc = do
 
   case R.lookupCap res $ capabilityId ref of
     Nothing     -> pure $ Left "Could not find capability"
-    Just capEnt -> do
-      case capExpirationDate $ Entity.val capEnt of
-        Nothing      -> pure $ fetchAction ref res capEnt
-        Just expDate -> do
-          currTime <- getCurrentTime
-          if unExpirationDate expDate < currTime
-            then pure $ Left "Capability has expired"
-            else pure $ fetchAction ref res capEnt
+    Just capEnt -> case capExpirationDate $ Entity.val capEnt of
+      Nothing      -> pure $ fetchAction ref res capEnt
+      Just expDate -> getCurrentTime >>= \currTime ->
+        if unExpirationDate expDate < currTime
+          then pure $ Left "Capability has expired"
+          else pure $ fetchAction ref res capEnt
  where
   fetchAction
     :: Reference
@@ -50,10 +48,9 @@ getContextState acc = do
     -> Entity Capability
     -> Either Text ContextState
   fetchAction ref res capEnt =
-    let actId = actionId $ Entity.val capEnt
-    in  case R.lookupAct res actId of
-          Nothing  -> Left "Could not find action"
-          Just act -> Right $ ContextState (Context ref capEnt act) res
+    case R.lookupAct res . actionId $ Entity.val capEnt of
+      Nothing  -> Left "Could not find action"
+      Just act -> Right $ ContextState (Context ref capEnt act) res
 
 getAction :: (WithError m) => ContextState -> Id Action -> m Action
 getAction ctx actId = Entity.val <$> R.getOneAct (csResource ctx) actId

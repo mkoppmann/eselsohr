@@ -47,10 +47,9 @@ server = do
     => TQueue SynchronizedStoreEvent
     -> TVar (HashMap (Id Resource) (TQueue SynchronizedStoreEvent))
     -> m Void
-  fetchUpdates queue writeQueuesVar = infinitely $ do
-    atomically $ do
-      update <- readTQueue queue
-      addToMap (syncStoreResId update) update writeQueuesVar
+  fetchUpdates queue writeQueuesVar = infinitely $ atomically $ do
+    update <- readTQueue queue
+    addToMap (syncStoreResId update) update writeQueuesVar
 
   addToMap
     :: Id Resource
@@ -99,19 +98,16 @@ worker
   :: (WithError m, WithLog env m, WithFile env m)
   => TQueue SynchronizedStoreEvent
   -> m ()
-worker queue = join . atomically $ do
-  mUpdate <- tryReadTQueue queue
-  case mUpdate of
-    Nothing     -> pure pass
-    Just update -> pure $ storeUpdate update >> worker queue
+worker queue = join . atomically $ tryReadTQueue queue >>= \case
+  Nothing     -> pure pass
+  Just update -> pure $ storeUpdate update >> worker queue
 
 storeUpdate
   :: (WithError m, WithLog env m, WithFile env m)
   => SynchronizedStoreEvent
   -> m ()
-storeUpdate SynchronizedStoreEvent {..} = do
-  save syncStoreResId syncStoreEvents
-  atomically $ putTMVar syncVar ()
+storeUpdate SynchronizedStoreEvent {..} =
+  save syncStoreResId syncStoreEvents >> atomically (putTMVar syncVar ())
 
 persistenceApp :: AppEnv -> IO ()
 persistenceApp env = runAppLogIO_ env server

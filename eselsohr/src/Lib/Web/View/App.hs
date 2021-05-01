@@ -18,11 +18,7 @@ render page = doctypehtml_ $ do
     footer
 
 header :: Html ()
-header = do
-  header_ $ do
-    ""
+header = header_ ""
 
 footer :: Html ()
-footer = do
-  footer_ $ do
-    p_ "Eselsohr 📄 (α)"
+footer = footer_ $ p_ "Eselsohr 📄 (α)"

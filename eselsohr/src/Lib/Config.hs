@@ -86,66 +86,49 @@ loadConfig mConfPath = do
       void $ loadFile config
 
   getDataFolder :: (MonadIO m) => m DataPath
-  getDataFolder = do
-    mDF <- lookupEnv "DATA_FOLDER"
-    case mDF of
-      Nothing -> getXdgDirectory XdgData $ addTrailingPathSeparator "eselsohr"
-      Just df -> pure $ addTrailingPathSeparator df
+  getDataFolder = lookupEnv "DATA_FOLDER" >>= \case
+    Nothing -> getXdgDirectory XdgData $ addTrailingPathSeparator "eselsohr"
+    Just df -> pure $ addTrailingPathSeparator df
 
   getMaxConcurrentWrites :: (MonadIO m) => m (Maybe MaxConcurrentWrites)
-  getMaxConcurrentWrites = do
-    mMW <- lookupEnv "MAX_CONCURRENT_WRITES"
-    case mMW of
-      Nothing -> pure Nothing
-      Just mw -> pure $ case readMaybe mw of
-        Nothing        -> Nothing
-        Just maxWrites -> if maxWrites > 0 then Just maxWrites else Nothing
+  getMaxConcurrentWrites = lookupEnv "MAX_CONCURRENT_WRITES" >>= \case
+    Nothing -> pure Nothing
+    Just mw -> pure $ case readMaybe mw of
+      Nothing        -> Nothing
+      Just maxWrites -> if maxWrites > 0 then Just maxWrites else Nothing
 
   getLogLevel :: (MonadIO m) => m Severity
-  getLogLevel = do
-    mLS <- lookupEnv "LOG_LEVEL"
-    case mLS of
-      Nothing -> pure Error
-      Just ls ->
-        pure . fromMaybe Error . readMaybe . toString . toTitle $ toText ls
+  getLogLevel = lookupEnv "LOG_LEVEL" >>= \case
+    Nothing -> pure Error
+    Just ls ->
+      pure . fromMaybe Error . readMaybe . toString . toTitle $ toText ls
 
   getPort :: (MonadIO m) => m Port
-  getPort = do
-    mSP <- lookupEnv "PORT"
-    case mSP of
-      Nothing -> pure 6979
-      Just sp -> pure . fromMaybe 6979 $ readMaybe sp
+  getPort = lookupEnv "PORT" >>= \case
+    Nothing -> pure 6979
+    Just sp -> pure . fromMaybe 6979 $ readMaybe sp
 
   getListenAddr :: (MonadIO m) => m String
-  getListenAddr = do
-    mLA <- lookupEnv "LISTEN_ADDR"
-    case mLA of
-      Nothing -> pure "127.0.0.1"
-      Just la -> pure la
+  getListenAddr = lookupEnv "LISTEN_ADDR" >>= \case
+    Nothing -> pure "127.0.0.1"
+    Just la -> pure la
 
   getBaseUrl :: (MonadIO m) => Port -> m Uri
-  getBaseUrl port = do
-    mBU <- lookupEnv "BASE_URL"
-    let url = case mBU of
-          Nothing -> "http://localhost:" <> show port <> "/"
-          Just bu -> toText bu
-    pure $ baseUri url
+  getBaseUrl port = lookupEnv "BASE_URL" >>= \case
+    Nothing -> pure . baseUri $ "http://localhost:" <> show port <> "/"
+    Just bu -> pure . baseUri $ toText bu
 
   getHttps :: (MonadIO m) => m Bool
-  getHttps = do
-    mHS <- lookupEnv "HTTPS"
-    case mHS of
-      Nothing -> pure False
-      Just hs ->
-        pure . fromMaybe False . readMaybe . toString . toTitle $ toText hs
+  getHttps = lookupEnv "HTTPS" >>= \case
+    Nothing -> pure False
+    Just hs ->
+      pure . fromMaybe False . readMaybe . toString . toTitle $ toText hs
 
   getDisableHsts :: (MonadIO m) => m Bool
-  getDisableHsts = do
-    mDH <- lookupEnv "DISABLE_HSTS"
-    case mDH of
-      Nothing -> pure False
-      Just dh ->
-        pure . fromMaybe False . readMaybe . toString . toTitle $ toText dh
+  getDisableHsts = lookupEnv "DISABLE_HSTS" >>= \case
+    Nothing -> pure False
+    Just dh ->
+      pure . fromMaybe False . readMaybe . toString . toTitle $ toText dh
 
   getCertFile :: (MonadIO m) => m FilePath
   getCertFile = maybe (pure "certificate.pem") pure =<< lookupEnv "CERT_FILE"

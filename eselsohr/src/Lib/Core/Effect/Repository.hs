@@ -6,26 +6,23 @@ module Lib.Core.Effect.Repository
   , ReadState(..)
   , WriteState(..)
   , RWState
-  ,
 
   -- * Getters with exceptions
-    getOneCap
+  , getOneCap
   , getOneAct
   , getOneArt
   , getCapIdForActId
-  ,
 
   -- * Pure getters
-    getManyCap
+  , getManyCap
   , lookupCap
   , getManyAct
   , lookupAct
   , getManyArt
   , lookupArt
-  ,
 
   -- * Pure setters
-    Impl.insertCap
+  , Impl.insertCap
   , Impl.updateCap
   , Impl.deleteCap
   , Impl.insertAct
@@ -34,10 +31,9 @@ module Lib.Core.Effect.Repository
   , Impl.insertArt
   , Impl.updateArt
   , Impl.deleteArt
-  ,
 
   -- * 'Article' helpers
-    artUpdateTitle
+  , artUpdateTitle
   , artUpdateState
   ) where
 

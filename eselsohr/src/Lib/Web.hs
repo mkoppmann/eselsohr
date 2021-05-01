@@ -18,6 +18,7 @@ import           Lib.Web.Route                  ( Command
                                                 , Frontend
                                                 , Query
                                                 )
+import           Network.Wai                    ( Middleware )
 import           Network.Wai.Handler.Warp       ( Port )
 import           Network.Wai.Middleware.AddHeaders
                                                 ( addHeaders )
@@ -60,12 +61,14 @@ application port env@Env {..} =
     . methodOverridePost
     $ serve (Proxy @Api) (server env)
  where
+  enforceHttps :: Middleware
   enforceHttps = case envHttps of
     HttpsOn ->
       let config = EnforceHTTPS.defaultConfig { EnforceHTTPS.httpsPort = port }
       in  EnforceHTTPS.withConfig config
     HttpsOff -> noOp
 
+  hstsHeader :: Middleware
   hstsHeader = case envHsts of
     HstsOn  -> addHsts
     HstsOff -> noOp

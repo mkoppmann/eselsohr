@@ -13,7 +13,9 @@ import           Options.Applicative.Builder    ( fullDesc
                                                 , short
                                                 , strOption
                                                 )
-import           Options.Applicative.Common     ( Parser )
+import           Options.Applicative.Common     ( Parser
+                                                , ParserInfo
+                                                )
 import           Options.Applicative.Extra      ( execParser
                                                 , helper
                                                 )
@@ -31,5 +33,6 @@ config = ExeConfig <$> optional
 main :: IO ()
 main = Lib.main . envPath =<< execParser opts
  where
+  opts :: ParserInfo ExeConfig
   opts = info (config <**> helper)
               (fullDesc <> progDesc "Run Eselsohr" <> header "Eselsohr")

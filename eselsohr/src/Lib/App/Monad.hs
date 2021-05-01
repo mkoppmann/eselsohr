@@ -37,9 +37,9 @@ instance MonadError AppError App where
   {-# INLINE throwError #-}
 
   catchError :: App a -> (AppError -> App a) -> App a
-  catchError action handler = App $ ReaderT $ \env -> do
+  catchError action handler = App $ ReaderT $ \env ->
     let ioAction = runApp env action
-    ioAction `catch` \(AppException e) -> runApp env $ handler e
+    in  ioAction `catch` \(AppException e) -> runApp env $ handler e
   {-# INLINE catchError #-}
 
 {- | Helper for running route handlers in IO. Catches exception of type

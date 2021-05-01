@@ -17,7 +17,8 @@ import qualified Lib.Init                      as Init
 import           Lib.Persistence                ( persistenceApp )
 import           Lib.Web                        ( application )
 import           Network.TLS                    ( Version(..) )
-import           Network.Wai.Handler.Warp       ( defaultSettings
+import           Network.Wai.Handler.Warp       ( Settings
+                                                , defaultSettings
                                                 , runSettings
                                                 , setHost
                                                 , setPort
@@ -36,13 +37,13 @@ mkAppEnv Config {..} = do
   writeQueue <- newTQueueIO
 
   let envDataFolder          = confDataFolder
-  let envMaxConcurrentWrites = confMaxConcurrentWrites
-  let envWriteQueue          = writeQueue
-  let envLogAction           = mainLogAction confLogSeverity
-  let envBaseUrl             = confBaseUrl
-  let envHttps               = if confHttps then HttpsOn else HttpsOff
-  let envHsts = if confDisableHsts then HstsOff else HstsOn
-  return Env { .. }
+      envMaxConcurrentWrites = confMaxConcurrentWrites
+      envWriteQueue          = writeQueue
+      envLogAction           = mainLogAction confLogSeverity
+      envBaseUrl             = confBaseUrl
+      envHttps               = if confHttps then HttpsOn else HttpsOff
+      envHsts                = if confDisableHsts then HstsOff else HstsOn
+  pure Env { .. }
 
 runServer :: Config -> AppEnv -> IO ()
 runServer Config {..} env@Env {..} = do
@@ -59,9 +60,10 @@ runServer Config {..} env@Env {..} = do
     HttpsOn  -> startTlsServer confCertFile confKeyFile settings
     HttpsOff -> startServer settings
  where
+  startTlsServer :: FilePath -> FilePath -> Settings -> IO ()
   startTlsServer certFile keyFile settings = do
-    let tlsOpts = tlsSettings certFile keyFile
-    let tlsOpts' = tlsOpts { onInsecure         = AllowInsecure
+    let tlsOpts  = tlsSettings certFile keyFile
+        tlsOpts' = tlsOpts { onInsecure         = AllowInsecure
                            , tlsAllowedVersions = [TLS13, TLS12]
                            }
     printIntro
@@ -69,20 +71,23 @@ runServer Config {..} env@Env {..} = do
           (runTLS tlsOpts' settings $ application confServerPort env)
     print @Text "Program ended"
 
+  startServer :: Settings -> IO ()
   startServer settings = do
     printIntro
     race_ (persistenceApp env)
           (runSettings settings $ application confServerPort env)
     print @Text "Program ended"
 
+  printIntro :: IO ()
   printIntro = do
     print @Text "Eselsohr is now running."
-    print @Text
+    print
       $  protocolText envHttps
       <> toText confListenAddr
       <> ":"
       <> show confServerPort
 
+  protocolText :: Https -> Text
   protocolText HttpsOn  = "Access it on: https://"
   protocolText HttpsOff = "Access it on: http://"
 

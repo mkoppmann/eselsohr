@@ -57,9 +57,8 @@ getResourceOverviewAccs ctx roActs = do
     Nothing -> do
       log E "roaCreateGetArticlesCap is missing"
       throwError $ serverError "A system error occured."
-    Just fcgacId -> do
-      acc <- actIdToAcc resId res fcgacId
-      pure . ResourceOverviewAccess $ Just acc
+    Just fcgacId ->
+      ResourceOverviewAccess . Just <$> actIdToAcc resId res fcgacId
 
 getShowArticlesAccess
   :: (WithError m) => ContextState -> GetArticlesActions -> m ShowArticlesAccess
@@ -92,30 +91,30 @@ getShowArticleAccess
   => ContextState
   -> QueryAction
   -> m (Maybe (Article, ShowArticleAccess))
-getShowArticleAccess ctx act = case act of
-  GetArticle artId GetArticleActions {..} -> do
-    let resId = resourceId . ctxRef $ csContext ctx
-        res   = csResource ctx
+getShowArticleAccess ctx (GetArticle artId GetArticleActions {..}) = do
+  let resId = resourceId . ctxRef $ csContext ctx
+      res   = csResource ctx
 
-    case R.lookupArt res artId of
-      Nothing             -> pure Nothing
-      Just (Entity _ art) -> do
-        showArticleAcc        <- actIdToAcc resId res gaaShowArticle
-        changeArticleTitleAcc <- mActIdToAcc resId res gaaChangeArticleTitle
-        archiveArticleAcc     <- mActIdToAcc resId res gaaArchiveArticle
-        unreadArticleAcc      <- mActIdToAcc resId res gaaUnreadArticle
-        deleteArticleAcc      <- mActIdToAcc resId res gaaDeleteArticle
-        getArticlesAcc        <- mActIdToAcc resId res gaaGetArticles
+  case R.lookupArt res artId of
+    Nothing             -> pure Nothing
+    Just (Entity _ art) -> do
+      showArticleAcc        <- actIdToAcc resId res gaaShowArticle
+      changeArticleTitleAcc <- mActIdToAcc resId res gaaChangeArticleTitle
+      archiveArticleAcc     <- mActIdToAcc resId res gaaArchiveArticle
+      unreadArticleAcc      <- mActIdToAcc resId res gaaUnreadArticle
+      deleteArticleAcc      <- mActIdToAcc resId res gaaDeleteArticle
+      getArticlesAcc        <- mActIdToAcc resId res gaaGetArticles
 
-        let saAccess = ShowArticleAccess showArticleAcc
-                                         changeArticleTitleAcc
-                                         archiveArticleAcc
-                                         unreadArticleAcc
-                                         deleteArticleAcc
-                                         getArticlesAcc
+      let saAccess = ShowArticleAccess showArticleAcc
+                                       changeArticleTitleAcc
+                                       archiveArticleAcc
+                                       unreadArticleAcc
+                                       deleteArticleAcc
+                                       getArticlesAcc
 
-        pure $ Just (art, saAccess)
-  _wrongAction -> throwError $ serverError "Wrong action"
+      pure $ Just (art, saAccess)
+getShowArticleAccess _ctx _wrongAction =
+  throwError $ serverError "Wrong action"
 
 getRevMap
   :: (MonadTime m)

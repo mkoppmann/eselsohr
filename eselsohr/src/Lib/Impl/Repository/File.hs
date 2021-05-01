@@ -38,8 +38,8 @@ import           UnliftIO                       ( MonadUnliftIO )
 import           UnliftIO.Directory             ( doesFileExist )
 import           UnliftIO.IO.File               ( writeBinaryFileDurableAtomic )
 
-zsdtCompressionLvl :: Int
-zsdtCompressionLvl = 1
+zstdCompressionLvl :: Int
+zstdCompressionLvl = 1
 
 type WithFile env m
   = ( MonadReader env m
@@ -70,7 +70,7 @@ init resId val = flip encodeFile val =<< idToPath resId
 encodeFile :: (Serialise a, WithFile env m) => FilePath -> a -> m ()
 encodeFile fp =
   writeBinaryFileDurableAtomic fp
-    . compress zsdtCompressionLvl
+    . compress zstdCompressionLvl
     . toStrict
     . Ser.serialise
 {-# INLINE encodeFile #-}

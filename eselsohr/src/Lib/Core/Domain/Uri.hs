@@ -70,12 +70,11 @@ data UriValidationError
     ForbiddenIPv6Range
 
 instance Show UriValidationError where
-  show = \case
-    ForbiddenPort      -> "Only port 80 and 443 are allowed."
-    ForbiddenProtocol  -> "Only HTTP and HTTPS are allowed."
-    ForbiddenHostname  -> "Hostnames like `localhost` are forbidden."
-    ForbiddenIPv4Range -> "Only public IPv4 ranges are allowed."
-    ForbiddenIPv6Range -> "Only public IPv6 ranges are allowed."
+  show ForbiddenPort      = "Only port 80 and 443 are allowed."
+  show ForbiddenProtocol  = "Only HTTP and HTTPS are allowed."
+  show ForbiddenHostname  = "Hostnames like `localhost` are forbidden."
+  show ForbiddenIPv4Range = "Only public IPv4 ranges are allowed."
+  show ForbiddenIPv6Range = "Only public IPv6 ranges are allowed."
 
 mkUri :: Text -> Either Text Uri
 mkUri url = case U.mkURI url of

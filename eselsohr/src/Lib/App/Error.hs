@@ -67,7 +67,9 @@ throwError = E.throwError . AppError (toSourcePosition callStack)
 newtype SourcePosition = SourcePosition Text
   deriving (Show, Eq) via Text
 
--- | Display 'CallStack' as 'SourcePosition' in a format: @Module.function#line_number@.
+{- | Display 'CallStack' as 'SourcePosition' in a format:
+ @Module.function#line_number@.
+-}
 toSourcePosition :: CallStack -> SourcePosition
 toSourcePosition cs = SourcePosition showCallStack
  where
@@ -102,7 +104,8 @@ newtype AppErrorType = InternalError IError
   deriving (Show, Eq) via IError
 
 {- | The internal errors that can be thrown. These errors are meant to be
- handled within the application and cover exceptional circumstances/coding errors.
+ handled within the application and cover exceptional circumstances/coding
+ errors.
 -}
 data IError
   = -- | General not found.
@@ -206,10 +209,14 @@ throwOnNothingM :: WithError m => AppErrorType -> m (Maybe a) -> m a
 throwOnNothingM err action =
   withFrozenCallStack $ action >>= throwOnNothing err
 
--- | Similar to 'throwOnNothing' but throws a 'NotFound' if the value does not exist
+{- | Similar to 'throwOnNothing' but throws a 'NotFound' if the value does not
+ exist
+-}
 notFoundOnNothing :: WithError m => Maybe a -> m a
 notFoundOnNothing = withFrozenCallStack . throwOnNothing notFound
 
--- | Similar to 'throwOnNothingM' but throws a 'NotFound' if the value does not exist
+{- | Similar to 'throwOnNothingM' but throws a 'NotFound' if the value does not
+ exist
+-}
 notFoundOnNothingM :: WithError m => m (Maybe a) -> m a
 notFoundOnNothingM = withFrozenCallStack . throwOnNothingM notFound

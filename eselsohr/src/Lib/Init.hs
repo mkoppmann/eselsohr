@@ -31,7 +31,7 @@ useRestrictedHttpManager = liftIO $ setGlobalManager =<< restrictedManager
   restrictedManager = do
     let connRestricted =
           Client.connectionRestricted ("This IP address is not allowed: " <>)
-    let restriction = Client.addressRestriction $ \addr ->
+        restriction = Client.addressRestriction $ \addr ->
           if isAllowed $ addrAddress addr
             then Nothing
             else Just $ connRestricted addr

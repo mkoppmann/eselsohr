@@ -1,17 +1,15 @@
 module Lib.Impl.Repository
   ( load
   , commit
-  ,
 
   -- * Generic implementations
-    getOne
+  , getOne
   , getMany
   , lookup
   , init
-  ,
 
   -- * Specific implementations
-    insertCap
+  , insertCap
   , updateCap
   , deleteCap
   , insertAct
@@ -25,9 +23,9 @@ module Lib.Impl.Repository
   , articleColInit
   , capabilityGetter
   , actionGetter
-  ,
+
   -- Error helper
-    asSingleEntry
+  , asSingleEntry
   ) where
 
 import qualified Data.HashMap.Strict           as Map
@@ -70,9 +68,8 @@ commit resId storeEvents = do
   syncVar <- newEmptyTMVarIO
   let sse = SynchronizedStoreEvent resId storeEvents syncVar
   atomically $ writeTQueue queue sse
-  -- Waiting for store action to finish.
-  -- This needs to be in a separate atomic operation, because else we get a
-  -- live lock.
+  -- Waiting for store action to finish. This needs to be in a separate atomic
+  -- operation, because else we get a live lock.
   atomically $ takeTMVar syncVar
 
 insertCap :: Id Capability -> Capability -> StoreEvent
@@ -93,10 +90,9 @@ insertAct entId newEnt = SeInsertAction
   $ StoreData (insertSetter actionGetter actionSetter) (entId, newEnt)
 
 updateAct :: Id Action -> (Action -> Action) -> StoreEvent
-updateAct entId actUpdater = do
-  SeUpdateAction $ StoreData
-    (updateSetter actionGetter actionSetter actUpdater entId)
-    Prelude.id
+updateAct entId actUpdater = SeUpdateAction $ StoreData
+  (updateSetter actionGetter actionSetter actUpdater entId)
+  Prelude.id
 
 deleteAct :: Id Action -> StoreEvent
 deleteAct entId =

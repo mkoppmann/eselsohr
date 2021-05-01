@@ -59,10 +59,7 @@ deleteGetArticles ctx gaCapId = do
       actEnt = ctxAct $ csContext ctx
 
   R.commit resId
-    $
-    -- Delete the stored capability id for the GetArticles action
-       one (R.deleteCap gaCapId)
-      -- Delete the capability and action for this DeleteGetArticles
+    $  one (R.deleteCap gaCapId)
     <> one (R.deleteCap (Entity.id capEnt))
     <> one (R.deleteAct (Entity.id actEnt))
 
@@ -75,8 +72,6 @@ changeArticleTitle
   :: (WriteState m) => ContextState -> Id Article -> Maybe Text -> m ()
 changeArticleTitle ctx artId mTitle = do
   let resId = resourceId . ctxRef $ csContext ctx
-  -- Update title of the article when it was part of the request, and do nothing
-  -- if it’s missing.
   case mTitle of
     Nothing    -> pass
     Just title -> R.commit resId . one $ R.artUpdateTitle artId title
@@ -157,14 +152,14 @@ createArticle ctx getArticlesId mUri = do
 
   createGetArticleAction
     :: Id Article -> Id Action -> ArticleAction (Entity Action) -> Action
-  createGetArticleAction artId getArtActId actEnts =
+  createGetArticleAction artId getArtActId actEnts = do
     let (ArticleAction cat aa ua da) = Just . Entity.id <$> actEnts
-    in  Query . GetArticle artId $ GetArticleActions getArtActId
-                                                     cat
-                                                     aa
-                                                     ua
-                                                     da
-                                                     (Just getArticlesId)
+    Query . GetArticle artId $ GetArticleActions getArtActId
+                                                 cat
+                                                 aa
+                                                 ua
+                                                 da
+                                                 (Just getArticlesId)
 
   createArticleCapabilities
     :: Maybe ExpirationDate -> [Id Action] -> [Capability]
@@ -266,15 +261,7 @@ createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..
     let dgaCap = Capability Nothing mExpDate $ Entity.id dgaEnt
     (dgaCapSe, dgaCapEnt) <- insertCapability dgaCap
 
-    let cgacSe = R.updateAct cgacGetActiveGetArticlesCap $ \oldAct ->
-          case oldAct of
-            Query qAction -> case qAction of
-              GetActiveGetArticlesCaps gagaSet ->
-                Query . GetActiveGetArticlesCaps $ Set.insert
-                  (Entity.id gaCapEnt, Entity.id dgaCapEnt)
-                  gagaSet
-              _wrongAction -> oldAct
-            _wrongAction -> oldAct
+    let cgacSe = updateCreateGetArticlesCap gaCapEnt dgaCapEnt
 
     R.commit resId
       $  gaSe
@@ -284,16 +271,28 @@ createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..
       <> one cgacSe
  where
   getGaActions :: (WithError m) => Action -> m GetArticlesActions
-  getGaActions = \case
-    Query qAction -> case qAction of
-      GetArticles gaActions -> pure gaActions
-      _wrongAction          -> wrongAction
-    _wrongAction -> wrongAction
+  getGaActions (Query qAction) = case qAction of
+    GetArticles gaActions -> pure gaActions
+    _wrongAction          -> wrongAction
+  getGaActions _wrongAction = wrongAction
 
   convertPetname :: Maybe Text -> Maybe Text
-  convertPetname = \case
-    Nothing      -> Nothing
-    Just petname -> if Text.null petname then Nothing else Just petname
+  convertPetname Nothing      = Nothing
+  convertPetname (Just pName) = if Text.null pName then Nothing else Just pName
+
+  updateCreateGetArticlesCap
+    :: Entity Capability -> Entity Capability -> StoreEvent
+  updateCreateGetArticlesCap gaCapEnt dgaCapEnt = R.updateAct
+    cgacGetActiveGetArticlesCap
+    updateFunc
+   where
+    updateFunc oldAct@(Query qAction) = case qAction of
+      GetActiveGetArticlesCaps gagaSet ->
+        Query . GetActiveGetArticlesCaps $ Set.insert
+          (Entity.id gaCapEnt, Entity.id dgaCapEnt)
+          gagaSet
+      _wrongAction -> oldAct
+    updateFunc oldAct@_wrongAction = oldAct
 
   wrongAction :: (WithError m) => m a
   wrongAction = throwError $ serverError "Wrong action called"

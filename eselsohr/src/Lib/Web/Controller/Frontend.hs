@@ -89,25 +89,22 @@ collectionMain
   :: (ReadState m, MonadTime m, WithError m, WithLog env m)
   => Maybe Accesstoken
   -> m HtmlPage
-collectionMain mAcc = case mAcc of
-  Nothing  -> pure notAuthorized
-  Just acc -> do
-    mCtx <- CC.getContextState acc
-    case mCtx of
-      Left err -> do
-        log I err
-        throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
-      Right ctx -> do
-        dates   <- getExpirationDates
+collectionMain Nothing    = pure notAuthorized
+collectionMain (Just acc) = CC.getContextState acc >>= \case
+  Left err -> do
+    log I err
+    throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
+  Right ctx -> do
+    dates   <- getExpirationDates
 
-        roaActs <- getActions . Entity.val . ctxAct $ csContext ctx
-        let gagacId = roaGetActiveGetArticlesCap roaActs
-        gagac <- CC.getAction ctx gagacId
-        let capIdsSet = extractSet gagac
-        (accMap, revMap) <- fetchData ctx roaActs capIdsSet
+    roaActs <- getActions . Entity.val . ctxAct $ csContext ctx
+    let gagacId = roaGetActiveGetArticlesCap roaActs
+    gagac <- CC.getAction ctx gagacId
+    let capIdsSet = extractSet gagac
+    (accMap, revMap) <- fetchData ctx roaActs capIdsSet
 
-        let viewAcc = mkAccesstoken . ctxRef $ csContext ctx
-        pure . App.render $ Page.resourceOverview viewAcc dates accMap revMap
+    let viewAcc = mkAccesstoken . ctxRef $ csContext ctx
+    pure . App.render $ Page.resourceOverview viewAcc dates accMap revMap
  where
   getExpirationDates :: (MonadTime m) => m (ExpirationDate, ExpirationDate)
   getExpirationDates = do
@@ -116,20 +113,18 @@ collectionMain mAcc = case mAcc of
     pure (ExpirationDate currTime, ExpirationDate expDate)
 
   getActions :: (WithError m) => Action -> m ResourceOverviewActions
-  getActions = \case
-    Query qAction -> case qAction of
-      ResourceOverview roActs -> pure roActs
-      _wrongQueryAction ->
-        throwError $ serverError "The accesstoken did not include actions"
-    _wrongAction ->
+  getActions (Query qAction) = case qAction of
+    ResourceOverview roActs -> pure roActs
+    _wrongQueryAction ->
       throwError $ serverError "The accesstoken did not include actions"
+  getActions _wrongAction =
+    throwError $ serverError "The accesstoken did not include actions"
 
   extractSet :: Action -> HashSet (Id Capability, Id Capability)
-  extractSet = \case
-    Query qAction -> case qAction of
-      GetActiveGetArticlesCaps capIdsSet -> capIdsSet
-      _wrongQueryAction                  -> Set.empty
-    _wrongAction -> Set.empty
+  extractSet (Query qAction) = case qAction of
+    GetActiveGetArticlesCaps capIdsSet -> capIdsSet
+    _wrongQueryAction                  -> Set.empty
+  extractSet _wrongAction = Set.empty
 
   fetchData
     :: (MonadTime m, WithError m, WithLog env m)
@@ -149,83 +144,68 @@ listArticles
   :: (ReadState m, MonadTime m, WithError m, WithLog env m)
   => Maybe Accesstoken
   -> m HtmlPage
-listArticles mAcc = case mAcc of
-  Nothing  -> pure notAuthorized
-  Just acc -> do
-    mCtx <- CC.getContextState acc
-    case mCtx of
-      Left err -> do
-        log I err
-        throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
-      Right ctx -> do
-        laActs <- getActions . Entity.val . ctxAct $ csContext ctx
-        laAcc  <- Query.getShowArticlesAccess ctx laActs
+listArticles Nothing    = pure notAuthorized
+listArticles (Just acc) = CC.getContextState acc >>= \case
+  Left err -> do
+    log I err
+    throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
+  Right ctx -> do
+    laActs <- getActions . Entity.val . ctxAct $ csContext ctx
+    laAcc  <- Query.getShowArticlesAccess ctx laActs
 
-        let viewAcc = mkAccesstoken . ctxRef $ csContext ctx
-        pure . App.render $ Page.articleList viewAcc laAcc
+    let viewAcc = mkAccesstoken . ctxRef $ csContext ctx
+    pure . App.render $ Page.articleList viewAcc laAcc
  where
   getActions :: (WithError m) => Action -> m GetArticlesActions
-  getActions = \case
-    Query qAction -> case qAction of
-      GetArticles laActs -> pure laActs
-      _wrongQueryAction  -> do
-        throwError $ serverError "ListArticles received the wrong query action."
-    _wrongAction ->
-      throwError $ serverError "The accesstoken did not include actions"
+  getActions (Query qAction) = case qAction of
+    GetArticles laActs -> pure laActs
+    _wrongQueryAction ->
+      throwError $ serverError "ListArticles received the wrong query action."
+  getActions _wrongAction =
+    throwError $ serverError "The accesstoken did not include actions"
 
 showArticle
   :: (ReadState m, MonadTime m, WithError m, WithLog env m)
   => Maybe Accesstoken
   -> m HtmlPage
-showArticle = \case
-  Nothing  -> pure notAuthorized
-  Just acc -> do
-    mCtx <- CC.getContextState acc
-    case mCtx of
-      Left err -> do
-        log I err
-        throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
-      Right ctx -> do
-        saQAction <- getGetArticleAction . Entity.val . ctxAct $ csContext ctx
-        mSaAcc    <- Query.getShowArticleAccess ctx saQAction
-        case mSaAcc of
-          Nothing           -> throwError notFound
-          Just (art, saAcc) -> pure . App.render $ Page.showArticle art saAcc
+showArticle Nothing    = pure notAuthorized
+showArticle (Just acc) = CC.getContextState acc >>= \case
+  Left err -> do
+    log I err
+    throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
+  Right ctx -> do
+    saQAction <- getGetArticleAction . Entity.val . ctxAct $ csContext ctx
+    Query.getShowArticleAccess ctx saQAction >>= \case
+      Nothing           -> throwError notFound
+      Just (art, saAcc) -> pure . App.render $ Page.showArticle art saAcc
 
 getGetArticleAction :: (WithError m) => Action -> m QueryAction
-getGetArticleAction = \case
-  Query qAction -> case qAction of
-    GetArticle _artId _saActs -> pure qAction
-    _wrongQueryAction         -> do
-      throwError $ serverError "ShowArticle received the wrong query action."
-  _wrongAction ->
-    throwError $ serverError "The accesstoken did not include actions"
+getGetArticleAction (Query qAction) = case qAction of
+  GetArticle _artId _saActs -> pure qAction
+  _wrongQueryAction         -> do
+    throwError $ serverError "ShowArticle received the wrong query action."
+getGetArticleAction _wrongAction =
+  throwError $ serverError "The accesstoken did not include actions"
 
 editArticle
   :: (ReadState m, MonadTime m, WithError m, WithLog env m)
   => Maybe Accesstoken
   -> m HtmlPage
-editArticle = \case
-  Nothing  -> pure notAuthorized
-  Just acc -> do
-    mCtx <- CC.getContextState acc
-    case mCtx of
-      Left err -> do
-        log I err
-        throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
-      Right ctx -> do
-        edQAction <- getGetArticleAction . Entity.val . ctxAct $ csContext ctx
-        mEdAcc    <- Query.getShowArticleAccess ctx edQAction
-        case mEdAcc of
-          Nothing -> throwError notFound
-          Just (Article aTitle _ _ _, ShowArticleAccess {..}) ->
-            case saAccChangeArticleTitle of
-              Nothing -> pure notAuthorized
-              Just caAcc ->
-                pure
-                  . App.render
-                  . Page.editArticle aTitle caAcc
-                  $ showArticleLink saAccShowArticle
+editArticle Nothing    = pure notAuthorized
+editArticle (Just acc) = CC.getContextState acc >>= \case
+  Left err -> do
+    log I err
+    throwError . redirect303 $ Route.linkAsText Route.invalidTokenR
+  Right ctx -> do
+    edQAction <- getGetArticleAction . Entity.val . ctxAct $ csContext ctx
+    Query.getShowArticleAccess ctx edQAction >>= \case
+      Nothing -> throwError notFound
+      Just (Article aTitle _ _ _, ShowArticleAccess {..}) ->
+        case saAccChangeArticleTitle of
+          Nothing -> pure notAuthorized
+          Just caAcc ->
+            pure . App.render . Page.editArticle aTitle caAcc $ showArticleLink
+              saAccShowArticle
  where
   showArticleLink :: Accesstoken -> Link
   showArticleLink = Route.showArticleR . Just
@@ -243,9 +223,8 @@ deleteFrontend
   :: (RWState m, MonadTime m, WithError m, WithLog env m)
   => DeleteActionForm
   -> m Redirection
-deleteFrontend (DeleteActionForm accId gotoUrl) = do
-  mCtx <- CC.getContextState accId
-  case mCtx of
+deleteFrontend (DeleteActionForm accId gotoUrl) =
+  CC.getContextState accId >>= \case
     Left  err -> log E err >> throwError (serverError err)
     Right ctx -> do
       Flow.deleteAction ctx
@@ -255,9 +234,8 @@ patchFrontend
   :: (RWState m, MonadTime m, WithError m, WithLog env m)
   => PatchActionForm
   -> m Redirection
-patchFrontend (PatchActionForm accId gotoUrl artTitle) = do
-  mCtx <- CC.getContextState accId
-  case mCtx of
+patchFrontend (PatchActionForm accId gotoUrl artTitle) =
+  CC.getContextState accId >>= \case
     Left  err -> log E err >> throwError (serverError err)
     Right ctx -> do
       Flow.patchAction ctx artTitle
@@ -274,12 +252,9 @@ postFrontend
   => PostActionForm
   -> m Redirection
 postFrontend (PostActionForm accId gotoUrl artUri unlockPetname expirationDate)
-  = do
-    mCtx <- CC.getContextState accId
-    case mCtx of
-      Left  err -> log E err >> throwError (serverError err)
-      Right ctx -> do
-        mUrl <- Flow.postAction ctx artUri unlockPetname expirationDate
-        case mUrl of
-          Nothing  -> throwError . redirect303 $ Uri.render gotoUrl
-          Just url -> throwError $ redirect303 url
+  = CC.getContextState accId >>= \case
+    Left  err -> log E err >> throwError (serverError err)
+    Right ctx -> do
+      Flow.postAction ctx artUri unlockPetname expirationDate >>= \case
+        Nothing  -> throwError . redirect303 $ Uri.render gotoUrl
+        Just url -> throwError $ redirect303 url
