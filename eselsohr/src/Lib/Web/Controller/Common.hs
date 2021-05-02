@@ -35,7 +35,7 @@ getContextState acc = do
       resId = resourceId ref
   res <- R.load resId
 
-  case R.lookupCap res $ capabilityId ref of
+  case R.lookup res $ capabilityId ref of
     Nothing     -> pure $ Left "Could not find capability"
     Just capEnt -> case capExpirationDate $ Entity.val capEnt of
       Nothing      -> pure $ fetchAction resId res capEnt
@@ -50,12 +50,12 @@ getContextState acc = do
     -> Entity Capability
     -> Either Text ContextState
   fetchAction resId res capEnt =
-    case R.lookupAct res . actionId $ Entity.val capEnt of
+    case R.lookup res . actionId $ Entity.val capEnt of
       Nothing  -> Left "Could not find action"
       Just act -> Right $ ContextState (Context resId capEnt act) res
 
 getAction :: (WithError m) => ContextState -> Id Action -> m Action
-getAction ctx actId = Entity.val <$> R.getOneAct (csResource ctx) actId
+getAction ctx actId = Entity.val <$> R.getOne (csResource ctx) actId
 
 notImplemented :: (WithError m) => m a
 notImplemented = throwError $ serverError "Not implemented yet"

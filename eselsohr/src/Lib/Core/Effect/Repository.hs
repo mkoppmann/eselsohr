@@ -4,33 +4,15 @@ module Lib.Core.Effect.Repository
     SealedResource
   , ContextState(..)
   , ReadState(..)
+  , ReadResource(..)
   , WriteState(..)
+  , WriteResource(..)
   , RWState
 
-  -- * Getters with exceptions
-  , getOneCap
-  , getOneAct
-  , getOneArt
+  -- * Getter helpers
+  , getOne
   , getCapIdForActId
-
-  -- * Pure getters
-  , getManyCap
-  , lookupCap
-  , getManyAct
-  , lookupAct
-  , getManyArt
-  , lookupArt
-
-  -- * Pure setters
-  , Impl.insertCap
-  , Impl.updateCap
-  , Impl.deleteCap
-  , Impl.insertAct
-  , Impl.updateAct
-  , Impl.deleteAct
-  , Impl.insertArt
-  , Impl.updateArt
-  , Impl.deleteArt
+  , lookupCapIdForActId
 
   -- * 'Article' helpers
   , artUpdateTitle
@@ -76,9 +58,52 @@ instance WriteState App where
   init colId = Impl.init colId Impl.articleColInit
   commit = Impl.commit
 
-getOneCap
-  :: (WithError m) => SealedResource -> Id Capability -> m (Entity Capability)
-getOneCap sRes = Impl.getOne Impl.capabilityGetter (unSealResource sRes)
+class ReadResource a where
+  lookup :: SealedResource -> Id a -> Maybe (Entity a)
+  getMany :: SealedResource -> HashSet (Id a) -> HashMap (Id a) a
+  getAll :: SealedResource -> HashMap (Id a) a
+
+class WriteResource a where
+  insert :: Id a -> a -> StoreEvent
+  update :: Id a -> (a -> a) -> StoreEvent
+  delete :: Id a -> StoreEvent
+
+instance ReadResource Article where
+  lookup  = lookupArt
+  getMany = getManyArt
+  getAll  = getAllArt
+
+instance WriteResource Article where
+  insert = Impl.insertArt
+  update = Impl.updateArt
+  delete = Impl.deleteArt
+
+instance ReadResource Capability  where
+  lookup  = lookupCap
+  getMany = getManyCap
+  getAll  = getAllCap
+
+instance WriteResource Capability  where
+  insert = Impl.insertCap
+  update = Impl.updateCap
+  delete = Impl.deleteCap
+
+instance ReadResource Action  where
+  lookup  = lookupAct
+  getMany = getManyAct
+  getAll  = getAllAct
+
+instance WriteResource Action where
+  insert = Impl.insertAct
+  update = Impl.updateAct
+  delete = Impl.deleteAct
+
+getOne
+  :: (WithError m, ReadResource a) => SealedResource -> Id a -> m (Entity a)
+getOne sRes = Impl.asSingleEntry . lookup sRes
+
+getAllCap :: SealedResource -> HashMap (Id Capability) Capability
+getAllCap = Impl.getAll Impl.capabilityGetter . unSealResource
 
 getManyCap
   :: SealedResource
@@ -89,8 +114,8 @@ getManyCap sRes = Impl.getMany Impl.capabilityGetter (unSealResource sRes)
 lookupCap :: SealedResource -> Id Capability -> Maybe (Entity Capability)
 lookupCap sRes = Impl.lookup Impl.capabilityGetter (unSealResource sRes)
 
-getOneAct :: (WithError m) => SealedResource -> Id Action -> m (Entity Action)
-getOneAct sRes = Impl.getOne Impl.actionGetter (unSealResource sRes)
+getAllAct :: SealedResource -> HashMap (Id Action) Action
+getAllAct = Impl.getAll Impl.actionGetter . unSealResource
 
 getManyAct
   :: SealedResource -> HashSet (Id Action) -> HashMap (Id Action) Action
@@ -101,11 +126,13 @@ lookupAct sRes = Impl.lookup Impl.actionGetter (unSealResource sRes)
 
 getCapIdForActId
   :: (WithError m) => SealedResource -> Id Action -> m (Id Capability)
-getCapIdForActId sRes = Impl.getCapIdForActId (unSealResource sRes)
+getCapIdForActId sRes = Impl.asSingleEntry . lookupCapIdForActId sRes
 
-getOneArt
-  :: (WithError m) => SealedResource -> Id Article -> m (Entity Article)
-getOneArt sRes = Impl.getOne Impl.articleGetter (unSealResource sRes)
+lookupCapIdForActId :: SealedResource -> Id Action -> Maybe (Id Capability)
+lookupCapIdForActId sRes = Impl.getCapIdForActId (unSealResource sRes)
+
+getAllArt :: SealedResource -> HashMap (Id Article) Article
+getAllArt = Impl.getAll Impl.articleGetter . unSealResource
 
 getManyArt
   :: SealedResource -> HashSet (Id Article) -> HashMap (Id Article) Article

@@ -3,7 +3,7 @@ module Lib.Impl.Repository
   , commit
 
   -- * Generic implementations
-  , getOne
+  , getAll
   , getMany
   , lookup
   , init
@@ -132,10 +132,6 @@ deleteSetter
   :: CollectionGetter a -> CollectionSetter a -> Resource -> Id a -> Resource
 deleteSetter getter setter = gsetter getter setter Map.delete
 
-getOne
-  :: (WithError m) => CollectionGetter a -> Resource -> Id a -> m (Entity a)
-getOne getter res = asSingleEntry . lookup getter res
-
 getMany :: CollectionGetter a -> Resource -> HashSet (Id a) -> HashMap (Id a) a
 getMany getter res entIds =
   Map.filterWithKey (\key _ -> key `Set.member` entIds) $ getter res
@@ -144,16 +140,18 @@ lookup :: CollectionGetter a -> Resource -> Id a -> Maybe (Entity a)
 lookup getter res entId =
   fmap (uncurry Entity . (entId, )) . Map.lookup entId $ getter res
 
+getAll :: CollectionGetter a -> Resource -> HashMap (Id a) a
+getAll getter = getter
+
 init :: (WithFile env m) => Id Resource -> Resource -> m ()
 init = File.init
 
 load :: (WithError m, WithFile env m) => Id Resource -> m Resource
 load = flip File.load Prelude.id
 
-getCapIdForActId :: (WithError m) => Resource -> Id Action -> m (Id Capability)
+getCapIdForActId :: Resource -> Id Action -> Maybe (Id Capability)
 getCapIdForActId res actId =
-  asSingleEntry
-    . viaNonEmpty head
+  viaNonEmpty head
     . Map.keys
     . Map.filter ((==) actId . actionId)
     $ capabilityGetter res

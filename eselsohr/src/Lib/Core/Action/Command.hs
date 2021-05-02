@@ -57,14 +57,14 @@ deleteGetArticles ctx gaCapId = do
       actEnt = ctxAct $ csContext ctx
 
   R.commit resId
-    $  one (R.deleteCap gaCapId)
-    <> one (R.deleteCap (Entity.id capEnt))
-    <> one (R.deleteAct (Entity.id actEnt))
+    $  one (R.delete gaCapId)
+    <> one (R.delete (Entity.id capEnt))
+    <> one (R.delete (Entity.id actEnt))
 
 deleteArticle :: (WriteState m) => ContextState -> Id Article -> m ()
 deleteArticle ctx artId = do
   let resId = ctxResId $ csContext ctx
-  R.commit resId . one $ R.deleteArt artId
+  R.commit resId . one $ R.delete artId
 
 changeArticleTitle
   :: (WriteState m) => ContextState -> Id Article -> Maybe Text -> m ()
@@ -105,7 +105,7 @@ createArticle ctx getArticlesId mUri = do
     Nothing  -> throwError $ missingParameter "The parameter `uri` is missing."
     Just uri -> do
       (Entity articleId articleVal) <- createArticleEnt uri
-      let storeArticleEvent = R.insertArt articleId articleVal
+      let storeArticleEvent = R.insert articleId articleVal
 
       seAndActEnts <- traverse insertAction $ createArticleActions articleId
       let actEnts             = snd <$> seAndActEnts
@@ -113,7 +113,7 @@ createArticle ctx getArticlesId mUri = do
 
       getArticleActId <- getRandomId
       let getArticleActionEvent =
-            R.insertAct getArticleActId
+            R.insert getArticleActId
               $ createGetArticleAction articleId getArticleActId actEnts
 
       capabilitiesEvent <-
@@ -165,7 +165,7 @@ createArticle ctx getArticlesId mUri = do
 
   updateGetArticlesAction :: Id Action -> StoreEvent
   updateGetArticlesAction getArticleId =
-    R.updateAct getArticlesId $ \oldActEnt -> case oldActEnt of
+    R.update getArticlesId $ \oldActEnt -> case oldActEnt of
       Query qAction -> case qAction of
         GetArticles oldGetArticlesAct ->
           let
@@ -191,7 +191,7 @@ createResource = do
   (gaaSe, gaaEnt) <- insertAction . Query $ GetArticles gaActions
 
   let caSe =
-        R.insertAct caaActId . Command . Post . CreateArticle $ Entity.id gaaEnt
+        R.insert caaActId . Command . Post . CreateArticle $ Entity.id gaaEnt
 
   roaActId <- getRandomId
   let cgaa =
@@ -205,7 +205,7 @@ createResource = do
                                            (Entity.id gaaEnt)
                                            (Just $ Entity.id cgaaEnt)
       roaAct = Query $ ResourceOverview roaActions
-      roaSe  = R.insertAct roaActId roaAct
+      roaSe  = R.insert roaActId roaAct
       roaEnt = Entity roaActId roaAct
 
   let roaCap = Capability Nothing Nothing $ Entity.id roaEnt
@@ -238,7 +238,7 @@ createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..
     let resId = ctxResId $ csContext ctx
         res   = csResource ctx
 
-    gaActEnt <- R.getOneAct res cgacGetArticles
+    gaActEnt <- R.getOne res cgacGetArticles
     (GetArticlesActions gaaCreateArticle showArticleIds) <- getGaActions
       $ Entity.val gaActEnt
     let saIds     = Just <$> Set.toList showArticleIds
@@ -280,7 +280,7 @@ createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..
 
   updateCreateGetArticlesCap
     :: Entity Capability -> Entity Capability -> StoreEvent
-  updateCreateGetArticlesCap gaCapEnt dgaCapEnt = R.updateAct
+  updateCreateGetArticlesCap gaCapEnt dgaCapEnt = R.update
     cgacGetActiveGetArticlesCap
     updateFunc
    where
@@ -298,10 +298,10 @@ createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..
 insertAction :: (MonadRandom m) => Action -> m (StoreEvent, Entity Action)
 insertAction act = do
   actId <- getRandomId
-  pure (R.insertAct actId act, Entity actId act)
+  pure (R.insert actId act, Entity actId act)
 
 insertCapability
   :: (MonadRandom m) => Capability -> m (StoreEvent, Entity Capability)
 insertCapability cap = do
   capId <- getRandomId
-  pure (R.insertCap capId cap, Entity capId cap)
+  pure (R.insert capId cap, Entity capId cap)

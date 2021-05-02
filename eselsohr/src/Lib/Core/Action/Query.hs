@@ -75,7 +75,7 @@ getShowArticlesAccess ctx GetArticlesActions {..} = do
     -> Id Action
     -> m (Maybe (Article, ShowArticleAccess))
   getArtAndSAAccess res actId = do
-    actEnt <- R.getOneAct res actId
+    actEnt <- R.getOne res actId
     case Entity.val actEnt of
       Query qAction -> getShowArticleAccess ctx qAction
       _wrongAction  -> throwError $ serverError "Wrong action"
@@ -93,7 +93,7 @@ getShowArticleAccess ctx (GetArticle artId GetArticleActions {..}) = do
   let resId = ctxResId $ csContext ctx
       res   = csResource ctx
 
-  case R.lookupArt res artId of
+  case R.lookup res artId of
     Nothing             -> pure Nothing
     Just (Entity _ art) -> do
       showArticleAcc        <- actIdToAcc resId res gaaShowArticle
@@ -131,7 +131,7 @@ getRevMap ctx capIdsSet = do
 
   -- Use the capability id from the GetArticles action to retrieve stored
   -- capabilities and convert it to an ascending list.
-  let capList = Map.toList . R.getManyCap res $ Set.map fst capIdsSet
+  let capList    = Map.toList . R.getMany res $ Set.map fst capIdsSet
 
   -- Filter out all deleted pairs, zip the fetched capabilities with their
   -- capability id pairs, and then create the sequence with all capability
