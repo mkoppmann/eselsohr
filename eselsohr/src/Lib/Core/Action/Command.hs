@@ -54,7 +54,7 @@ import           Lib.Web.Route.Common           ( collectionMainR
 
 deleteGetArticles :: (WriteState m) => ContextState -> Id Capability -> m ()
 deleteGetArticles ctx gaCapId = do
-  let resId  = resourceId . ctxRef $ csContext ctx
+  let resId  = ctxResId $ csContext ctx
       capEnt = ctxCap $ csContext ctx
       actEnt = ctxAct $ csContext ctx
 
@@ -65,25 +65,25 @@ deleteGetArticles ctx gaCapId = do
 
 deleteArticle :: (WriteState m) => ContextState -> Id Article -> m ()
 deleteArticle ctx artId = do
-  let resId = resourceId . ctxRef $ csContext ctx
+  let resId = ctxResId $ csContext ctx
   R.commit resId . one $ R.deleteArt artId
 
 changeArticleTitle
   :: (WriteState m) => ContextState -> Id Article -> Maybe Text -> m ()
 changeArticleTitle ctx artId mTitle = do
-  let resId = resourceId . ctxRef $ csContext ctx
+  let resId = ctxResId $ csContext ctx
   case mTitle of
     Nothing    -> pass
     Just title -> R.commit resId . one $ R.artUpdateTitle artId title
 
 archiveArticle :: (WriteState m) => ContextState -> Id Article -> m ()
 archiveArticle ctx artId = do
-  let resId = resourceId . ctxRef $ csContext ctx
+  let resId = ctxResId $ csContext ctx
   R.commit resId . one $ R.artUpdateState artId Archived
 
 unreadArticle :: (WriteState m) => ContextState -> Id Article -> m ()
 unreadArticle ctx artId = do
-  let resId = resourceId . ctxRef $ csContext ctx
+  let resId = ctxResId $ csContext ctx
   R.commit resId . one $ R.artUpdateState artId Unread
 
 data ArticleAction a = ArticleAction
@@ -101,7 +101,7 @@ createArticle
   -> Maybe Uri
   -> m ()
 createArticle ctx getArticlesId mUri = do
-  let resId    = resourceId . ctxRef $ csContext ctx
+  let resId    = ctxResId $ csContext ctx
       mExpDate = capExpirationDate . Entity.val . ctxCap $ csContext ctx
   case mUri of
     Nothing  -> throwError $ missingParameter "The parameter `uri` is missing."
@@ -237,7 +237,7 @@ createGetArticlesCap
   -> m ()
 createGetArticlesCap ctx mUnlockPetname mExpDate CreateGetArticlesCapActions {..}
   = do
-    let resId = resourceId . ctxRef $ csContext ctx
+    let resId = ctxResId $ csContext ctx
         res   = csResource ctx
 
     gaActEnt <- R.getOneAct res cgacGetArticles

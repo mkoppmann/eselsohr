@@ -51,7 +51,7 @@ getResourceOverviewAccs
   -> ResourceOverviewActions
   -> m ResourceOverviewAccess
 getResourceOverviewAccs ctx roActs = do
-  let resId = resourceId . ctxRef $ csContext ctx
+  let resId = ctxResId $ csContext ctx
       res   = csResource ctx
   case roaCreateGetArticlesCap roActs of
     Nothing -> do
@@ -63,7 +63,7 @@ getResourceOverviewAccs ctx roActs = do
 getShowArticlesAccess
   :: (WithError m) => ContextState -> GetArticlesActions -> m ShowArticlesAccess
 getShowArticlesAccess ctx GetArticlesActions {..} = do
-  let resId = resourceId . ctxRef $ csContext ctx
+  let resId = ctxResId $ csContext ctx
       res   = csResource ctx
   ca  <- mActIdToAcc resId res gaaCreateArticle
   sas <- fromList . sortBy (flip expDateCmp) . catMaybes <$> traverse
@@ -92,7 +92,7 @@ getShowArticleAccess
   -> QueryAction
   -> m (Maybe (Article, ShowArticleAccess))
 getShowArticleAccess ctx (GetArticle artId GetArticleActions {..}) = do
-  let resId = resourceId . ctxRef $ csContext ctx
+  let resId = ctxResId $ csContext ctx
       res   = csResource ctx
 
   case R.lookupArt res artId of
@@ -122,7 +122,7 @@ getRevMap
   -> HashSet (Id Capability, Id Capability)
   -> m (Seq (Capability, Revocable))
 getRevMap ctx capIdsSet = do
-  let resId = resourceId . ctxRef $ csContext ctx
+  let resId = ctxResId $ csContext ctx
       res   = csResource ctx
 
   currTime <- getCurrentTime

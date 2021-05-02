@@ -28,7 +28,6 @@ import qualified Lib.Core.Action               as Action
 import qualified Lib.Core.Action.Query         as Query
 import           Lib.Core.Domain.Accesstoken    ( Accesstoken
                                                 , Revocable
-                                                , mkAccesstoken
                                                 )
 import           Lib.Core.Domain.Article        ( Article(..) )
 import           Lib.Core.Domain.Capability     ( Action(..)
@@ -103,8 +102,7 @@ collectionMain (Just acc) = CC.getContextState acc >>= \case
     let capIdsSet = extractSet gagac
     (accMap, revMap) <- fetchData ctx roaActs capIdsSet
 
-    let viewAcc = mkAccesstoken . ctxRef $ csContext ctx
-    pure . App.render $ Page.resourceOverview viewAcc dates accMap revMap
+    pure . App.render $ Page.resourceOverview acc dates accMap revMap
  where
   getExpirationDates :: (MonadTime m) => m (ExpirationDate, ExpirationDate)
   getExpirationDates = do
@@ -153,8 +151,7 @@ listArticles (Just acc) = CC.getContextState acc >>= \case
     laActs <- getActions . Entity.val . ctxAct $ csContext ctx
     laAcc  <- Query.getShowArticlesAccess ctx laActs
 
-    let viewAcc = mkAccesstoken . ctxRef $ csContext ctx
-    pure . App.render $ Page.articleList viewAcc laAcc
+    pure . App.render $ Page.articleList acc laAcc
  where
   getActions :: (WithError m) => Action -> m GetArticlesActions
   getActions (Query qAction) = case qAction of
