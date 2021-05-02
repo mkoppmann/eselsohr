@@ -2,7 +2,7 @@ module Lib.Web.View.App
   ( render
   ) where
 
-import           Lib.Web.Route.Common           ( stylesheetR )
+import           Lib.Web.Route                  ( stylesheetR )
 import           Lucid
 import           Lucid.Servant                  ( linkAbsHref_ )
 

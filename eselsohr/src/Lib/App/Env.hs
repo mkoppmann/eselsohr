@@ -16,8 +16,9 @@ import           Colog                          ( HasLog(..)
                                                 , LogAction
                                                 , Message
                                                 )
-import           Lib.Core.Domain.StoreEvent     ( SynchronizedStoreEvent )
-import           Lib.Core.Domain.Uri            ( Uri )
+import           Lib.Core.Domain                ( SynchronizedStoreEvent
+                                                , Uri
+                                                )
 import           UnliftIO.STM                   ( TQueue )
 
 type DataPath = FilePath

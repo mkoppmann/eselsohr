@@ -9,7 +9,7 @@ import           Hedgehog                       ( (===)
                                                 , property
                                                 , tripping
                                                 )
-import           Lib.Core.Domain.Accesstoken    ( Reference(..)
+import           Lib.Core.Domain                ( Reference(..)
                                                 , mkAccesstoken
                                                 , toReference
                                                 )

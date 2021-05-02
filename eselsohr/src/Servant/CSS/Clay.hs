@@ -7,7 +7,7 @@ import           Clay                           ( Css
                                                 , renderWith
                                                 )
 import qualified Network.HTTP.Media            as M
-import           Servant.API                    ( Accept(..)
+import           Servant                        ( Accept(..)
                                                 , MimeRender(..)
                                                 )
 

@@ -15,30 +15,26 @@ import           Data.Time                      ( UTCTime
 import           Lens.Micro                     ( (^?)
                                                 , _Right
                                                 )
-import           Lib.Core.Domain.Accesstoken    ( Accesstoken
-                                                , Revocable
-                                                )
-import           Lib.Core.Domain.Article        ( Article
+import           Lib.Core.Domain                ( Accesstoken
+                                                , Article
                                                 , ArticleState(..)
-                                                )
-import qualified Lib.Core.Domain.Article       as Article
-import           Lib.Core.Domain.Capability     ( Capability(..) )
-import           Lib.Core.Domain.ExpirationDate ( ExpirationDate
-                                                , expDateToText
-                                                )
-import           Lib.Core.Domain.Frontend       ( ResourceOverviewAccess(..)
+                                                , Capability(..)
+                                                , ExpirationDate
+                                                , ResourceOverviewAccess(..)
+                                                , Revocable
                                                 , ShowArticleAccess(..)
                                                 , ShowArticlesAccess(..)
-                                                )
-import           Lib.Core.Domain.Uri            ( Uri
+                                                , Uri
+                                                , expDateToText
                                                 , render
                                                 , unUri
                                                 )
+import qualified Lib.Core.Domain.Article       as Article
 import qualified Lib.Web.Route.Common          as Route
 import qualified Lib.Web.View.Form             as Form
 import           Lucid
 import           Lucid.Servant                  ( linkAbsHref_ )
-import           Servant.Links                  ( Link )
+import           Servant                        ( Link )
 import qualified Text.URI                      as URI
 import qualified Text.URI.Lens                 as UL
 

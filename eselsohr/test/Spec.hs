@@ -5,9 +5,10 @@ import           Hedgehog                       ( Group(..)
                                                 , checkParallel
                                                 )
 import           Lib                            ( mkAppEnv )
-import           Lib.App.Env                    ( Env(..) )
-import           Lib.App.Log                    ( runAppLogIO_ )
-import           Lib.App.Monad                  ( AppEnv )
+import           Lib.App                        ( AppEnv
+                                                , Env(..)
+                                                , runAppLogIO_
+                                                )
 import           Lib.Config                     ( Config(..)
                                                 , loadConfig
                                                 )

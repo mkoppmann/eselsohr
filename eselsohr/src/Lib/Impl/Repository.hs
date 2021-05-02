@@ -37,16 +37,14 @@ import           Lib.App                        ( AppErrorType
                                                 , storeError
                                                 , throwOnNothing
                                                 )
-import           Lib.Core.Domain.Article        ( Article(..) )
-import           Lib.Core.Domain.Capability     ( Action
+import           Lib.Core.Domain                ( Action
+                                                , Article(..)
+                                                , ArticleCollection(..)
                                                 , Capability(..)
-                                                )
-import           Lib.Core.Domain.Entity         ( Entity(..) )
-import           Lib.Core.Domain.Id             ( Id )
-import           Lib.Core.Domain.Resource       ( ArticleCollection(..)
+                                                , Entity(..)
+                                                , Id
                                                 , Resource(..)
-                                                )
-import           Lib.Core.Domain.StoreEvent     ( StoreData(..)
+                                                , StoreData(..)
                                                 , StoreEvent(..)
                                                 , SynchronizedStoreEvent(..)
                                                 )

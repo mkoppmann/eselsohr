@@ -31,7 +31,7 @@ import           Lib.App.Monad                  ( App
                                                 , AppEnv
                                                 , runAppAsIO
                                                 )
-import           Servant.Server                 ( Handler )
+import           Servant                        ( Handler )
 
 -- | 'Colog.WithLog' alias specialized to 'Message' data type.
 type WithLog env m = Colog.WithLog env Colog.Message m

@@ -2,22 +2,19 @@ module Main where
 
 import qualified Lib
 import           Options.Applicative            ( (<**>)
-                                                , optional
-                                                )
-import           Options.Applicative.Builder    ( fullDesc
+                                                , Parser
+                                                , ParserInfo
+                                                , execParser
+                                                , fullDesc
                                                 , header
                                                 , help
+                                                , helper
                                                 , info
                                                 , long
+                                                , optional
                                                 , progDesc
                                                 , short
                                                 , strOption
-                                                )
-import           Options.Applicative.Common     ( Parser
-                                                , ParserInfo
-                                                )
-import           Options.Applicative.Extra      ( execParser
-                                                , helper
                                                 )
 
 newtype ExeConfig = ExeConfig

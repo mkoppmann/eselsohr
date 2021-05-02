@@ -15,9 +15,9 @@ import           Lib.Core.Effect.Time           ( MonadTime(..) )
 import qualified Lib.Impl.Random               as RandomImpl
 import qualified Lib.Impl.Scraper              as ScraperImpl
 import qualified Lib.Impl.Time                 as TimeImpl
-import           Relude.Extra.Bifunctor         ( firstF )
-import           UnliftIO                       ( MonadUnliftIO )
-import           UnliftIO.Exception             ( catch
+import           Relude.Extra                   ( firstF )
+import           UnliftIO                       ( MonadUnliftIO
+                                                , catch
                                                 , throwIO
                                                 , try
                                                 )

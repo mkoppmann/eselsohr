@@ -35,9 +35,9 @@ import           Lib.App                        ( App
                                                 , AppEnv
                                                 , AppError(..)
                                                 , AppErrorType
+                                                , isRedirect
                                                 , runAppAsIO
                                                 )
-import           Lib.App.Error                  ( isRedirect )
 import           Test.Hspec                     ( Expectation
                                                 , expectationFailure
                                                 , shouldBe

@@ -7,43 +7,41 @@ module Lib.Core.Action.Query
 
 import qualified Data.HashMap.Strict           as Map
 import qualified Data.HashSet                  as Set
-import           Lib.App.Error                  ( WithError
+import           Lib.App                        ( pattern E
+                                                , WithError
+                                                , WithLog
+                                                , log
                                                 , serverError
                                                 , throwError
                                                 )
-import           Lib.App.Log                    ( pattern E
-                                                , WithLog
-                                                , log
-                                                )
-import           Lib.Core.Domain.Accesstoken    ( Accesstoken
-                                                , Reference(..)
-                                                , Revocable
-                                                , mkAccesstoken
-                                                )
-import           Lib.Core.Domain.Article        ( Article(..) )
-import           Lib.Core.Domain.Capability     ( Action(..)
+import           Lib.Core.Domain                ( Accesstoken
+                                                , Action(..)
+                                                , Article(..)
                                                 , Capability(..)
+                                                , Context(..)
+                                                , Entity(..)
+                                                , ExpirationDate(..)
                                                 , GetArticleActions(..)
                                                 , GetArticlesActions(..)
+                                                , Id
                                                 , QueryAction(..)
+                                                , Reference(..)
+                                                , Resource
+                                                , ResourceOverviewAccess(..)
                                                 , ResourceOverviewActions(..)
-                                                )
-import           Lib.Core.Domain.Context        ( Context(..) )
-import           Lib.Core.Domain.Entity         ( Entity(..) )
-import qualified Lib.Core.Domain.Entity        as Entity
-import           Lib.Core.Domain.ExpirationDate ( ExpirationDate(..) )
-import           Lib.Core.Domain.Frontend       ( ResourceOverviewAccess(..)
+                                                , Revocable
                                                 , ShowArticleAccess(..)
                                                 , ShowArticlesAccess(..)
+                                                , mkAccesstoken
                                                 )
-import           Lib.Core.Domain.Id             ( Id )
-import           Lib.Core.Domain.Resource       ( Resource )
-import           Lib.Core.Effect.Repository     ( ContextState(..)
+import qualified Lib.Core.Domain.Entity        as Entity
+import           Lib.Core.Effect                ( ContextState(..)
+                                                , MonadTime(..)
                                                 , SealedResource
                                                 )
 import qualified Lib.Core.Effect.Repository    as R
-import           Lib.Core.Effect.Time           ( MonadTime(..) )
-import           Relude.Extra.Bifunctor         ( secondF )
+
+import           Relude.Extra                   ( secondF )
 
 getResourceOverviewAccs
   :: (WithError m, WithLog env m)

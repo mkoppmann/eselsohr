@@ -3,8 +3,8 @@ module Lib.Web.Controller.Query
   ) where
 
 import           Data.Aeson                     ( Value )
-import           Lib.App.Error                  ( WithError )
-import           Lib.Core.Domain.Accesstoken    ( Accesstoken )
+import           Lib.App                        ( WithError )
+import           Lib.Core.Domain                ( Accesstoken )
 import qualified Lib.Web.Controller.Common     as CC
 import qualified Lib.Web.Route.Query           as Route
 import           Lib.Web.Types                  ( AppServer )

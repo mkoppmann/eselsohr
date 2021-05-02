@@ -11,44 +11,42 @@ module Lib.Core.Action.Command
 
 import qualified Data.HashSet                  as Set
 import qualified Data.Text                     as Text
-import           Lib.App.Error                  ( WithError
+import           Lib.App                        ( WithError
                                                 , missingParameter
                                                 , serverError
                                                 , throwError
                                                 )
-import           Lib.Core.Domain.Accesstoken    ( Reference(..)
-                                                , mkAccesstoken
-                                                )
-import           Lib.Core.Domain.Article        ( Article(..)
+import           Lib.Core.Domain                ( Action(..)
+                                                , Article(..)
                                                 , ArticleState(..)
-                                                )
-import           Lib.Core.Domain.Capability     ( Action(..)
                                                 , Capability(..)
                                                 , CommandAction(..)
+                                                , Context(..)
                                                 , CreateGetArticlesCapActions(..)
                                                 , DeleteAction(..)
+                                                , Entity(..)
+                                                , ExpirationDate
                                                 , GetArticleActions(..)
                                                 , GetArticlesActions(..)
+                                                , Id
                                                 , PatchAction(..)
                                                 , PostAction(..)
                                                 , QueryAction(..)
+                                                , Reference(..)
                                                 , ResourceOverviewActions(..)
+                                                , StoreEvent
+                                                , Uri
+                                                , mkAccesstoken
                                                 )
-import           Lib.Core.Domain.Context        ( Context(..) )
-import           Lib.Core.Domain.Entity         ( Entity(..) )
 import qualified Lib.Core.Domain.Entity        as Entity
-import           Lib.Core.Domain.ExpirationDate ( ExpirationDate )
-import           Lib.Core.Domain.Id             ( Id )
-import           Lib.Core.Domain.StoreEvent     ( StoreEvent )
-import           Lib.Core.Domain.Uri            ( Uri )
-import           Lib.Core.Effect.Random         ( MonadRandom(..) )
-import           Lib.Core.Effect.Repository     ( ContextState(..)
+import           Lib.Core.Effect                ( ContextState(..)
+                                                , MonadRandom(..)
+                                                , MonadScraper(..)
+                                                , MonadTime(..)
                                                 , WriteState(..)
                                                 )
 import qualified Lib.Core.Effect.Repository    as R
-import           Lib.Core.Effect.Scraper        ( MonadScraper(..) )
-import           Lib.Core.Effect.Time           ( MonadTime(..) )
-import           Lib.Web.Route.Common           ( collectionMainR
+import           Lib.Web.Route                  ( collectionMainR
                                                 , linkAsText
                                                 )
 

@@ -13,45 +13,44 @@ import qualified Data.HashSet                  as Set
 import           Data.Time                      ( UTCTime(..)
                                                 , addGregorianMonthsClip
                                                 )
-import           Lib.App.Error                  ( WithError
+import           Lib.App                        ( pattern E
+                                                , pattern I
+                                                , WithError
+                                                , WithLog
+                                                , log
                                                 , notFound
                                                 , redirect303
                                                 , serverError
                                                 , throwError
                                                 )
-import           Lib.App.Log                    ( pattern E
-                                                , pattern I
-                                                , WithLog
-                                                , log
-                                                )
 import qualified Lib.Core.Action               as Action
 import qualified Lib.Core.Action.Query         as Query
-import           Lib.Core.Domain.Accesstoken    ( Accesstoken
-                                                , Revocable
-                                                )
-import           Lib.Core.Domain.Article        ( Article(..) )
-import           Lib.Core.Domain.Capability     ( Action(..)
+import           Lib.Core.Domain                ( Accesstoken
+                                                , Action(..)
+                                                , Article(..)
                                                 , Capability
+                                                , Context(..)
+                                                , ExpirationDate(..)
                                                 , GetArticlesActions
+                                                , Id
                                                 , QueryAction(..)
+                                                , ResourceOverviewAccess
                                                 , ResourceOverviewActions(..)
-                                                )
-import           Lib.Core.Domain.Context        ( Context(..) )
-import qualified Lib.Core.Domain.Entity        as Entity
-import           Lib.Core.Domain.ExpirationDate ( ExpirationDate(..) )
-import           Lib.Core.Domain.Frontend       ( ResourceOverviewAccess
+                                                , Revocable
                                                 , ShowArticleAccess(..)
                                                 )
-import           Lib.Core.Domain.Id             ( Id )
+
+import qualified Lib.Core.Domain.Entity        as Entity
+
 import qualified Lib.Core.Domain.Uri           as Uri
-import           Lib.Core.Effect.Random         ( MonadRandom )
-import           Lib.Core.Effect.Repository     ( ContextState(..)
+import           Lib.Core.Effect                ( ContextState(..)
+                                                , MonadRandom
+                                                , MonadScraper
+                                                , MonadTime(..)
                                                 , RWState
                                                 , ReadState
                                                 , WriteState
                                                 )
-import           Lib.Core.Effect.Scraper        ( MonadScraper )
-import           Lib.Core.Effect.Time           ( MonadTime(..) )
 import qualified Lib.Core.Flow                 as Flow
 import qualified Lib.Web.Controller.Common     as CC
 import qualified Lib.Web.Route                 as Route
@@ -65,7 +64,7 @@ import           Lib.Web.Types                  ( AppServer
 import qualified Lib.Web.View.App              as App
 import qualified Lib.Web.View.Page             as Page
 import           Lib.Web.View.Style             ( appStylesheet )
-import           Servant.Links                  ( Link )
+import           Servant                        ( Link )
 
 frontend :: Route.FrontendSite AppServer
 frontend = Route.FrontendSite { Route.startpage      = startpage

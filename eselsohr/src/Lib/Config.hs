@@ -11,10 +11,10 @@ import           Configuration.Dotenv           ( configPath
                                                 )
 import           Control.Monad.Catch            ( MonadCatch )
 import           Data.Text                      ( toTitle )
-import           Lib.App.Env                    ( DataPath
+import           Lib.App                        ( DataPath
                                                 , MaxConcurrentWrites
                                                 )
-import           Lib.Core.Domain.Uri            ( Uri(..)
+import           Lib.Core.Domain                ( Uri(..)
                                                 , baseUri
                                                 )
 import           Network.Wai.Handler.Warp       ( Port )

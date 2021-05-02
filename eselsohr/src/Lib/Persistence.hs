@@ -3,20 +3,20 @@ module Lib.Persistence
   ) where
 
 import qualified Data.HashMap.Strict           as Map
-import           Lib.App.Env                    ( MaxConcurrentWrites
+import           Lib.App                        ( AppEnv
+                                                , pattern E
+                                                , MaxConcurrentWrites
+                                                , WithError
+                                                , WithLog
                                                 , WriteQueue
                                                 , grab
-                                                )
-import           Lib.App.Error                  ( WithError )
-import           Lib.App.Log                    ( pattern E
-                                                , WithLog
                                                 , log
                                                 , runAppLogIO_
                                                 )
-import           Lib.App.Monad                  ( AppEnv )
-import           Lib.Core.Domain.Id             ( Id )
-import           Lib.Core.Domain.Resource       ( Resource )
-import           Lib.Core.Domain.StoreEvent     ( SynchronizedStoreEvent(..) )
+import           Lib.Core.Domain                ( Id
+                                                , Resource
+                                                , SynchronizedStoreEvent(..)
+                                                )
 import           Lib.Impl.Repository.File       ( WithFile
                                                 , save
                                                 )

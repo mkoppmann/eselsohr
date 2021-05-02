@@ -9,8 +9,8 @@ module Lib.Web.View.Form
   , deleteUnlockLink
   ) where
 
-import           Lib.Core.Domain.Accesstoken    ( Accesstoken )
-import           Lib.Core.Domain.ExpirationDate ( ExpirationDate
+import           Lib.Core.Domain                ( Accesstoken
+                                                , ExpirationDate
                                                 , expDateToText
                                                 )
 import qualified Lib.Web.Route.Common          as Route

@@ -17,20 +17,19 @@ import           Codec.Compression.Zstd         ( Decompress(..)
 import qualified Codec.Serialise               as Ser
 import           Codec.Serialise.Class          ( Serialise )
 import qualified Data.Sequence                 as Seq
-import           Lib.App.Env                    ( DataPath
+import           Lib.App                        ( AppErrorType
+                                                , DataPath
                                                 , Has
                                                 , MaxConcurrentWrites
+                                                , WithError
                                                 , WriteQueue
                                                 , grab
-                                                )
-import           Lib.App.Error                  ( AppErrorType
-                                                , WithError
                                                 , storeError
                                                 , throwError
                                                 , throwOnNothing
                                                 )
-import           Lib.Core.Domain                ( Id )
-import           Lib.Core.Domain.StoreEvent     ( StoreEvent
+import           Lib.Core.Domain                ( Id
+                                                , StoreEvent
                                                 , apply
                                                 )
 import           Prelude                 hiding ( init )

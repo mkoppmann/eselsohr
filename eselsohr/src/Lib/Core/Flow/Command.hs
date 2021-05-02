@@ -4,28 +4,30 @@ module Lib.Core.Flow.Command
   , postAction
   ) where
 
-import           Lib.App.Error                  ( WithError )
-import           Lib.App.Log                    ( pattern E
+import           Lib.App                        ( pattern E
+                                                , WithError
                                                 , WithLog
                                                 , log
                                                 )
 import qualified Lib.Core.Action.Command       as Action
-import           Lib.Core.Domain.Capability     ( Action(..)
+import           Lib.Core.Domain                ( Action(..)
                                                 , CommandAction(..)
                                                 , DeleteAction(..)
+                                                , ExpirationDate
                                                 , PatchAction(..)
                                                 , PostAction(..)
+                                                , Uri
                                                 )
-import qualified Lib.Core.Domain.Context       as Context
-import qualified Lib.Core.Domain.Entity        as Entity
-import           Lib.Core.Domain.ExpirationDate ( ExpirationDate )
-import           Lib.Core.Domain.Uri            ( Uri )
-import           Lib.Core.Effect.Random         ( MonadRandom )
-import           Lib.Core.Effect.Repository     ( ContextState(..)
+import           Lib.Core.Effect                ( ContextState(..)
+                                                , MonadRandom
+                                                , MonadScraper
+                                                , MonadTime
                                                 , WriteState
                                                 )
-import           Lib.Core.Effect.Scraper        ( MonadScraper )
-import           Lib.Core.Effect.Time           ( MonadTime )
+
+import qualified Lib.Core.Domain.Context       as Context
+import qualified Lib.Core.Domain.Entity        as Entity
+
 
 deleteAction :: (WriteState m, WithLog env m) => ContextState -> m ()
 deleteAction ctx = case Entity.val . Context.ctxAct $ csContext ctx of

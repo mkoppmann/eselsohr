@@ -43,7 +43,7 @@ import           GHC.Stack                      ( SrcLoc
                                                   , srcLocStartLine
                                                   )
                                                 )
-import           Servant.Server                 ( err303
+import           Servant                        ( err303
                                                 , err307
                                                 , err400
                                                 , err404

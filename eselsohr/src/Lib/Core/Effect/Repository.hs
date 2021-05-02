@@ -40,18 +40,17 @@ module Lib.Core.Effect.Repository
 import           Lib.App                        ( App
                                                 , WithError
                                                 )
-import           Lib.Core.Domain.Article        ( Article
+import           Lib.Core.Domain                ( Action(..)
+                                                , Article
                                                 , ArticleState
+                                                , Capability(..)
+                                                , Context
+                                                , Entity(..)
+                                                , Id
+                                                , Resource
+                                                , StoreEvent
                                                 )
 import qualified Lib.Core.Domain.Article       as Article
-import           Lib.Core.Domain.Capability     ( Action(..)
-                                                , Capability(..)
-                                                )
-import           Lib.Core.Domain.Context        ( Context )
-import           Lib.Core.Domain.Entity         ( Entity(..) )
-import           Lib.Core.Domain.Id             ( Id )
-import           Lib.Core.Domain.Resource       ( Resource )
-import           Lib.Core.Domain.StoreEvent     ( StoreEvent )
 import qualified Lib.Impl.Repository           as Impl
 
 newtype SealedResource = SealedResource {unSealResource :: Resource}

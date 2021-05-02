@@ -3,8 +3,7 @@ module Test.Static
   ) where
 
 import           Lib.App                        ( AppEnv )
-import           Lib.App.Env                    ( )
-import           Lib.Web.Controller.Frontend    ( startpage )
+import           Lib.Web.Controller             ( startpage )
 import           Test.Assert                    ( succeeds )
 import           Test.Common                    ( joinSpecs )
 import           Test.Hspec                     ( Spec

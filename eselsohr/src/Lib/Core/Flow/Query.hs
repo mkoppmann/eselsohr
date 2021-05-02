@@ -3,11 +3,11 @@ module Lib.Core.Flow.Query
   ) where
 
 import           Data.Aeson                     ( Value )
-import           Lib.App.Error                  ( WithError
+import           Lib.App                        ( WithError
                                                 , serverError
                                                 , throwError
                                                 )
-import           Lib.Core.Effect.Repository     ( ContextState )
+import           Lib.Core.Effect                ( ContextState )
 
 queryAction :: (WithError m) => ContextState -> m Value
 queryAction _ = throwError $ serverError "Not implemented yet"

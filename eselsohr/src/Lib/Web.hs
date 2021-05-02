@@ -10,10 +10,7 @@ import           Lib.App                        ( AppEnv
                                                 , runAppAsHandler
                                                 )
 import qualified Lib.Web.Controller            as Controller
-                                                ( command
-                                                , frontend
-                                                , query
-                                                )
+
 import           Lib.Web.Route                  ( Command
                                                 , Frontend
                                                 , Query
@@ -32,13 +29,14 @@ import           Network.Wai.Middleware.MethodOverridePost
                                                 ( methodOverridePost )
 import           Network.Wai.Middleware.NoOp    ( noOp )
 import           Network.Wai.Middleware.RealIp  ( realIpHeader )
-import           Servant.API                    ( (:<|>)(..) )
-import           Servant.API.Generic            ( toServant )
-import           Servant.Server                 ( Application
+
+import           Servant                        ( (:<|>)(..)
+                                                , Application
                                                 , Server
                                                 , hoistServer
                                                 , serve
                                                 )
+import           Servant.API.Generic            ( toServant )
 
 type Api = Frontend :<|> Query :<|> Command
 
