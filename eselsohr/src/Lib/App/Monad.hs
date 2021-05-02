@@ -9,12 +9,6 @@ import           Lib.App.Env                    ( Env )
 import           Lib.App.Error                  ( AppError
                                                 , AppException(..)
                                                 )
-import           Lib.Core.Effect.Random         ( MonadRandom(..) )
-import           Lib.Core.Effect.Scraper        ( MonadScraper(..) )
-import           Lib.Core.Effect.Time           ( MonadTime(..) )
-import qualified Lib.Impl.Random               as RandomImpl
-import qualified Lib.Impl.Scraper              as ScraperImpl
-import qualified Lib.Impl.Time                 as TimeImpl
 import           Relude.Extra                   ( firstF )
 import           UnliftIO                       ( MonadUnliftIO
                                                 , catch
@@ -56,14 +50,3 @@ runAppAsIO env = firstF unAppException . try . runApp env
 -}
 runApp :: AppEnv -> App a -> IO a
 runApp env = usingReaderT env . unApp
-
--- * Monad effect instances
-
-instance MonadRandom App where
-  getRandomId = RandomImpl.getRandomId
-
-instance MonadScraper App where
-  scrapWebsite = ScraperImpl.scrapWebsite
-
-instance MonadTime App where
-  getCurrentTime = TimeImpl.getCurrentTime
