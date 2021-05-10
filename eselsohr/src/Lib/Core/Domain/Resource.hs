@@ -5,9 +5,7 @@ module Lib.Core.Domain.Resource
 
 import           Codec.Serialise.Class          ( Serialise )
 import           Lib.Core.Domain.Article        ( Article )
-import           Lib.Core.Domain.Capability     ( Action
-                                                , Capability
-                                                )
+import           Lib.Core.Domain.Capability     ( Capability )
 import           Lib.Core.Domain.Id             ( Id )
 
 newtype Resource = ArticleResource ArticleCollection
@@ -15,9 +13,8 @@ newtype Resource = ArticleResource ArticleCollection
   deriving anyclass (Serialise)
 
 data ArticleCollection = ArticleCollection
-  { artCapCollection :: !(HashMap (Id Capability) Capability)
-  , artActCollection :: !(HashMap (Id Action) Action)
-  , artCollection    :: !(HashMap (Id Article) Article)
+  { artCollection    :: !(HashMap (Id Article) Article)
+  , artCapCollection :: !(HashMap (Id Capability) Capability)
   }
   deriving stock (Generic, Show, Eq)
   deriving anyclass Serialise

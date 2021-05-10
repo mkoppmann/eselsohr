@@ -28,7 +28,7 @@ cabal configure --disable-executable-static
 ## Deploy Eselsohr
 
 Eselsohr is distributed as a single statically-linked binary and does not have any other system dependencies.
-It can be configured by using [env vars](https://en.wikipedia.org/wiki/Environment_variable) or by using a configuration file (`eselsohr --config-file path/to/file`).
+It can be configured by using [env vars](https://en.wikipedia.org/wiki/Environment_variable) or by using a configuration file (`eselsohr --config-file /path/to/file`).
 By default it looks for an `.env` file in the current working directory.
 
 The following values can be set:
@@ -62,7 +62,7 @@ The `dist` directory in this repository provides deployment relevant files, like
 
 ### Docker-based
 
-Alternatively, a Dockerimage is provided.
+Alternatively, a Docker image is provided.
 You can build and run it like so:
 
 ```shell
@@ -82,22 +82,20 @@ This has certain disadvantages, some of them are listed in the description of th
 
 In Eselsohr authorization works with capabilities.
 A capability is a shareable, unforgeable token that references a piece of data, including the associated set of access rights.
-In our case, authorized requests work with access tokens, which are transmitted either over HTTP Query Parameters or in an HTML body.
-An access token points to a capability, which can have some optional properties like a pet-name, or an expiration date.
-A capability points to an user action, the core of Eselsohr.
-All actions that can be executed by an user are represented as values in the system, e.g. there are multiple actions per article, like showing, or deleting the article or marking it as read.
-Also opening a new collection, or creating an access token for listing your articles is an user action.
+In our case, authorized requests work with access tokens, [base32-encoded](https://en.wikipedia.org/wiki/Base32) binary data, which are transmitted either over HTTP query strings or in an HTML body.
+An access token points to a capability, which points to a data structure called ObjectReference.
+They can also have some additional, optional properties like a pet-name, or an expiration date.
+An object reference gives access to a collection or a single resource and has the associated permissions encoded within.
 
-This allows Eselsohr to provide a single API endpoint for everything.
-Access tokens get converted to capabilities and user actions and the server handles them accordingly.
-This means that security becomes explicit and represents the control flow of the application.
-A single API endpoint also makes the API unguessable; the only way to perform actions on the system is by using access tokens that were given out by the system.
-This inverts the classic API security model: Instead of having a predictable API where every endpoints needs to be protected to prevent malicious access to data, an unpredictable API means, that if you forget to share access to data, it stays secure.
+Object references are required for accessing the global state, like fetching an article with a specific id.
+This is enforced by authorized actions: a data type which corresponds to user actions like creating a new article, or changing an article’s title.
+To obtain such an authorized action token, one has to pass a object reference and in some cases the id, on which the action will be performed, to functions, which evaluate if the required permissions are set in the object reference.
+This forces us to do authorization checks and we can’t forget to do them.
 
 The application tries to incorporate the [Principle of Least Privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege) wherever it can.
 Instead of using one single data storage for everything, each article collection is stored as a separate resource in the system.
 In theory, if Eselsohr would have a vulnerability like a SQL Injection, an attacker could only access their own data, because they do not have a reference to the other resources.
-Access tokens are encoded binary data, that point to an id of a resource and the id of a capability; this means that they work across multiple server instances, as long as the server has access to that resource.
+Because access tokens are encoded binary data, that point to an id of a resource and the id of a capability, they work across multiple server instances, as long as the server has access to that resource.
 
 Eselsohr is written in the programming language [Haskell](https://en.wikipedia.org/wiki/Haskell_(programming_language)).
 Although it’s never explicitly called one, Haskell is a great language to implement capability-based techniques, as functions are pure and data has to be explicitly passed as arguments to other functions and global state is rarely used.

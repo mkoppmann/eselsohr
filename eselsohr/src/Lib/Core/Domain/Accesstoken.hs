@@ -27,8 +27,7 @@ data Reference = Reference
   deriving anyclass Serialise
 
 newtype Accesstoken = Accesstoken {unAccesstoken :: LByteString}
-  deriving stock (Generic, Eq)
-  deriving anyclass (Serialise)
+  deriving (Eq) via LByteString
 
 instance Show Accesstoken where
   show = toString . toUrlPiece
@@ -42,7 +41,7 @@ instance FromHttpApiData Accesstoken where
       . decodeBase32
       . encodeUtf8
 
-type Revocable = (Accesstoken, Accesstoken)
+type Revocable = (Id Capability, Accesstoken)
 
 mkAccesstoken :: Reference -> Accesstoken
 mkAccesstoken = Accesstoken . Ser.serialise

@@ -1,6 +1,6 @@
 module Lib.Web.View.Form
   ( createCollection
-  , createGetArticlesCap
+  , createUnlockLink
   , createArticle
   , changeArticleTitle
   , archiveArticle
@@ -10,59 +10,28 @@ module Lib.Web.View.Form
   ) where
 
 import           Lib.Core.Domain                ( Accesstoken
+                                                , Article
+                                                , Capability
                                                 , ExpirationDate
+                                                , Id
                                                 , expDateToText
                                                 )
-import qualified Lib.Web.Route.Common          as Route
+import qualified Lib.Web.Route                 as Route
 import           Lucid
 import           Servant                        ( Link
+                                                , fieldLink
                                                 , toUrlPiece
                                                 )
 
 createCollection :: Html ()
 createCollection =
-  form_ [linkAbsAction_ Route.createResourceR, method_ "POST"] $ do
-    input_ [type_ "hidden", name_ "_method", value_ "POST"]
+  form_ [linkAbsAction_ $ fieldLink Route.createCollection, method_ "POST"] $ do
     input_ [type_ "submit", value_ "Create new collection"]
 
-genPost
-  :: Bool -> Text -> Link -> [Html ()] -> Text -> Accesstoken -> Link -> Html ()
-genPost asLink commandMethod route inputFields buttonName acc gotoUrl =
-  form_ [linkAbsAction_ route, method_ "POST"] $ do
-    input_ [type_ "hidden", name_ "_method", value_ commandMethod]
-    input_ [type_ "hidden", name_ "acc", value_ $ toUrlPiece acc]
-    input_ [type_ "hidden", name_ "goto", linkAbsValue_ gotoUrl]
-    sequenceA_ inputFields
-    if asLink
-      then button_ [type_ "submit", class_ "link"] . span_ $ toHtml buttonName
-      else input_ [type_ "submit", value_ buttonName]
-
-postMethodButton :: [Html ()] -> Text -> Accesstoken -> Link -> Html ()
-postMethodButton = genPost False "POST" Route.actionR
-
-patchMethodButton :: [Html ()] -> Text -> Accesstoken -> Link -> Html ()
-patchMethodButton = genPost False "PATCH" Route.actionR
-
-patchMethodLink :: [Html ()] -> Text -> Accesstoken -> Link -> Html ()
-patchMethodLink = genPost True "PATCH" Route.actionR
-
-deleteMethodLink :: Text -> Accesstoken -> Link -> Html ()
-deleteMethodLink = genPost True "DELETE" Route.actionR []
-
-createArticle :: Accesstoken -> Link -> Html ()
-createArticle = postMethodButton [urlInput] "Save article"
- where
-  urlInput = input_ [type_ "text", name_ "articleUri", placeholder_ "URL"]
-
-deleteUnlockLink :: Accesstoken -> Link -> Html ()
-deleteUnlockLink = deleteMethodLink "Delete unlock link"
-
-deleteArticle :: Accesstoken -> Link -> Html ()
-deleteArticle = deleteMethodLink "Delete article"
-
-createGetArticlesCap
-  :: (ExpirationDate, ExpirationDate) -> Accesstoken -> Link -> Html ()
-createGetArticlesCap (currTime, expTime) = postMethodButton
+createUnlockLink
+  :: ExpirationDate -> ExpirationDate -> Accesstoken -> Link -> Html ()
+createUnlockLink currTime expTime = postMethodButton
+  (fieldLink Route.createUnlockLink)
   [options]
   "Create access link"
  where
@@ -83,17 +52,71 @@ createGetArticlesCap (currTime, expTime) = postMethodButton
       , value_ $ expDateToText expTime
       ]
 
-changeArticleTitle :: Text -> Accesstoken -> Link -> Html ()
-changeArticleTitle artTitle = patchMethodButton [changeTitle] "Change title"
+deleteUnlockLink :: Id Capability -> Accesstoken -> Link -> Html ()
+deleteUnlockLink unlockLinkId = deleteMethodLink
+  (fieldLink Route.deleteUnlockLink unlockLinkId)
+  []
+  "Delete unlock link"
+
+createArticle :: Accesstoken -> Link -> Html ()
+createArticle = postMethodButton (fieldLink Route.createArticle)
+                                 [urlInput]
+                                 "Save article"
+ where
+  urlInput = input_ [type_ "text", name_ "articleUri", placeholder_ "URL"]
+
+changeArticleTitle :: Id Article -> Text -> Accesstoken -> Link -> Html ()
+changeArticleTitle artId artTitle = patchMethodButton
+  (fieldLink Route.patchArticle artId)
+  [changeTitle]
+  "Change title"
  where
   changeTitle =
     input_ [type_ "text", name_ "articleTitle", value_ $ toText artTitle]
 
-archiveArticle :: Accesstoken -> Link -> Html ()
-archiveArticle = patchMethodLink [] "Mark as read"
+archiveArticle :: Id Article -> Accesstoken -> Link -> Html ()
+archiveArticle artId = patchMethodLink (fieldLink Route.patchArticle artId)
+                                       [archive]
+                                       "Mark as read"
+ where
+  archive = input_ [type_ "hidden", name_ "articleState", value_ "Archived"]
 
-unreadArticle :: Accesstoken -> Link -> Html ()
-unreadArticle = patchMethodLink [] "Mark as unread"
+unreadArticle :: Id Article -> Accesstoken -> Link -> Html ()
+unreadArticle artId = patchMethodLink (fieldLink Route.patchArticle artId)
+                                      [unread]
+                                      "Mark as unread"
+  where unread = input_ [type_ "hidden", name_ "articleState", value_ "Unread"]
+
+deleteArticle :: Id Article -> Accesstoken -> Link -> Html ()
+deleteArticle artId =
+  deleteMethodLink (fieldLink Route.deleteArticle artId) [] "Delete article"
+
+-- Helpers
+
+genPost
+  :: Bool -> Text -> Link -> [Html ()] -> Text -> Accesstoken -> Link -> Html ()
+genPost asLink commandMethod route inputFields buttonName acc gotoUrl =
+  form_ [linkAbsAction_ route, method_ "POST"] $ do
+    input_ [type_ "hidden", name_ "_method", value_ commandMethod]
+    input_ [type_ "hidden", name_ "acc", value_ $ toUrlPiece acc]
+    input_ [type_ "hidden", name_ "goto", linkAbsValue_ gotoUrl]
+    sequenceA_ inputFields
+    if asLink
+      then button_ [type_ "submit", class_ "link"] . span_ $ toHtml buttonName
+      else input_ [type_ "submit", value_ buttonName]
+
+postMethodButton :: Link -> [Html ()] -> Text -> Accesstoken -> Link -> Html ()
+postMethodButton = genPost False "POST"
+
+patchMethodButton
+  :: Link -> [Html ()] -> Text -> Accesstoken -> Link -> Html ()
+patchMethodButton = genPost False "PATCH"
+
+patchMethodLink :: Link -> [Html ()] -> Text -> Accesstoken -> Link -> Html ()
+patchMethodLink = genPost True "PATCH"
+
+deleteMethodLink :: Link -> [Html ()] -> Text -> Accesstoken -> Link -> Html ()
+deleteMethodLink = genPost True "DELETE"
 
 linkAbsAction_ :: Link -> Attribute
 linkAbsAction_ = action_ . ("/" <>) . toUrlPiece

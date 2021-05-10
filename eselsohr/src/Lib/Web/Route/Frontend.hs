@@ -4,22 +4,17 @@ module Lib.Web.Route.Frontend
   ) where
 
 import           Clay                           ( Css )
-import           Lib.Core.Domain                ( Accesstoken )
-import           Lib.Web.Types                  ( DeleteActionForm
-                                                , HtmlPage
-                                                , PatchActionForm
-                                                , PostActionForm
-                                                , Redirection
+import           Lib.Core.Domain                ( Accesstoken
+                                                , Article
+                                                , Id
+                                                )
+import           Lib.Web.Types                  ( HtmlPage
                                                 , ToApi
                                                 )
 import           Servant                        ( (:>)
-                                                , Delete
-                                                , FormUrlEncoded
+                                                , Capture
                                                 , Get
-                                                , Patch
-                                                , Post
                                                 , QueryParam
-                                                , ReqBody
                                                 )
 import           Servant.API.Generic            ( GenericMode((:-)) )
 import           Servant.CSS.Clay               ( CSS )
@@ -29,60 +24,38 @@ data FrontendSite route = FrontendSite
   { startpage ::
       route
         :- Get '[HTML] HtmlPage
-  , collectionMain ::
+  , invalidToken ::
       route
-        :- "collection"
+        :- "invalid-token"
+        :> Get '[HTML] HtmlPage
+  , collectionOverview ::
+      route
+        :- "resources"
         :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage
-  , listArticles ::
+  , viewArticles ::
       route
         :- "articles"
         :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage
-  , showArticle ::
+  , viewArticle ::
       route
         :- "articles"
-        :> "read"
+        :> Capture "articleId" (Id Article)
         :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage
   , editArticle ::
       route
         :- "articles"
+        :> Capture "articleId" (Id Article)
         :> "edit"
         :> QueryParam "acc" Accesstoken
-        :> Get '[HTML] HtmlPage
-  , invalidToken ::
-      route
-        :- "invalid-token"
         :> Get '[HTML] HtmlPage
   , stylesheet ::
       route
         :- "static"
         :> "style.css"
         :> Get '[CSS] Css
-  , createResource ::
-      route
-        :- "api"
-        :> "new-resource"
-        :> Post '[HTML] Redirection
-  , deleteFrontend ::
-      route
-        :- "api"
-        :> "cap"
-        :> ReqBody '[FormUrlEncoded] DeleteActionForm
-        :> Delete '[HTML] Redirection
-  , patchFrontend ::
-      route
-        :- "api"
-        :> "cap"
-        :> ReqBody '[FormUrlEncoded] PatchActionForm
-        :> Patch '[HTML] Redirection
-  , postFrontend ::
-      route
-        :- "api"
-        :> "cap"
-        :> ReqBody '[FormUrlEncoded] PostActionForm
-        :> Post '[HTML] Redirection
   }
   deriving stock (Generic)
 

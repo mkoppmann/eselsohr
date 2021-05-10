@@ -5,14 +5,23 @@ module Lib.Web.Types
   , ToApi
   , HtmlPage
   , Redirection
-  , DeleteActionForm(..)
-  , PatchActionForm(..)
-  , PostActionForm(..)
+  , CollectionOverviewData(..)
+  , ArticleListData(..)
+  , ViewArticleData(..)
+  , DeleteItemForm(..)
+  , PatchArticleForm(..)
+  , PostCreateUnlockLinkForm(..)
+  , PostCreateArticleForm(..)
   ) where
 
 import           Lib.App                        ( App )
 import           Lib.Core.Domain                ( Accesstoken
+                                                , Article
+                                                , ArticleState
+                                                , Capability
+                                                , Entity
                                                 , ExpirationDate
+                                                , Revocable
                                                 , Uri
                                                 )
 import           Lucid                          ( Html )
@@ -28,27 +37,61 @@ type HtmlPage = Html ()
 
 type Redirection = HtmlPage
 
-data DeleteActionForm = DeleteActionForm
+data CollectionOverviewData = CollectionOverviewData
+  { acc                 :: !Accesstoken
+  , canCreateUnlockLink :: !Bool
+  , earliestExpDate     :: !ExpirationDate
+  , defaultExpDate      :: !ExpirationDate
+  , unlockLinks         :: !(Seq (Capability, Revocable))
+  }
+
+data ArticleListData = ArticleListData
+  { acc                   :: !Accesstoken
+  , canCreateArticles     :: !Bool
+  , canChangeArticleTitle :: !Bool
+  , canChangeArticleState :: !Bool
+  , canDeleteArticle      :: !Bool
+  , articles              :: !(Seq (Entity Article))
+  }
+
+data ViewArticleData = ViewArticleData
+  { acc                   :: !Accesstoken
+  , canViewArticles       :: !Bool
+  , canChangeArticleTitle :: !Bool
+  , canChangeArticleState :: !Bool
+  , canDeleteArticle      :: !Bool
+  , article               :: !(Entity Article)
+  }
+
+data DeleteItemForm = DeleteItemForm
   { acc  :: !Accesstoken
   , goto :: !Uri
   }
   deriving stock Generic
   deriving anyclass FromForm
 
-data PatchActionForm = PatchActionForm
+data PatchArticleForm = PatchArticleForm
   { acc          :: !Accesstoken
   , goto         :: !Uri
   , articleTitle :: !(Maybe Text)
+  , articleState :: !(Maybe ArticleState)
   }
   deriving stock Generic
   deriving anyclass FromForm
 
-data PostActionForm = PostActionForm
+data PostCreateUnlockLinkForm = PostCreateUnlockLinkForm
   { acc            :: !Accesstoken
   , goto           :: !Uri
-  , articleUri     :: !(Maybe Uri)
   , petname        :: !(Maybe Text)
   , expirationDate :: !(Maybe ExpirationDate)
+  }
+  deriving stock Generic
+  deriving anyclass FromForm
+
+data PostCreateArticleForm = PostCreateArticleForm
+  { acc        :: !Accesstoken
+  , goto       :: !Uri
+  , articleUri :: !Uri
   }
   deriving stock Generic
   deriving anyclass FromForm

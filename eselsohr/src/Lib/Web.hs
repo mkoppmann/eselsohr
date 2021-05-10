@@ -11,9 +11,10 @@ import           Lib.App                        ( AppEnv
                                                 )
 import qualified Lib.Web.Controller            as Controller
 
-import           Lib.Web.Route                  ( Command
+import           Lib.Web.Route                  ( Articles
+                                                , Collections
                                                 , Frontend
-                                                , Query
+                                                , UnlockLinks
                                                 )
 import           Network.Wai                    ( Middleware )
 import           Network.Wai.Handler.Warp       ( Port )
@@ -38,14 +39,15 @@ import           Servant                        ( (:<|>)(..)
                                                 )
 import           Servant.API.Generic            ( toServant )
 
-type Api = Frontend :<|> Query :<|> Command
+type Api = Frontend :<|> Articles :<|> Collections :<|> UnlockLinks
 
 server :: AppEnv -> Server Api
 server env =
   hoistServer (Proxy @Api) (runAppAsHandler env)
     $    toServant Controller.frontend
-    :<|> toServant Controller.query
-    :<|> toServant Controller.command
+    :<|> toServant Controller.article
+    :<|> toServant Controller.collection
+    :<|> toServant Controller.unlockLink
 
 application :: Port -> AppEnv -> Application
 application port env@Env {..} =
@@ -61,9 +63,8 @@ application port env@Env {..} =
  where
   enforceHttps :: Middleware
   enforceHttps = case envHttps of
-    HttpsOn ->
-      let config = EnforceHTTPS.defaultConfig { EnforceHTTPS.httpsPort = port }
-      in  EnforceHTTPS.withConfig config
+    HttpsOn -> EnforceHTTPS.withConfig
+      $ EnforceHTTPS.defaultConfig { EnforceHTTPS.httpsPort = port }
     HttpsOff -> noOp
 
   hstsHeader :: Middleware

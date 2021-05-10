@@ -16,7 +16,6 @@ import           Codec.Compression.Zstd         ( Decompress(..)
                                                 )
 import qualified Codec.Serialise               as Ser
 import           Codec.Serialise.Class          ( Serialise )
-import qualified Data.Sequence                 as Seq
 import           Lib.App                        ( AppErrorType
                                                 , DataPath
                                                 , Has
@@ -55,9 +54,7 @@ save :: (WithError m, WithFile env m) => Id a -> Seq StoreEvent -> m ()
 save resId updates = do
   fp      <- idToPath resId
   content <- decodeFile fp
-  -- We need to reverse the order of updates because of how foldr traverses the
-  -- list.
-  let newContent = foldr apply content $ Seq.reverse updates
+  let newContent = foldl' apply content updates
   encodeFile fp newContent
 
 exists :: (WithFile env m) => Id a -> m Bool
@@ -88,9 +85,7 @@ decodeFile fp =
 idToPath :: (WithFile env m) => Id a -> m FilePath
 idToPath resId = do
   dataPath <- grab @DataPath
-  let showId     = show resId
-  let fileEnding = ".bin"
-  pure $ dataPath <> showId <> fileEnding
+  pure $ dataPath <> show resId <> ".bin"
 
 -- * Error helpers
 

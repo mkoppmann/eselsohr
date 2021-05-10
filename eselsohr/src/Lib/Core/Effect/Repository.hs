@@ -4,30 +4,46 @@ module Lib.Core.Effect.Repository
     SealedResource
   , ContextState(..)
   , ReadState(..)
-  , ReadResource(..)
   , WriteState(..)
-  , WriteResource(..)
   , RWState
 
-  -- * Getter helpers
-  , getOne
-  , Impl.getCapIdForActId
-  , Impl.lookupCapIdForActId
+  -- * Getter
+  , getOneArt
+  , lookupArt
+  , getAllArt
+  , getOneCap
+  , lookupCap
+  , getAllCap
 
-  -- * 'Article' helpers
-  , Impl.artUpdateTitle
-  , Impl.artUpdateState
+  -- * Setter
+  , insertArt
+  , updateArtTitle
+  , updateArtState
+  , deleteArt
+  , insertCap
+  , updateCap
+  , deleteCap
+
+  -- * Direct access without authorization
+  , noAuthLookupCap
+  , noAuthInsertCap
   ) where
 
 import           Lib.App                        ( App
                                                 , WithError
+                                                , throwError
                                                 )
+import qualified Lib.App.Error                 as Error
 import           Lib.Core.Domain                ( Action(..)
                                                 , Article
+                                                , ArticleAction(..)
+                                                , ArticleState
+                                                , AuthAction(getAction)
                                                 , Capability(..)
                                                 , Context
                                                 , Entity(..)
                                                 , Id
+                                                , OverviewAction(..)
                                                 , Resource
                                                 , StoreEvent
                                                 )
@@ -48,16 +64,6 @@ class (Monad m) => WriteState m where
 
 type RWState m = (ReadState m, WriteState m)
 
-class ReadResource a where
-  lookup :: SealedResource -> Id a -> Maybe (Entity a)
-  getMany :: SealedResource -> HashSet (Id a) -> HashMap (Id a) a
-  getAll :: SealedResource -> HashMap (Id a) a
-
-class WriteResource a where
-  insert :: Id a -> a -> StoreEvent
-  update :: Id a -> (a -> a) -> StoreEvent
-  delete :: Id a -> StoreEvent
-
 instance ReadState App where
   load = Impl.load
 
@@ -65,38 +71,112 @@ instance WriteState App where
   init   = Impl.initArtCol
   commit = Impl.commit
 
-instance ReadResource Article where
-  lookup  = Impl.lookupArt
-  getMany = Impl.getManyArt
-  getAll  = Impl.getAllArt
+getOneArt
+  :: (WithError m) => SealedResource -> AuthAction -> m (Entity Article)
+getOneArt sRes authAction = case getAction authAction of
+  ArticleAct artAct -> case artAct of
+    ViewArticle aId -> Impl.getOneArt sRes aId
+    _otherAct       -> notAuthorized
+  _otherAct -> notAuthorized
 
-instance WriteResource Article where
-  insert = Impl.insertArt
-  update = Impl.updateArt
-  delete = Impl.deleteArt
+lookupArt
+  :: (WithError m) => SealedResource -> AuthAction -> m (Maybe (Entity Article))
+lookupArt sRes authAction = case getAction authAction of
+  ArticleAct artAct -> case artAct of
+    ViewArticle aId -> pure $ Impl.lookupArt sRes aId
+    _otherAct       -> notAuthorized
+  _otherAct -> notAuthorized
 
-instance ReadResource Capability  where
-  lookup  = Impl.lookupCap
-  getMany = Impl.getManyCap
-  getAll  = Impl.getAllCap
+getAllArt
+  :: (WithError m)
+  => SealedResource
+  -> AuthAction
+  -> m (HashMap (Id Article) Article)
+getAllArt sRes authAction = case getAction authAction of
+  ArticleAct artAct -> case artAct of
+    ViewArticles -> pure $ Impl.getAllArt sRes
+    _otherAct    -> notAuthorized
+  _otherAct -> notAuthorized
 
-instance WriteResource Capability  where
-  insert = Impl.insertCap
-  update = Impl.updateCap
-  delete = Impl.deleteCap
+insertArt :: (WithError m) => AuthAction -> Article -> m StoreEvent
+insertArt authAction art = case getAction authAction of
+  ArticleAct artAct -> case artAct of
+    CreateArticle aId -> pure $ Impl.insertArt aId art
+    _otherAct         -> notAuthorized
+  _otherAct -> notAuthorized
 
-instance ReadResource Action  where
-  lookup  = Impl.lookupAct
-  getMany = Impl.getManyAct
-  getAll  = Impl.getAllAct
+updateArtTitle :: (WithError m) => AuthAction -> Text -> m StoreEvent
+updateArtTitle authAction aTitle = case getAction authAction of
+  ArticleAct artAct -> case artAct of
+    ChangeArticleTitle aId -> pure $ Impl.updateArtTitle aId aTitle
+    _otherAct              -> notAuthorized
+  _otherAct -> notAuthorized
 
-instance WriteResource Action where
-  insert = Impl.insertAct
-  update = Impl.updateAct
-  delete = Impl.deleteAct
+updateArtState :: (WithError m) => AuthAction -> ArticleState -> m StoreEvent
+updateArtState authAction aState = case getAction authAction of
+  ArticleAct artAct -> case artAct of
+    ChangeArticleState aId -> pure $ Impl.updateArtState aId aState
+    _otherAct              -> notAuthorized
+  _otherAct -> notAuthorized
 
--- Helpers
+deleteArt :: (WithError m) => AuthAction -> m StoreEvent
+deleteArt authAction = case getAction authAction of
+  ArticleAct artAct -> case artAct of
+    DeleteArticle aId -> pure $ Impl.deleteArt aId
+    _otherAct         -> notAuthorized
+  _otherAct -> notAuthorized
 
-getOne
-  :: (WithError m, ReadResource a) => SealedResource -> Id a -> m (Entity a)
-getOne sRes = Impl.asSingleEntry . lookup sRes
+getOneCap
+  :: (WithError m) => SealedResource -> AuthAction -> m (Entity Capability)
+getOneCap _sRes authAction = case getAction authAction of
+  _otherAct -> notAuthorized
+
+lookupCap
+  :: (WithError m)
+  => SealedResource
+  -> AuthAction
+  -> m (Maybe (Entity Capability))
+lookupCap _sRes authAction = case getAction authAction of
+  _otherAct -> notAuthorized
+
+getAllCap
+  :: (WithError m)
+  => SealedResource
+  -> AuthAction
+  -> m (HashMap (Id Capability) Capability)
+getAllCap sRes authAction = case getAction authAction of
+  OverviewAct oAct -> case oAct of
+    ViewUnlockLinks -> pure $ Impl.getAllCap sRes
+    _otherAct       -> notAuthorized
+  _otherAct -> notAuthorized
+
+insertCap :: (WithError m) => AuthAction -> Capability -> m StoreEvent
+insertCap authAction cap = case getAction authAction of
+  OverviewAct oAct -> case oAct of
+    CreateUnlockLink unlockLinkId -> pure $ Impl.insertCap unlockLinkId cap
+    _otherAct                     -> notAuthorized
+  _otherAct -> notAuthorized
+
+updateCap
+  :: (WithError m) => AuthAction -> (Capability -> Capability) -> m StoreEvent
+updateCap authAction _capUpdater = case getAction authAction of
+  _otherAct -> notAuthorized
+
+deleteCap :: (WithError m) => AuthAction -> m StoreEvent
+deleteCap authAction = case getAction authAction of
+  OverviewAct oAct -> case oAct of
+    DeleteUnlockLink unlockLinkId -> pure $ Impl.deleteCap unlockLinkId
+    _otherAct                     -> notAuthorized
+  _otherAct -> notAuthorized
+
+noAuthLookupCap :: SealedResource -> Id Capability -> Maybe (Entity Capability)
+noAuthLookupCap = Impl.lookupCap
+
+noAuthInsertCap :: Id Capability -> Capability -> StoreEvent
+noAuthInsertCap = Impl.insertCap
+
+-- * Helpers
+
+notAuthorized :: (WithError m) => m a
+notAuthorized = throwError $ Error.notAuthorized
+  "You are missing the required permissions for this action"

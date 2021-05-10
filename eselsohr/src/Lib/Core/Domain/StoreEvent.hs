@@ -6,9 +6,7 @@ module Lib.Core.Domain.StoreEvent
   ) where
 
 import           Lib.Core.Domain.Article        ( Article )
-import           Lib.Core.Domain.Capability     ( Action
-                                                , Capability
-                                                )
+import           Lib.Core.Domain.Capability     ( Capability )
 import           Lib.Core.Domain.Id             ( Id )
 import           Lib.Core.Domain.Resource       ( Resource )
 
@@ -24,9 +22,6 @@ data StoreEvent
   | SeInsertCapability !(StoreData (Id Capability, Capability))
   | SeUpdateCapability !(StoreData (Capability -> Capability))
   | SeDeleteCapability !(StoreData (Id Capability))
-  | SeInsertAction !(StoreData (Id Action, Action))
-  | SeUpdateAction !(StoreData (Action -> Action))
-  | SeDeleteAction !(StoreData (Id Action))
 
 data SynchronizedStoreEvent = SynchronizedStoreEvent
   { syncStoreResId  :: !(Id Resource)
@@ -34,14 +29,11 @@ data SynchronizedStoreEvent = SynchronizedStoreEvent
   , syncVar         :: !(TMVar ())
   }
 
-apply :: StoreEvent -> Resource -> Resource
-apply se res = case se of
+apply :: Resource -> StoreEvent -> Resource
+apply res se = case se of
   SeInsertArticle    StoreData {..} -> setter res newVal
   SeUpdateArticle    StoreData {..} -> setter res newVal
   SeDeleteArticle    StoreData {..} -> setter res newVal
   SeInsertCapability StoreData {..} -> setter res newVal
   SeUpdateCapability StoreData {..} -> setter res newVal
   SeDeleteCapability StoreData {..} -> setter res newVal
-  SeInsertAction     StoreData {..} -> setter res newVal
-  SeUpdateAction     StoreData {..} -> setter res newVal
-  SeDeleteAction     StoreData {..} -> setter res newVal

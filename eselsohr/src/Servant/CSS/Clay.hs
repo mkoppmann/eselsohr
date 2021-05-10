@@ -3,7 +3,7 @@ module Servant.CSS.Clay
   ) where
 
 import           Clay                           ( Css
-                                                , compact
+                                                , pretty
                                                 , renderWith
                                                 )
 import qualified Network.HTTP.Media            as M
@@ -20,4 +20,4 @@ instance Accept CSS where
     "text" M.// "css" M./: ("charset", "utf-8") :| ["text" M.// "css"]
 
 instance MimeRender CSS Css where
-  mimeRender _ = encodeUtf8 . renderWith compact []
+  mimeRender _ = encodeUtf8 . renderWith pretty []

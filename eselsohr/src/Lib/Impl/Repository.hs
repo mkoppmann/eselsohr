@@ -10,37 +10,26 @@ module Lib.Impl.Repository
   , initArtCol
   , articleColInit
   , articleGetter
+  , getOneArt
   , lookupArt
-  , getManyArt
   , getAllArt
   , insertArt
-  , updateArt
+  , updateArtTitle
+  , updateArtState
   , deleteArt
-  , artUpdateTitle
-  , artUpdateState
-  , actionGetter
-  , lookupAct
-  , getManyAct
-  , getAllAct
-  , insertAct
-  , updateAct
-  , deleteAct
   , capabilityGetter
+  , getOneCap
   , lookupCap
-  , getManyCap
   , getAllCap
   , insertCap
   , updateCap
   , deleteCap
-  , getCapIdForActId
-  , lookupCapIdForActId
 
   -- * Helpers
   , asSingleEntry
   ) where
 
 import qualified Data.HashMap.Strict           as Map
-import qualified Data.HashSet                  as Set
 import           Lib.App                        ( AppErrorType
                                                 , WithError
                                                 , WriteQueue
@@ -48,8 +37,7 @@ import           Lib.App                        ( AppErrorType
                                                 , storeError
                                                 , throwOnNothing
                                                 )
-import           Lib.Core.Domain                ( Action
-                                                , Article(..)
+import           Lib.Core.Domain                ( Article(..)
                                                 , ArticleCollection(..)
                                                 , ArticleState
                                                 , Capability(..)
@@ -99,17 +87,16 @@ initArtCol :: (WithFile env m) => Id Resource -> m ()
 initArtCol colId = init colId articleColInit
 
 articleColInit :: Resource
-articleColInit =
-  ArticleResource $ ArticleCollection Map.empty Map.empty Map.empty
+articleColInit = ArticleResource $ ArticleCollection Map.empty Map.empty
 
 -- Article
 
+getOneArt
+  :: (WithError m) => SealedResource -> Id Article -> m (Entity Article)
+getOneArt sRes = asSingleEntry . lookupArt sRes
+
 lookupArt :: SealedResource -> Id Article -> Maybe (Entity Article)
 lookupArt sRes = lookup articleGetter (unSealResource sRes)
-
-getManyArt
-  :: SealedResource -> HashSet (Id Article) -> HashMap (Id Article) Article
-getManyArt sRes = getMany articleGetter (unSealResource sRes)
 
 getAllArt :: SealedResource -> HashMap (Id Article) Article
 getAllArt = getAll articleGetter . unSealResource
@@ -134,56 +121,22 @@ articleSetter :: CollectionSetter Article
 articleSetter (ArticleResource artCol) newVal =
   ArticleResource $ artCol { artCollection = newVal }
 
-artUpdateTitle :: Id Article -> Text -> StoreEvent
-artUpdateTitle aId aTitle =
+updateArtTitle :: Id Article -> Text -> StoreEvent
+updateArtTitle aId aTitle =
   updateArt aId $ \oldArt -> oldArt { Article.title = aTitle }
 
-artUpdateState :: Id Article -> ArticleState -> StoreEvent
-artUpdateState aId aState =
+updateArtState :: Id Article -> ArticleState -> StoreEvent
+updateArtState aId aState =
   updateArt aId $ \oldArt -> oldArt { Article.state = aState }
-
--- Action
-
-lookupAct :: SealedResource -> Id Action -> Maybe (Entity Action)
-lookupAct sRes = lookup actionGetter (unSealResource sRes)
-
-getManyAct
-  :: SealedResource -> HashSet (Id Action) -> HashMap (Id Action) Action
-getManyAct sRes = getMany actionGetter (unSealResource sRes)
-
-getAllAct :: SealedResource -> HashMap (Id Action) Action
-getAllAct = getAll actionGetter . unSealResource
-
-insertAct :: Id Action -> Action -> StoreEvent
-insertAct entId newEnt = SeInsertAction
-  $ StoreData (insertSetter actionGetter actionSetter) (entId, newEnt)
-
-updateAct :: Id Action -> (Action -> Action) -> StoreEvent
-updateAct entId actUpdater = SeUpdateAction $ StoreData
-  (updateSetter actionGetter actionSetter actUpdater entId)
-  Prelude.id
-
-deleteAct :: Id Action -> StoreEvent
-deleteAct entId =
-  SeDeleteAction $ StoreData (deleteSetter actionGetter actionSetter) entId
-
-actionGetter :: CollectionGetter Action
-actionGetter (ArticleResource artCol) = artActCollection artCol
-
-actionSetter :: CollectionSetter Action
-actionSetter (ArticleResource artCol) newVal =
-  ArticleResource $ artCol { artActCollection = newVal }
 
 -- Capability
 
+getOneCap
+  :: (WithError m) => SealedResource -> Id Capability -> m (Entity Capability)
+getOneCap sRes = asSingleEntry . lookupCap sRes
+
 lookupCap :: SealedResource -> Id Capability -> Maybe (Entity Capability)
 lookupCap sRes = lookup capabilityGetter (unSealResource sRes)
-
-getManyCap
-  :: SealedResource
-  -> HashSet (Id Capability)
-  -> HashMap (Id Capability) Capability
-getManyCap sRes = getMany capabilityGetter (unSealResource sRes)
 
 getAllCap :: SealedResource -> HashMap (Id Capability) Capability
 getAllCap = getAll capabilityGetter . unSealResource
@@ -208,17 +161,6 @@ capabilitySetter :: CollectionSetter Capability
 capabilitySetter (ArticleResource artCol) newVal =
   ArticleResource $ artCol { artCapCollection = newVal }
 
-getCapIdForActId
-  :: (WithError m) => SealedResource -> Id Action -> m (Id Capability)
-getCapIdForActId sRes = asSingleEntry . lookupCapIdForActId sRes
-
-lookupCapIdForActId :: SealedResource -> Id Action -> Maybe (Id Capability)
-lookupCapIdForActId sRes actId =
-  viaNonEmpty head
-    . Map.keys
-    . Map.filter ((==) actId . actionId)
-    $ capabilityGetter (unSealResource sRes)
-
 -- * Helpers
 
 asSingleEntry :: (WithError m) => Maybe a -> m a
@@ -230,10 +172,6 @@ singleEntryError = storeError "Expected a single entry, but got none"
 lookup :: CollectionGetter a -> Resource -> Id a -> Maybe (Entity a)
 lookup getter res entId =
   fmap (uncurry Entity . (entId, )) . Map.lookup entId $ getter res
-
-getMany :: CollectionGetter a -> Resource -> HashSet (Id a) -> HashMap (Id a) a
-getMany getter res entIds =
-  Map.filterWithKey (\key _ -> key `Set.member` entIds) $ getter res
 
 getAll :: CollectionGetter a -> Resource -> HashMap (Id a) a
 getAll getter = getter

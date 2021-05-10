@@ -20,6 +20,7 @@ module Lib.App.Error
 
   -- * Internal error helpers
     notFound
+  , notAuthorized
   , serverError
   , invalid
   , missingParameter
@@ -46,6 +47,7 @@ import           GHC.Stack                      ( SrcLoc
 import           Servant                        ( err303
                                                 , err307
                                                 , err400
+                                                , err403
                                                 , err404
                                                 , err413
                                                 , err417
@@ -113,6 +115,9 @@ data IError
   | -- | Some exceptional circumstance has happened stop execution and return.
     -- Optional text to provide some context in server logs.
     ServerError !Text
+  | -- | A required permission level was not met. Optional text to provide some
+    -- context.
+    NotAuthorized !Text
   | -- | An expected parameter was not given by the client. Optional text to
     -- provide the parameter’s name.
     MissingParameter !Text
@@ -137,8 +142,9 @@ data IError
 toHttpError :: AppError -> Servant.ServerError
 toHttpError (AppError _callStack errorType) = case errorType of
   InternalError err -> case err of
-    NotFound        -> err404
-    ServerError msg -> err500 { errBody = encodeUtf8 msg }
+    NotFound          -> err404
+    ServerError   msg -> err500 { errBody = encodeUtf8 msg }
+    NotAuthorized msg -> err403 { errBody = encodeUtf8 msg }
     MissingParameter name ->
       err400 { errBody = "Parameter not found: " <> encodeUtf8 name }
     Invalid    msg     -> err417 { errBody = encodeUtf8 msg }
@@ -173,6 +179,9 @@ notFound = InternalError NotFound
 
 serverError :: Text -> AppErrorType
 serverError = InternalError . ServerError
+
+notAuthorized :: Text -> AppErrorType
+notAuthorized = InternalError . NotAuthorized
 
 missingParameter :: Text -> AppErrorType
 missingParameter = InternalError . MissingParameter
