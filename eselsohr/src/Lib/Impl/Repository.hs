@@ -38,7 +38,6 @@ import           Lib.App                        ( AppErrorType
                                                 , throwOnNothing
                                                 )
 import           Lib.Core.Domain                ( Article(..)
-                                                , ArticleCollection(..)
                                                 , ArticleState
                                                 , Capability(..)
                                                 , Entity(..)
@@ -87,7 +86,7 @@ initArtCol :: (WithFile env m) => Id Resource -> m ()
 initArtCol colId = init colId articleColInit
 
 articleColInit :: Resource
-articleColInit = ArticleResource $ ArticleCollection Map.empty Map.empty
+articleColInit = Resource Map.empty Map.empty
 
 -- Article
 
@@ -115,11 +114,10 @@ deleteArt entId =
   SeDeleteArticle $ StoreData (deleteSetter articleGetter articleSetter) entId
 
 articleGetter :: CollectionGetter Article
-articleGetter (ArticleResource artCol) = artCollection artCol
+articleGetter Resource {..} = artCollection
 
 articleSetter :: CollectionSetter Article
-articleSetter (ArticleResource artCol) newVal =
-  ArticleResource $ artCol { artCollection = newVal }
+articleSetter res newVal = res { artCollection = newVal }
 
 updateArtTitle :: Id Article -> Text -> StoreEvent
 updateArtTitle aId aTitle =
@@ -155,11 +153,10 @@ deleteCap entId = SeDeleteCapability
   $ StoreData (deleteSetter capabilityGetter capabilitySetter) entId
 
 capabilityGetter :: CollectionGetter Capability
-capabilityGetter (ArticleResource artCol) = artCapCollection artCol
+capabilityGetter Resource {..} = capCollection
 
 capabilitySetter :: CollectionSetter Capability
-capabilitySetter (ArticleResource artCol) newVal =
-  ArticleResource $ artCol { artCapCollection = newVal }
+capabilitySetter res newVal = res { capCollection = newVal }
 
 -- * Helpers
 
