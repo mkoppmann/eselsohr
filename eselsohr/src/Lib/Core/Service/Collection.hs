@@ -5,10 +5,9 @@ module Lib.Core.Service.Collection
 import           Lib.Core.Domain                ( Accesstoken
                                                 , Capability(..)
                                                 , Id
-                                                , ObjectReference(..)
                                                 , Reference(..)
                                                 , Resource
-                                                , defaultOverviewPerms
+                                                , defaultOverviewRef
                                                 , mkAccesstoken
                                                 )
 import           Lib.Core.Effect                ( MonadRandom(..)
@@ -24,8 +23,7 @@ createCollection = createAccess =<< createFile
 
   createAccess :: (WriteState m, MonadRandom m) => Id Resource -> m Accesstoken
   createAccess resId = do
-    let ovRef = OverviewRef defaultOverviewPerms
-        cap   = Capability ovRef Nothing Nothing
+    let cap = Capability defaultOverviewRef Nothing Nothing
     capId <- getRandomId
     let capSe = R.noAuthInsertCap capId cap
     R.commit resId $ one capSe

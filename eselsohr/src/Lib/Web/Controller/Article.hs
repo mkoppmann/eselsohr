@@ -7,7 +7,7 @@ import           Lib.Core.Domain                ( Article
                                                 , Id
                                                 , render
                                                 )
-import qualified Lib.Core.Domain.Action        as Action
+import qualified Lib.Core.Domain.Capability    as Cap
 import           Lib.Core.Effect                ( MonadRandom(..)
                                                 , MonadScraper
                                                 , MonadTime
@@ -41,7 +41,7 @@ createArticle
 createArticle PostCreateArticleForm {..} = do
   ctxState <- getContextState acc
   artId    <- getRandomId
-  let mAuthAct = Action.createArticle (getObjRef ctxState) artId
+  let mAuthAct = Cap.createArticle (getObjRef ctxState) artId
   authAction (Service.createArticle ctxState articleUri) mAuthAct
   redirect $ render goto
 
@@ -62,11 +62,11 @@ patchArticle artId PatchArticleForm {..} = do
   redirect $ render goto
  where
   changeArticleTitle ctxState objRef artTitle = do
-    let mAuthAct = Action.changeArticleTitle objRef artId
+    let mAuthAct = Cap.changeArticleTitle objRef artId
     authAction (Service.changeArticleTitle ctxState artTitle) mAuthAct
 
   changeArticleState ctxState objRef artState = do
-    let mAuthAct = Action.changeArticleState objRef artId
+    let mAuthAct = Cap.changeArticleState objRef artId
     authAction (Service.changeArticleState ctxState artState) mAuthAct
 
 deleteArticle
@@ -76,6 +76,6 @@ deleteArticle
   -> m Redirection
 deleteArticle artId DeleteItemForm {..} = do
   ctxState <- getContextState acc
-  let mAuthAct = Action.deleteArticle (getObjRef ctxState) artId
+  let mAuthAct = Cap.deleteArticle (getObjRef ctxState) artId
   authAction (Service.deleteArticle ctxState) mAuthAct
   redirect $ render goto

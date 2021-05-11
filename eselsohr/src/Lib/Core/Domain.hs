@@ -1,6 +1,5 @@
 module Lib.Core.Domain
   ( module Lib.Core.Domain.Accesstoken
-  , module Lib.Core.Domain.Action
   , module Lib.Core.Domain.Article
   , module Lib.Core.Domain.Capability
   , module Lib.Core.Domain.Entity
@@ -13,7 +12,6 @@ module Lib.Core.Domain
   ) where
 
 import           Lib.Core.Domain.Accesstoken
-import           Lib.Core.Domain.Action
 import           Lib.Core.Domain.Article
 import           Lib.Core.Domain.Capability
 import           Lib.Core.Domain.Context

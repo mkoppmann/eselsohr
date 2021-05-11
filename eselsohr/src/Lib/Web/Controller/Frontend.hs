@@ -16,7 +16,7 @@ import           Lib.Core.Domain                ( Accesstoken
                                                 , ExpirationDate(..)
                                                 , Id
                                                 )
-import qualified Lib.Core.Domain.Action        as Action
+import qualified Lib.Core.Domain.Capability    as Cap
 import qualified Lib.Core.Domain.Entity        as Entity
 import           Lib.Core.Effect                ( MonadTime(..)
                                                 , ReadState
@@ -59,12 +59,12 @@ collectionOverview Nothing    = pure notAuthorized
 collectionOverview (Just acc) = do
   ctxState <- getContextState acc
   let objRef = getObjRef ctxState
-  case Action.getUnlockLinks objRef of
+  case Cap.getUnlockLinks objRef of
     Nothing         -> pure notAuthorized
     Just authAction -> do
       unlockLinks <- Service.getUnlockLinks ctxState authAction
       (earliestExpDate, defaultExpDate) <- getExpirationDates
-      let canCreateUnlockLinks = Action.canCreateUnlockLink objRef
+      let canCreateUnlockLinks = Cap.canCreateUnlockLink objRef
           page = Page.collectionOverview $ CollectionOverviewData
             acc
             canCreateUnlockLinks
@@ -85,14 +85,14 @@ viewArticles Nothing    = pure notAuthorized
 viewArticles (Just acc) = do
   ctxState <- getContextState acc
   let objRef = getObjRef ctxState
-  case Action.viewArticles objRef of
+  case Cap.viewArticles objRef of
     Nothing         -> pure notAuthorized
     Just authAction -> do
       articles <- Service.getArticles ctxState authAction
-      let canCreateArticles = Action.canCreateArticle objRef
-          canChangeTitles   = Action.canChangeAllArticleTitles objRef
-          canChangeStates   = Action.canChangeAllArticleStates objRef
-          canDelete         = Action.canDeleteAllArticles objRef
+      let canCreateArticles = Cap.canCreateArticle objRef
+          canChangeTitles   = Cap.canChangeAllArticleTitles objRef
+          canChangeStates   = Cap.canChangeAllArticleStates objRef
+          canDelete         = Cap.canDeleteAllArticles objRef
           page = Page.articleList $ ArticleListData acc
                                                     canCreateArticles
                                                     canChangeTitles
@@ -110,14 +110,14 @@ viewArticle _     Nothing    = pure notAuthorized
 viewArticle artId (Just acc) = do
   ctxState <- getContextState acc
   let objRef = getObjRef ctxState
-  case Action.viewArticle objRef artId of
+  case Cap.viewArticle objRef artId of
     Nothing         -> pure notAuthorized
     Just authAction -> do
       artEnt <- Service.getArticle ctxState authAction
-      let canViewArticles = Action.canViewArticles objRef
-          canChangeTitle  = Action.canChangeArticleTitle objRef artId
-          canChangeState  = Action.canChangeArticleState objRef artId
-          canDelete       = Action.canDeleteArticle objRef artId
+      let canViewArticles = Cap.canViewArticles objRef
+          canChangeTitle  = Cap.canChangeArticleTitle objRef artId
+          canChangeState  = Cap.canChangeArticleState objRef artId
+          canDelete       = Cap.canDeleteArticle objRef artId
           page            = Page.showArticle $ ViewArticleData acc
                                                                canViewArticles
                                                                canChangeTitle
@@ -135,9 +135,9 @@ editArticle _     Nothing    = pure notAuthorized
 editArticle artId (Just acc) = do
   ctxState <- getContextState acc
   let objRef = getObjRef ctxState
-  case Action.viewArticle objRef artId of
+  case Cap.viewArticle objRef artId of
     Nothing         -> pure notAuthorized
-    Just authAction -> if not $ Action.canChangeArticleTitle objRef artId
+    Just authAction -> if not $ Cap.canChangeArticleTitle objRef artId
       then pure notAuthorized
       else do
         artEnt <- Service.getArticle ctxState authAction

@@ -9,17 +9,15 @@ import qualified Data.Sequence                 as Seq
 import qualified Data.Text                     as Text
 import           Data.Time                      ( UTCTime )
 import           Lib.App                        ( WithError )
-import           Lib.Core.Domain                ( ArticlesPerms(..)
-                                                , AuthAction
+import           Lib.Core.Domain                ( AuthAction
                                                 , Capability(..)
                                                 , ExpirationDate(..)
                                                 , Id
-                                                , ObjectReference(..)
-                                                , Permission(..)
                                                 , Reference(..)
                                                 , Resource
                                                 , Revocable
-                                                , defaultArticlesPermissions
+                                                , canViewArticles
+                                                , defaultArticlesRef
                                                 , mkAccesstoken
                                                 )
 import           Lib.Core.Effect                ( ContextState(..)
@@ -58,11 +56,7 @@ getUnlockLinks ctxState authAction = do
   filterF currTime cap = isViewArticles cap && isStillValid currTime cap
 
   isViewArticles :: Capability -> Bool
-  isViewArticles cap = case objectRef cap of
-    ArticlesRef perms -> case aspViewArticles perms of
-      NotAllowed -> False
-      Allowed    -> True
-    _otherRef -> False
+  isViewArticles = canViewArticles . objectRef
 
   isStillValid :: UTCTime -> Capability -> Bool
   isStillValid currTime cap = case capExpirationDate cap of
@@ -80,9 +74,9 @@ createUnlockLink
   -> AuthAction
   -> m ()
 createUnlockLink ctxState petname mExpDate authAct = do
-  let resId  = getResId ctxState
-      objRef = ArticlesRef defaultArticlesPermissions
-      cap    = Capability objRef (checkForEmptyPetname petname) mExpDate
+  let resId          = getResId ctxState
+      checkedPetname = checkForEmptyPetname petname
+      cap            = Capability defaultArticlesRef checkedPetname mExpDate
   R.commit resId . one =<< R.insertCap authAct cap
 
 deleteUnlockLink

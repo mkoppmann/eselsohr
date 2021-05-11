@@ -7,7 +7,7 @@ import           Lib.Core.Domain                ( Capability
                                                 , Id
                                                 , render
                                                 )
-import qualified Lib.Core.Domain.Action        as Action
+import qualified Lib.Core.Domain.Capability    as Cap
 import           Lib.Core.Effect                ( MonadRandom(..)
                                                 , MonadTime
                                                 , RWState
@@ -37,7 +37,7 @@ createUnlockLink
 createUnlockLink PostCreateUnlockLinkForm {..} = do
   ctxState <- getContextState acc
   uLinkId  <- getRandomId
-  let mAuthAct = Action.createUnlockLink (getObjRef ctxState) uLinkId
+  let mAuthAct = Cap.createUnlockLink (getObjRef ctxState) uLinkId
   authAction (Service.createUnlockLink ctxState petname expirationDate) mAuthAct
   redirect $ render goto
 
@@ -48,6 +48,6 @@ deleteUnlockLink
   -> m Redirection
 deleteUnlockLink capId DeleteItemForm {..} = do
   ctxState <- getContextState acc
-  let mAuthAct = Action.deleteUnlockLink (getObjRef ctxState) capId
+  let mAuthAct = Cap.deleteUnlockLink (getObjRef ctxState) capId
   authAction (Service.deleteUnlockLink ctxState) mAuthAct
   redirect $ render goto

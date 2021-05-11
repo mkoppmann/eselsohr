@@ -20,7 +20,6 @@ library
         Lib.Config
         Lib.Core.Domain
         Lib.Core.Domain.Accesstoken
-        Lib.Core.Domain.Action
         Lib.Core.Domain.Article
         Lib.Core.Domain.Capability
         Lib.Core.Domain.Context
