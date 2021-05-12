@@ -4,6 +4,8 @@ module Lib.Web.Controller.Article
 
 import           Lib.App                        ( WithError )
 import           Lib.Core.Domain                ( Article
+                                                , ArticlePerms(..)
+                                                , ArticlesPerms(..)
                                                 , Id
                                                 , render
                                                 )
@@ -15,9 +17,11 @@ import           Lib.Core.Effect                ( MonadRandom(..)
                                                 )
 import qualified Lib.Core.Service              as Service
 import           Lib.Web.Controller.Util        ( authAction
+                                                , getCapId
                                                 , getContextState
                                                 , getObjRef
                                                 , missingParameter
+                                                , notAuthorized
                                                 , redirect
                                                 )
 import qualified Lib.Web.Route                 as Route
@@ -25,14 +29,19 @@ import           Lib.Web.Types                  ( AppServer
                                                 , DeleteItemForm(..)
                                                 , PatchArticleForm(..)
                                                 , PostCreateArticleForm(..)
+                                                , PostCreateSharedArticleRefForm(..)
+                                                , PostCreateSharedArticlesRefForm(..)
                                                 , Redirection
                                                 )
 
 article :: Route.ArticlesSite AppServer
-article = Route.ArticlesSite { Route.createArticle = createArticle
-                             , Route.patchArticle  = patchArticle
-                             , Route.deleteArticle = deleteArticle
-                             }
+article = Route.ArticlesSite
+  { Route.createArticle           = createArticle
+  , Route.createSharedArticlesRef = createSharedArticlesRef
+  , Route.createSharedArticleRef  = createSharedArticleRef
+  , Route.patchArticle            = patchArticle
+  , Route.deleteArticle           = deleteArticle
+  }
 
 createArticle
   :: (RWState m, MonadRandom m, MonadScraper m, MonadTime m, WithError m)
@@ -44,6 +53,60 @@ createArticle PostCreateArticleForm {..} = do
   let mAuthAct = Cap.createArticle (getObjRef ctxState) artId
   authAction (Service.createArticle ctxState articleUri) mAuthAct
   redirect $ render goto
+
+createSharedArticlesRef
+  :: (RWState m, MonadRandom m, MonadTime m, WithError m)
+  => PostCreateSharedArticlesRefForm
+  -> m Redirection
+createSharedArticlesRef PostCreateSharedArticlesRefForm {..} = do
+  ctxState <- getContextState acc
+  let ogCapId = getCapId acc
+      objRef  = getObjRef ctxState
+
+  sharedRefId <- getRandomId
+  let mAuthAct = Cap.createSharedRef objRef sharedRefId
+  sharedRef <- maybe notAuthorized pure
+    $ Cap.createSharedArticlesRef ogCapId objRef perms
+
+  authAction
+    (Service.createSharedRef ctxState petname expirationDate sharedRef)
+    mAuthAct
+  redirect $ render goto
+ where
+  perms :: ArticlesPerms
+  perms = ArticlesPerms (Cap.maybePerm viewArticles)
+                        (Cap.maybePerm createArticles)
+                        (Cap.maybePerm changeTitle)
+                        (Cap.maybePerm changeState)
+                        (Cap.maybePerm delete)
+                        (Cap.maybePerm shareLinks)
+
+createSharedArticleRef
+  :: (RWState m, MonadRandom m, MonadTime m, WithError m)
+  => Id Article
+  -> PostCreateSharedArticleRefForm
+  -> m Redirection
+createSharedArticleRef artId PostCreateSharedArticleRefForm {..} = do
+  ctxState <- getContextState acc
+  let ogCapId = getCapId acc
+      objRef  = getObjRef ctxState
+
+  sharedRefId <- getRandomId
+  let mAuthAct = Cap.createSharedRef objRef sharedRefId
+  sharedRef <- maybe notAuthorized pure
+    $ Cap.createSharedArticleRef ogCapId objRef perms artId
+
+  authAction
+    (Service.createSharedRef ctxState petname expirationDate sharedRef)
+    mAuthAct
+  redirect $ render goto
+ where
+  perms :: ArticlePerms
+  perms = ArticlePerms (Cap.maybePerm viewArticle)
+                       (Cap.maybePerm changeTitle)
+                       (Cap.maybePerm changeState)
+                       (Cap.maybePerm delete)
+                       (Cap.maybePerm shareLinks)
 
 patchArticle
   :: (RWState m, MonadTime m, WithError m)

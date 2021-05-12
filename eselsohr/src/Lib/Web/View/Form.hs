@@ -1,12 +1,16 @@
 module Lib.Web.View.Form
   ( createCollection
   , createUnlockLink
+  , createSharedOverviewRef
   , createArticle
   , changeArticleTitle
   , archiveArticle
   , unreadArticle
   , deleteArticle
   , deleteUnlockLink
+  , createSharedArticlesRef
+  , createSharedArticleRef
+  , deleteSharedReference
   ) where
 
 import           Lib.Core.Domain                ( Accesstoken
@@ -17,7 +21,12 @@ import           Lib.Core.Domain                ( Accesstoken
                                                 , expDateToText
                                                 )
 import qualified Lib.Web.Route                 as Route
+import           Lib.Web.Types                  ( CreateSharedArticleRefPerms(..)
+                                                , CreateSharedArticlesRefPerms(..)
+                                                , CreateSharedOverviewRefPerms(..)
+                                                )
 import           Lucid
+import           Prelude                 hiding ( for_ )
 import           Servant                        ( Link
                                                 , fieldLink
                                                 , toUrlPiece
@@ -32,31 +41,34 @@ createUnlockLink
   :: ExpirationDate -> ExpirationDate -> Accesstoken -> Link -> Html ()
 createUnlockLink currTime expTime = postMethodButton
   (fieldLink Route.createUnlockLink)
-  [options]
+  [createLink currTime expTime]
   "Create access link"
- where
-  options = do
-    ul_ $ do
-      petname
-      expirationDate
-  petname = li_ $ do
-    label_ [Lucid.for_ "petname"] "Optional name for this token: "
-    input_ [type_ "text", name_ "petname", id_ "petname"]
-  expirationDate = li_ $ do
-    label_ [Lucid.for_ "noExpiration"] "Access link expires on:"
-    input_
-      [ type_ "datetime-local"
-      , name_ "expirationDate"
-      , id_ "expirationDate"
-      , min_ $ expDateToText currTime
-      , value_ $ expDateToText expTime
-      ]
 
 deleteUnlockLink :: Id Capability -> Accesstoken -> Link -> Html ()
 deleteUnlockLink unlockLinkId = deleteMethodLink
   (fieldLink Route.deleteUnlockLink unlockLinkId)
   []
   "Delete unlock link"
+
+createSharedOverviewRef
+  :: CreateSharedOverviewRefPerms
+  -> ExpirationDate
+  -> ExpirationDate
+  -> Accesstoken
+  -> Link
+  -> Html ()
+createSharedOverviewRef CreateSharedOverviewRefPerms {..} currTime expTime =
+  postMethodButton (fieldLink Route.createSharedOverviewRef)
+                   [createLinkWithSharing currTime expTime permissionList]
+                   "Create link"
+ where
+  permissionList =
+    [ when canViewUnlockLinks
+      $ permissionField "viewUnlockLinks" "View unlock links"
+    , when canCreateUnlockLinks
+      $ permissionField "createUnlockLinks" "Create unlock links"
+    , when canDeleteUnlockLinks $ permissionField "delete" "Delete unlock links"
+    ]
 
 createArticle :: Accesstoken -> Link -> Html ()
 createArticle = postMethodButton (fieldLink Route.createArticle)
@@ -91,6 +103,53 @@ deleteArticle :: Id Article -> Accesstoken -> Link -> Html ()
 deleteArticle artId =
   deleteMethodLink (fieldLink Route.deleteArticle artId) [] "Delete article"
 
+createSharedArticlesRef
+  :: CreateSharedArticlesRefPerms
+  -> ExpirationDate
+  -> ExpirationDate
+  -> Accesstoken
+  -> Link
+  -> Html ()
+createSharedArticlesRef CreateSharedArticlesRefPerms {..} currTime expTime =
+  postMethodButton (fieldLink Route.createSharedArticlesRef)
+                   [createLinkWithSharing currTime expTime permissionList]
+                   "Create link"
+ where
+  permissionList =
+    [ when canViewArticles $ permissionField "viewArticles" "View articles"
+    , when canCreateArticles
+      $ permissionField "createArticles" "Create articles"
+    , when canChangeArticleTitle $ permissionField "changeTitle" "Change titles"
+    , when canChangeArticleState $ permissionField "changeState" "Change states"
+    , when canDeleteArticle $ permissionField "delete" "Delete articles"
+    ]
+
+createSharedArticleRef
+  :: Id Article
+  -> CreateSharedArticleRefPerms
+  -> ExpirationDate
+  -> ExpirationDate
+  -> Accesstoken
+  -> Link
+  -> Html ()
+createSharedArticleRef artId CreateSharedArticleRefPerms {..} currTime expTime
+  = postMethodButton (fieldLink Route.createSharedArticleRef artId)
+                     [createLinkWithSharing currTime expTime permissionList]
+                     "Create link"
+ where
+  permissionList =
+    [ when canViewArticle $ permissionField "viewArticle" "View article"
+    , when canChangeArticleTitle $ permissionField "changeTitle" "Change title"
+    , when canChangeArticleState $ permissionField "changeState" "Change state"
+    , when canDeleteArticle $ permissionField "delete" "Delete articles"
+    ]
+
+deleteSharedReference :: Id Capability -> Accesstoken -> Link -> Html ()
+deleteSharedReference sharedLink = deleteMethodLink
+  (fieldLink Route.deleteSharedRef sharedLink)
+  []
+  "Delete shared link"
+
 -- Helpers
 
 genPost
@@ -123,3 +182,44 @@ linkAbsAction_ = action_ . ("/" <>) . toUrlPiece
 
 linkAbsValue_ :: Link -> Attribute
 linkAbsValue_ = value_ . ("/" <>) . toUrlPiece
+
+createLinkWithSharing
+  :: ExpirationDate -> ExpirationDate -> [Html ()] -> Html ()
+createLinkWithSharing currTime expTime permissionList =
+  ul_ [class_ "no-bullet"] $ do
+    li_ petnameField
+    li_ $ expirationDateField currTime expTime
+    li_ $ sharingOptions permissionList
+
+petnameField :: Html ()
+petnameField = div_ [class_ "form-group"] $ do
+  label_ [for_ "petname"] "Optional name for this token"
+  input_ [type_ "text", id_ "petname", name_ "petname", id_ "petname"]
+
+expirationDateField :: ExpirationDate -> ExpirationDate -> Html ()
+expirationDateField currTime expTime = div_ [class_ "form-group"] $ do
+  label_ [for_ "expirationDate"] "Access link expires on"
+  input_
+    [ type_ "datetime-local"
+    , name_ "expirationDate"
+    , id_ "expirationDate"
+    , min_ $ expDateToText currTime
+    , value_ $ expDateToText expTime
+    ]
+
+createLink :: ExpirationDate -> ExpirationDate -> Html ()
+createLink currTime expTime = ul_ [class_ "no-bullet"] $ do
+  li_ petnameField
+  li_ $ expirationDateField currTime expTime
+
+sharingOptions :: [Html ()] -> Html ()
+sharingOptions permissionList = fieldset_ $ do
+  legend_ "Permissions"
+  ul_ $ do
+    traverse_ li_ permissionList
+    li_ $ permissionField "shareLinks" "Share links"
+
+permissionField :: Text -> Text -> Html ()
+permissionField fieldName labelText = do
+  input_ [type_ "checkbox", id_ fieldName, name_ fieldName, value_ "Allowed"]
+  label_ [for_ fieldName] $ toHtml labelText

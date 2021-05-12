@@ -33,15 +33,34 @@ data FrontendSite route = FrontendSite
         :- "resources"
         :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage
+  , shareCollectionOverview ::
+      route
+        :- "resources"
+        :> "shared-links"
+        :> QueryParam "acc" Accesstoken
+        :> Get '[HTML] HtmlPage
   , viewArticles ::
       route
         :- "articles"
+        :> QueryParam "acc" Accesstoken
+        :> Get '[HTML] HtmlPage
+  , shareViewArticles ::
+      route
+        :- "articles"
+        :> "shared-links"
         :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage
   , viewArticle ::
       route
         :- "articles"
         :> Capture "articleId" (Id Article)
+        :> QueryParam "acc" Accesstoken
+        :> Get '[HTML] HtmlPage
+  , shareViewArticle ::
+      route
+        :- "articles"
+        :> Capture "articleId" (Id Article)
+        :> "shared-links"
         :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage
   , editArticle ::

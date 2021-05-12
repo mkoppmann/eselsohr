@@ -1,5 +1,6 @@
 module Lib.Web.Controller.Util
   ( getContextState
+  , getCapId
   , getObjRef
   , authAction
   , notImplemented
@@ -58,6 +59,9 @@ getContextState acc = do
   mkContextState
     :: Id Resource -> SealedResource -> ObjectReference -> ContextState
   mkContextState resId sRes capEnt = ContextState (Context resId capEnt) sRes
+
+getCapId :: Accesstoken -> Id Capability
+getCapId = capabilityId . toReference
 
 getObjRef :: ContextState -> ObjectReference
 getObjRef = ctxObjRef . csContext

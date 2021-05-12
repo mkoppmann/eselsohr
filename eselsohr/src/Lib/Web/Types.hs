@@ -7,11 +7,20 @@ module Lib.Web.Types
   , Redirection
   , CollectionOverviewData(..)
   , ArticleListData(..)
+  , ShareOverviewLinkData(..)
+  , ShareArticleListLinkData(..)
+  , ShareArticleLinkData(..)
+  , CreateSharedOverviewRefPerms(..)
+  , CreateSharedArticlesRefPerms(..)
+  , CreateSharedArticleRefPerms(..)
   , ViewArticleData(..)
   , DeleteItemForm(..)
   , PatchArticleForm(..)
   , PostCreateUnlockLinkForm(..)
   , PostCreateArticleForm(..)
+  , PostCreateSharedOverviewRefForm(..)
+  , PostCreateSharedArticlesRefForm(..)
+  , PostCreateSharedArticleRefForm(..)
   ) where
 
 import           Lib.App                        ( App )
@@ -21,6 +30,7 @@ import           Lib.Core.Domain                ( Accesstoken
                                                 , Capability
                                                 , Entity
                                                 , ExpirationDate
+                                                , Permission
                                                 , Revocable
                                                 , Uri
                                                 )
@@ -40,6 +50,7 @@ type Redirection = HtmlPage
 data CollectionOverviewData = CollectionOverviewData
   { acc                 :: !Accesstoken
   , canCreateUnlockLink :: !Bool
+  , canShareLinks       :: !Bool
   , earliestExpDate     :: !ExpirationDate
   , defaultExpDate      :: !ExpirationDate
   , unlockLinks         :: !(Seq (Capability, Revocable))
@@ -51,7 +62,55 @@ data ArticleListData = ArticleListData
   , canChangeArticleTitle :: !Bool
   , canChangeArticleState :: !Bool
   , canDeleteArticle      :: !Bool
+  , canShareLinks         :: !Bool
   , articles              :: !(Seq (Entity Article))
+  }
+
+data ShareOverviewLinkData = ShareOverviewLinkData
+  { acc             :: !Accesstoken
+  , sharingPerms    :: !CreateSharedOverviewRefPerms
+  , earliestExpDate :: !ExpirationDate
+  , defaultExpDate  :: !ExpirationDate
+  , sharedLinks     :: !(Seq (Capability, Revocable))
+  }
+
+data ShareArticleListLinkData = ShareArticleListLinkData
+  { acc             :: !Accesstoken
+  , canViewArticles :: !Bool
+  , sharingPerms    :: !CreateSharedArticlesRefPerms
+  , earliestExpDate :: !ExpirationDate
+  , defaultExpDate  :: !ExpirationDate
+  , sharedLinks     :: !(Seq (Capability, Revocable))
+  }
+
+data ShareArticleLinkData = ShareArticleLinkData
+  { acc             :: !Accesstoken
+  , canViewArticle  :: !Bool
+  , sharingPerms    :: !CreateSharedArticleRefPerms
+  , earliestExpDate :: !ExpirationDate
+  , defaultExpDate  :: !ExpirationDate
+  , sharedLinks     :: !(Seq (Capability, Revocable))
+  }
+
+data CreateSharedOverviewRefPerms = CreateSharedOverviewRefPerms
+  { canViewUnlockLinks   :: !Bool
+  , canCreateUnlockLinks :: !Bool
+  , canDeleteUnlockLinks :: !Bool
+  }
+
+data CreateSharedArticlesRefPerms = CreateSharedArticlesRefPerms
+  { canViewArticles       :: !Bool
+  , canCreateArticles     :: !Bool
+  , canChangeArticleTitle :: !Bool
+  , canChangeArticleState :: !Bool
+  , canDeleteArticle      :: !Bool
+  }
+
+data CreateSharedArticleRefPerms = CreateSharedArticleRefPerms
+  { canViewArticle        :: !Bool
+  , canChangeArticleTitle :: !Bool
+  , canChangeArticleState :: !Bool
+  , canDeleteArticle      :: !Bool
   }
 
 data ViewArticleData = ViewArticleData
@@ -60,6 +119,7 @@ data ViewArticleData = ViewArticleData
   , canChangeArticleTitle :: !Bool
   , canChangeArticleState :: !Bool
   , canDeleteArticle      :: !Bool
+  , canShareLinks         :: !Bool
   , article               :: !(Entity Article)
   }
 
@@ -92,6 +152,48 @@ data PostCreateArticleForm = PostCreateArticleForm
   { acc        :: !Accesstoken
   , goto       :: !Uri
   , articleUri :: !Uri
+  }
+  deriving stock Generic
+  deriving anyclass FromForm
+
+data PostCreateSharedOverviewRefForm = PostCreateSharedOverviewRefForm
+  { acc               :: !Accesstoken
+  , goto              :: !Uri
+  , petname           :: !(Maybe Text)
+  , expirationDate    :: !(Maybe ExpirationDate)
+  , viewUnlockLinks   :: !(Maybe Permission)
+  , createUnlockLinks :: !(Maybe Permission)
+  , delete            :: !(Maybe Permission)
+  , shareLinks        :: !(Maybe Permission)
+  }
+  deriving stock Generic
+  deriving anyclass FromForm
+
+data PostCreateSharedArticlesRefForm = PostCreateSharedArticlesRefForm
+  { acc            :: !Accesstoken
+  , goto           :: !Uri
+  , petname        :: !(Maybe Text)
+  , expirationDate :: !(Maybe ExpirationDate)
+  , viewArticles   :: !(Maybe Permission)
+  , createArticles :: !(Maybe Permission)
+  , changeTitle    :: !(Maybe Permission)
+  , changeState    :: !(Maybe Permission)
+  , delete         :: !(Maybe Permission)
+  , shareLinks     :: !(Maybe Permission)
+  }
+  deriving stock Generic
+  deriving anyclass FromForm
+
+data PostCreateSharedArticleRefForm = PostCreateSharedArticleRefForm
+  { acc            :: !Accesstoken
+  , goto           :: !Uri
+  , petname        :: !(Maybe Text)
+  , expirationDate :: !(Maybe ExpirationDate)
+  , viewArticle    :: !(Maybe Permission)
+  , changeTitle    :: !(Maybe Permission)
+  , changeState    :: !(Maybe Permission)
+  , delete         :: !(Maybe Permission)
+  , shareLinks     :: !(Maybe Permission)
   }
   deriving stock Generic
   deriving anyclass FromForm

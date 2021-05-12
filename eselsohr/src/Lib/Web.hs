@@ -14,6 +14,7 @@ import qualified Lib.Web.Controller            as Controller
 import           Lib.Web.Route                  ( Articles
                                                 , Collections
                                                 , Frontend
+                                                , SharedRefs
                                                 , UnlockLinks
                                                 )
 import           Network.Wai                    ( Middleware )
@@ -39,7 +40,8 @@ import           Servant                        ( (:<|>)(..)
                                                 )
 import           Servant.API.Generic            ( toServant )
 
-type Api = Frontend :<|> Articles :<|> Collections :<|> UnlockLinks
+type Api
+  = Frontend :<|> Articles :<|> Collections :<|> UnlockLinks :<|> SharedRefs
 
 server :: AppEnv -> Server Api
 server env =
@@ -48,6 +50,7 @@ server env =
     :<|> toServant Controller.article
     :<|> toServant Controller.collection
     :<|> toServant Controller.unlockLink
+    :<|> toServant Controller.sharedRef
 
 application :: Port -> AppEnv -> Application
 application port env@Env {..} =

@@ -15,6 +15,10 @@ appStylesheet = do
   pStyle
   itemStyle
   formButtonAsLink
+  noBullet
+  inputStyle
+  fieldsetInputStyle
+  formGroupStyle
 
 htmlStyle :: Css
 htmlStyle = html ? do
@@ -97,3 +101,21 @@ itemStyle = do
     li ? marginRight (px 5)
     form ? do
       display inline
+
+noBullet :: Css
+noBullet = ".no-bullet" ? li ? listStyleType none
+
+inputStyle :: Css
+inputStyle = input ? do
+  marginTop $ Clay.rem 0.4
+  marginBottom $ Clay.rem 0.4
+
+fieldsetInputStyle :: Css
+fieldsetInputStyle = fieldset ? input ? do
+  marginLeft $ Clay.rem 0.4
+  marginRight $ Clay.rem 0.4
+
+formGroupStyle :: Css
+formGroupStyle = ".form-group" ? do
+  label ? display block
+  input ? display block

@@ -45,6 +45,7 @@ import           Lib.Core.Domain                ( Action(..)
                                                 , Id
                                                 , OverviewAction(..)
                                                 , Resource
+                                                , SharedRefAction(..)
                                                 , StoreEvent
                                                 )
 import           Lib.Impl.Repository            ( SealedResource )
@@ -148,6 +149,9 @@ getAllCap sRes authAction = case getAction authAction of
   OverviewAct oAct -> case oAct of
     ViewUnlockLinks -> pure $ Impl.getAllCap sRes
     _otherAct       -> notAuthorized
+  SharedRefAct sAct -> case sAct of
+    ViewSharedRefs -> pure $ Impl.getAllCap sRes
+    _otherAct      -> notAuthorized
   _otherAct -> notAuthorized
 
 insertCap :: (WithError m) => AuthAction -> Capability -> m StoreEvent
@@ -155,6 +159,9 @@ insertCap authAction cap = case getAction authAction of
   OverviewAct oAct -> case oAct of
     CreateUnlockLink unlockLinkId -> pure $ Impl.insertCap unlockLinkId cap
     _otherAct                     -> notAuthorized
+  SharedRefAct sAct -> case sAct of
+    CreateSharedRef srId -> pure $ Impl.insertCap srId cap
+    _otherAct            -> notAuthorized
   _otherAct -> notAuthorized
 
 updateCap
@@ -167,6 +174,9 @@ deleteCap authAction = case getAction authAction of
   OverviewAct oAct -> case oAct of
     DeleteUnlockLink unlockLinkId -> pure $ Impl.deleteCap unlockLinkId
     _otherAct                     -> notAuthorized
+  SharedRefAct sAct -> case sAct of
+    DeleteSharedRef srId -> pure $ Impl.deleteCap srId
+    _otheract            -> notAuthorized
   _otherAct -> notAuthorized
 
 noAuthLookupCap :: SealedResource -> Id Capability -> Maybe (Entity Capability)

@@ -6,7 +6,6 @@ module Lib.Core.Service.UnlockLink
 
 import qualified Data.HashMap.Strict           as Map
 import qualified Data.Sequence                 as Seq
-import qualified Data.Text                     as Text
 import           Data.Time                      ( UTCTime )
 import           Lib.App                        ( WithError )
 import           Lib.Core.Domain                ( AuthAction
@@ -25,7 +24,9 @@ import           Lib.Core.Effect                ( ContextState(..)
                                                 , WriteState(..)
                                                 )
 import qualified Lib.Core.Effect.Repository    as R
-import           Lib.Core.Service.Util          ( getResId )
+import           Lib.Core.Service.Util          ( createCapability
+                                                , getResId
+                                                )
 import           Relude.Extra                   ( secondF )
 
 getUnlockLinks
@@ -74,18 +75,11 @@ createUnlockLink
   -> AuthAction
   -> m ()
 createUnlockLink ctxState petname mExpDate authAct = do
-  let resId          = getResId ctxState
-      checkedPetname = checkForEmptyPetname petname
-      cap            = Capability defaultArticlesRef checkedPetname mExpDate
-  R.commit resId . one =<< R.insertCap authAct cap
+  let resId = getResId ctxState
+  createCapability resId defaultArticlesRef petname mExpDate authAct
 
 deleteUnlockLink
   :: (WriteState m, WithError m) => ContextState -> AuthAction -> m ()
 deleteUnlockLink ctxState authAct = do
   let resId = getResId ctxState
   R.commit resId . one =<< R.deleteCap authAct
-
-checkForEmptyPetname :: Maybe Text -> Maybe Text
-checkForEmptyPetname Nothing = Nothing
-checkForEmptyPetname (Just pName) | Text.null pName = Nothing
-                                  | otherwise       = Just pName

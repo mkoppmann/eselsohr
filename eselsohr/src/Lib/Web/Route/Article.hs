@@ -9,6 +9,8 @@ import           Lib.Core.Domain                ( Article
 import           Lib.Web.Types                  ( DeleteItemForm
                                                 , PatchArticleForm
                                                 , PostCreateArticleForm
+                                                , PostCreateSharedArticlesRefForm
+                                                , PostCreateSharedArticleRefForm
                                                 , Redirection
                                                 , ToApi
                                                 )
@@ -29,6 +31,21 @@ data ArticlesSite route = ArticlesSite
         :- "api"
         :> "articles"
         :> ReqBody '[FormUrlEncoded] PostCreateArticleForm
+        :> Post '[HTML] Redirection
+  , createSharedArticlesRef ::
+      route
+        :- "api"
+        :> "articles"
+        :> "shared-ref"
+        :> ReqBody '[FormUrlEncoded] PostCreateSharedArticlesRefForm
+        :> Post '[HTML] Redirection
+  , createSharedArticleRef ::
+      route
+        :- "api"
+        :> "articles"
+        :> Capture "articleId" (Id Article)
+        :> "shared-ref"
+        :> ReqBody '[FormUrlEncoded] PostCreateSharedArticleRefForm
         :> Post '[HTML] Redirection
   , patchArticle ::
       route

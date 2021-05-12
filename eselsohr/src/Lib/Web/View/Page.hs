@@ -3,8 +3,11 @@ module Lib.Web.View.Page
   , invalidToken
   , root
   , collectionOverview
+  , shareOverviewLink
   , articleList
+  , shareArticleListLink
   , showArticle
+  , shareArticleLink
   , editArticle
   ) where
 
@@ -31,6 +34,9 @@ import qualified Lib.Core.Domain.Article       as Article
 import qualified Lib.Web.Route                 as Route
 import           Lib.Web.Types                  ( ArticleListData(..)
                                                 , CollectionOverviewData(..)
+                                                , ShareArticleLinkData(..)
+                                                , ShareArticleListLinkData(..)
+                                                , ShareOverviewLinkData(..)
                                                 , ViewArticleData(..)
                                                 )
 import qualified Lib.Web.View.Form             as Form
@@ -41,6 +47,9 @@ import           Servant                        ( Link
                                                 )
 import qualified Text.URI                      as URI
 import qualified Text.URI.Lens                 as UL
+
+navBar :: [Html ()] -> Html ()
+navBar links = nav_ . ul_ [class_ "no-bullet"] $ traverse_ li_ links
 
 notAuthorized :: Html ()
 notAuthorized = do
@@ -69,6 +78,12 @@ root = do
 
 collectionOverview :: CollectionOverviewData -> Html ()
 collectionOverview CollectionOverviewData {..} = do
+  navBar
+    [ when canShareLinks $ do
+        a_ [linkAbsHref_ . fieldLink Route.shareCollectionOverview $ Just acc]
+           "Share this page"
+    ]
+
   h1_ "Collection Overview Page"
   p_
     "Welcome to the main page of this collection.\
@@ -79,6 +94,7 @@ collectionOverview CollectionOverviewData {..} = do
     \ If you loose access to this page, you can cannot access it again. Treat\
     \ the link like a password.\
     \ Do not share it with anyone."
+
   h2_ "Currently active unlock links"
   if null unlockLinks
     then p_ "You have no active access links for this collection"
@@ -99,24 +115,60 @@ collectionOverview CollectionOverviewData {..} = do
     li_ $ do
       let petname = fromMaybe (show capId) mPetname
           expDate = maybe "Never" (toHtml . expDateToText) mExpDate
-      activeLinkA activeAcc petname
+      articlesLinkA activeAcc petname
       small_ $ "Expires on: " <> expDate
       Form.deleteUnlockLink capId acc $ collectionOverviewLink acc
 
-  activeLinkA :: Accesstoken -> Text -> Html ()
-  activeLinkA artListAcc =
-    a_ [linkAbsHref_ . fieldLink Route.viewArticles $ Just artListAcc] . toHtml
+shareOverviewLink :: ShareOverviewLinkData -> Html ()
+shareOverviewLink ShareOverviewLinkData {..} = do
+  navBar [collectionOverviewA acc "Back to overview"]
 
-  collectionOverviewLink :: Accesstoken -> Link
-  collectionOverviewLink = fieldLink Route.collectionOverview . Just
+  h1_ "Collection Overview Sharing Menu"
+  Form.createSharedOverviewRef sharingPerms earliestExpDate defaultExpDate acc
+    . fieldLink Route.shareCollectionOverview
+    $ Just acc
+  div_ . void $ traverse_ sharedLinkItem sharedLinks
+ where
+  sharedLinkItem :: (Capability, Revocable) -> Html ()
+  sharedLinkItem (Capability _ mPetname _, (capId, sharedAcc)) = do
+    li_ $ do
+      let petname = fromMaybe (show sharedAcc) mPetname
+      collectionOverviewA sharedAcc petname
+      Form.deleteSharedReference capId acc
+        . fieldLink Route.shareCollectionOverview
+        $ Just acc
+
+
+collectionOverviewA :: Accesstoken -> Text -> Html ()
+collectionOverviewA acc =
+  a_ [linkAbsHref_ $ collectionOverviewLink acc] . toHtml
+
+collectionOverviewLink :: Accesstoken -> Link
+collectionOverviewLink = fieldLink Route.collectionOverview . Just
+
+articlesLinkA :: Accesstoken -> Text -> Html ()
+articlesLinkA artListAcc =
+  a_ [linkAbsHref_ . fieldLink Route.viewArticles $ Just artListAcc] . toHtml
+
+articleLinkA :: Id Article -> Accesstoken -> Text -> Html ()
+articleLinkA artId artListAcc =
+  a_ [linkAbsHref_ . fieldLink Route.viewArticle artId $ Just artListAcc]
+    . toHtml
 
 articleList :: ArticleListData -> Html ()
 articleList ArticleListData {..} = do
+  navBar
+    [ when canShareLinks . p_ $ do
+        a_ [linkAbsHref_ . fieldLink Route.shareViewArticles $ Just acc]
+           "Share this page"
+    ]
+
   if canCreateArticles
     then newArticle acc . fieldLink Route.viewArticles $ Just acc
     else pass
+
   h1_ "Your articles"
-  div_ . void $ traverse_
+  div_ . ul_ [] . void $ traverse_
     (articleItem canChangeArticleTitle
                  canChangeArticleState
                  canDeleteArticle
@@ -128,6 +180,25 @@ newArticle :: Accesstoken -> Link -> Html ()
 newArticle acc goto = do
   h2_ "Add a new article"
   Form.createArticle acc goto
+
+shareArticleListLink :: ShareArticleListLinkData -> Html ()
+shareArticleListLink ShareArticleListLinkData {..} = do
+  navBar [when canViewArticles $ getArticlesA acc]
+
+  h1_ "Article List Sharing Menu"
+  Form.createSharedArticlesRef sharingPerms earliestExpDate defaultExpDate acc
+    . fieldLink Route.shareViewArticles
+    $ Just acc
+  div_ . void $ traverse_ sharedLinkItem sharedLinks
+ where
+  sharedLinkItem :: (Capability, Revocable) -> Html ()
+  sharedLinkItem (Capability _ mPetname _, (capId, sharedAcc)) = do
+    li_ $ do
+      let petname = fromMaybe (show sharedAcc) mPetname
+      articlesLinkA sharedAcc petname
+      Form.deleteSharedReference capId acc
+        . fieldLink Route.shareViewArticles
+        $ Just acc
 
 articleItem :: Bool -> Bool -> Bool -> Accesstoken -> Entity Article -> Html ()
 articleItem canChangeTitle canChangeState canDelete acc (Entity artId art) =
@@ -196,7 +267,12 @@ showArticle ViewArticleData {..} = do
   let (Entity artId art) = article
       aUrl               = Article.uri art
 
-  when canViewArticles getArticlesA
+  navBar
+    [ when canViewArticles $ getArticlesA acc
+    , when canShareLinks $ do
+      a_ [linkAbsHref_ . fieldLink Route.shareViewArticle artId $ Just acc]
+         "Share this page"
+    ]
 
   h1_ . toHtml $ Article.title art
   p_ . toHtml $ "Created: " <> prettyDate (Article.creation art)
@@ -214,16 +290,42 @@ showArticle ViewArticleData {..} = do
   when canChangeArticleTitle $ editArticleA artId acc
   when canDeleteArticle $ if canViewArticles
     then Form.deleteArticle artId acc . fieldLink Route.viewArticles $ Just acc
-    else root
+    else Form.deleteArticle artId acc $ fieldLink Route.startpage
  where
   showArticleLink :: Id Article -> Link
   showArticleLink artId = fieldLink Route.viewArticle artId $ Just acc
 
-  getArticlesLink :: Link
-  getArticlesLink = fieldLink Route.viewArticles $ Just acc
+shareArticleLink :: Id Article -> ShareArticleLinkData -> Html ()
+shareArticleLink artId ShareArticleLinkData {..} = do
+  navBar [when canViewArticle $ getArticleA artId acc]
 
-  getArticlesA :: Html ()
-  getArticlesA = a_ [linkAbsHref_ getArticlesLink] "Back to overview"
+  h1_ "Article Sharing Menu"
+  Form.createSharedArticleRef artId
+                              sharingPerms
+                              earliestExpDate
+                              defaultExpDate
+                              acc
+    . fieldLink Route.shareViewArticle artId
+    $ Just acc
+  div_ . void $ traverse_ sharedLinkItem sharedLinks
+ where
+  sharedLinkItem :: (Capability, Revocable) -> Html ()
+  sharedLinkItem (Capability _ mPetname _, (capId, sharedAcc)) = do
+    li_ $ do
+      let petname = fromMaybe (show sharedAcc) mPetname
+      articleLinkA artId sharedAcc petname
+      Form.deleteSharedReference capId acc
+        . fieldLink Route.shareViewArticle artId
+        $ Just acc
+
+getArticlesA :: Accesstoken -> Html ()
+getArticlesA acc =
+  a_ [linkAbsHref_ . fieldLink Route.viewArticles $ Just acc] "Back to overview"
+
+getArticleA :: Id Article -> Accesstoken -> Html ()
+getArticleA artId acc = a_
+  [linkAbsHref_ . fieldLink Route.viewArticle artId $ Just acc]
+  "Back to article"
 
 editArticle :: Id Article -> Text -> Accesstoken -> Link -> Html ()
 editArticle artId artTitle acc goto = do

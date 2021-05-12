@@ -29,7 +29,13 @@ import qualified Lib.Web.Route                 as Route
 import           Lib.Web.Types                  ( AppServer
                                                 , ArticleListData(..)
                                                 , CollectionOverviewData(..)
+                                                , CreateSharedArticleRefPerms(..)
+                                                , CreateSharedArticlesRefPerms(..)
+                                                , CreateSharedOverviewRefPerms(..)
                                                 , HtmlPage
+                                                , ShareArticleLinkData(..)
+                                                , ShareArticleListLinkData(..)
+                                                , ShareOverviewLinkData(..)
                                                 , ViewArticleData(..)
                                                 )
 import qualified Lib.Web.View.App              as App
@@ -38,14 +44,18 @@ import           Lib.Web.View.Style             ( appStylesheet )
 import           Servant                        ( fieldLink )
 
 frontend :: Route.FrontendSite AppServer
-frontend = Route.FrontendSite { Route.startpage          = startpage
-                              , Route.invalidToken       = invalidToken
-                              , Route.collectionOverview = collectionOverview
-                              , Route.viewArticles       = viewArticles
-                              , Route.viewArticle        = viewArticle
-                              , Route.editArticle        = editArticle
-                              , Route.stylesheet         = stylesheet
-                              }
+frontend = Route.FrontendSite
+  { Route.startpage               = startpage
+  , Route.invalidToken            = invalidToken
+  , Route.collectionOverview      = collectionOverview
+  , Route.shareCollectionOverview = shareCollectionOverview
+  , Route.viewArticles            = viewArticles
+  , Route.shareViewArticles       = shareViewArticles
+  , Route.viewArticle             = viewArticle
+  , Route.shareViewArticle        = shareViewArticle
+  , Route.editArticle             = editArticle
+  , Route.stylesheet              = stylesheet
+  }
 
 startpage :: (Monad m) => m HtmlPage
 startpage = pure $ App.render Page.root
@@ -64,20 +74,30 @@ collectionOverview (Just acc) = do
     Just authAction -> do
       unlockLinks <- Service.getUnlockLinks ctxState authAction
       (earliestExpDate, defaultExpDate) <- getExpirationDates
-      let canCreateUnlockLinks = Cap.canCreateUnlockLink objRef
-          page = Page.collectionOverview $ CollectionOverviewData
-            acc
-            canCreateUnlockLinks
-            earliestExpDate
-            defaultExpDate
-            unlockLinks
+      let canCreateUnlockLink = Cap.canCreateUnlockLink objRef
+          canShareLinks = Cap.canManageSharedRef objRef
+          page = Page.collectionOverview $ CollectionOverviewData { .. }
       pure $ App.render page
- where
-  getExpirationDates :: (MonadTime m) => m (ExpirationDate, ExpirationDate)
-  getExpirationDates = do
-    currTime@UTCTime {..} <- getCurrentTime
-    let expDate = currTime { utctDay = addGregorianMonthsClip 1 utctDay }
-    pure (ExpirationDate currTime, ExpirationDate expDate)
+
+shareCollectionOverview
+  :: (ReadState m, MonadTime m, WithError m) => Maybe Accesstoken -> m HtmlPage
+shareCollectionOverview Nothing    = pure notAuthorized
+shareCollectionOverview (Just acc) = do
+  ctxState <- getContextState acc
+  let objRef = getObjRef ctxState
+  case Cap.viewSharedRefs objRef of
+    Nothing                  -> pure notAuthorized
+    Just sharedRefAuthAction -> do
+      sharedLinks <- Service.getSharedRefs ctxState
+                                           Cap.isSharedOverviewRef
+                                           sharedRefAuthAction
+      (earliestExpDate, defaultExpDate) <- getExpirationDates
+      let canViewUnlockLinks   = Cap.canGetUnlockLinks objRef
+          canCreateUnlockLinks = Cap.canCreateUnlockLink objRef
+          canDeleteUnlockLinks = Cap.canDeleteUnlockLink objRef
+          sharingPerms         = CreateSharedOverviewRefPerms { .. }
+          page = Page.shareOverviewLink $ ShareOverviewLinkData { .. }
+      pure $ App.render page
 
 viewArticles
   :: (ReadState m, MonadTime m, WithError m) => Maybe Accesstoken -> m HtmlPage
@@ -86,19 +106,37 @@ viewArticles (Just acc) = do
   ctxState <- getContextState acc
   let objRef = getObjRef ctxState
   case Cap.viewArticles objRef of
-    Nothing         -> pure notAuthorized
-    Just authAction -> do
-      articles <- Service.getArticles ctxState authAction
-      let canCreateArticles = Cap.canCreateArticle objRef
-          canChangeTitles   = Cap.canChangeAllArticleTitles objRef
-          canChangeStates   = Cap.canChangeAllArticleStates objRef
-          canDelete         = Cap.canDeleteAllArticles objRef
-          page = Page.articleList $ ArticleListData acc
-                                                    canCreateArticles
-                                                    canChangeTitles
-                                                    canChangeStates
-                                                    canDelete
-                                                    articles
+    Nothing            -> pure notAuthorized
+    Just artAuthAction -> do
+      articles <- Service.getArticles ctxState artAuthAction
+      let canCreateArticles     = Cap.canCreateArticle objRef
+          canChangeArticleTitle = Cap.canChangeAllArticleTitles objRef
+          canChangeArticleState = Cap.canChangeAllArticleStates objRef
+          canDeleteArticle      = Cap.canDeleteAllArticles objRef
+          canShareLinks         = Cap.canManageSharedRef objRef
+          page                  = Page.articleList $ ArticleListData { .. }
+      pure $ App.render page
+
+shareViewArticles
+  :: (ReadState m, MonadTime m, WithError m) => Maybe Accesstoken -> m HtmlPage
+shareViewArticles Nothing    = pure notAuthorized
+shareViewArticles (Just acc) = do
+  ctxState <- getContextState acc
+  let objRef = getObjRef ctxState
+  case Cap.viewSharedRefs objRef of
+    Nothing                  -> pure notAuthorized
+    Just sharedRefAuthAction -> do
+      sharedLinks <- Service.getSharedRefs ctxState
+                                           Cap.isSharedArticlesRef
+                                           sharedRefAuthAction
+      (earliestExpDate, defaultExpDate) <- getExpirationDates
+      let canViewArticles       = Cap.canViewArticles objRef
+          canCreateArticles     = Cap.canCreateArticle objRef
+          canChangeArticleTitle = Cap.canChangeAllArticleTitles objRef
+          canChangeArticleState = Cap.canChangeAllArticleStates objRef
+          canDeleteArticle      = Cap.canDeleteAllArticles objRef
+          sharingPerms          = CreateSharedArticlesRefPerms { .. }
+          page = Page.shareArticleListLink $ ShareArticleListLinkData { .. }
       pure $ App.render page
 
 viewArticle
@@ -113,17 +151,37 @@ viewArticle artId (Just acc) = do
   case Cap.viewArticle objRef artId of
     Nothing         -> pure notAuthorized
     Just authAction -> do
-      artEnt <- Service.getArticle ctxState authAction
-      let canViewArticles = Cap.canViewArticles objRef
-          canChangeTitle  = Cap.canChangeArticleTitle objRef artId
-          canChangeState  = Cap.canChangeArticleState objRef artId
-          canDelete       = Cap.canDeleteArticle objRef artId
-          page            = Page.showArticle $ ViewArticleData acc
-                                                               canViewArticles
-                                                               canChangeTitle
-                                                               canChangeState
-                                                               canDelete
-                                                               artEnt
+      article <- Service.getArticle ctxState authAction
+      let canViewArticles       = Cap.canViewArticles objRef
+          canChangeArticleTitle = Cap.canChangeArticleTitle objRef artId
+          canChangeArticleState = Cap.canChangeArticleState objRef artId
+          canDeleteArticle      = Cap.canDeleteArticle objRef artId
+          canShareLinks         = Cap.canManageSharedRef objRef
+          page                  = Page.showArticle $ ViewArticleData { .. }
+      pure $ App.render page
+
+shareViewArticle
+  :: (ReadState m, MonadTime m, WithError m)
+  => Id Article
+  -> Maybe Accesstoken
+  -> m HtmlPage
+shareViewArticle _     Nothing    = pure notAuthorized
+shareViewArticle artId (Just acc) = do
+  ctxState <- getContextState acc
+  let objRef = getObjRef ctxState
+  case Cap.viewSharedRefs objRef of
+    Nothing                  -> pure notAuthorized
+    Just sharedRefAuthAction -> do
+      sharedLinks <- Service.getSharedRefs ctxState
+                                           Cap.isSharedArticleRef
+                                           sharedRefAuthAction
+      (earliestExpDate, defaultExpDate) <- getExpirationDates
+      let canViewArticle        = Cap.canViewArticle objRef artId
+          canChangeArticleTitle = Cap.canChangeArticleTitle objRef artId
+          canChangeArticleState = Cap.canChangeArticleState objRef artId
+          canDeleteArticle      = Cap.canDeleteArticle objRef artId
+          sharingPerms          = CreateSharedArticleRefPerms { .. }
+          page = Page.shareArticleLink artId $ ShareArticleLinkData { .. }
       pure $ App.render page
 
 editArticle
@@ -151,3 +209,9 @@ invalidToken = pure . App.render $ Page.invalidToken
 
 stylesheet :: (Monad m) => m Css
 stylesheet = return appStylesheet
+
+getExpirationDates :: (MonadTime m) => m (ExpirationDate, ExpirationDate)
+getExpirationDates = do
+  currTime@UTCTime {..} <- getCurrentTime
+  let expDate = currTime { utctDay = addGregorianMonthsClip 1 utctDay }
+  pure (ExpirationDate currTime, ExpirationDate expDate)

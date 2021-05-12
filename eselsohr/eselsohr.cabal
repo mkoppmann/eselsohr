@@ -37,6 +37,7 @@ library
         Lib.Core.Service
         Lib.Core.Service.Article
         Lib.Core.Service.Collection
+        Lib.Core.Service.SharedReference
         Lib.Core.Service.UnlockLink
         Lib.Core.Service.Util
         Lib.Impl.Repository.File
@@ -51,12 +52,14 @@ library
         Lib.Web.Controller.Article
         Lib.Web.Controller.Collection
         Lib.Web.Controller.Frontend
+        Lib.Web.Controller.SharedReference
         Lib.Web.Controller.UnlockLink
         Lib.Web.Controller.Util
         Lib.Web.Route
         Lib.Web.Route.Article
         Lib.Web.Route.Collection
         Lib.Web.Route.Frontend
+        Lib.Web.Route.SharedReference
         Lib.Web.Route.UnlockLink
         Lib.Web.Route.Util
         Lib.Web.Types
