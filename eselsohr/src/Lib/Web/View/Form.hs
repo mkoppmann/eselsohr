@@ -74,8 +74,7 @@ createArticle :: Accesstoken -> Link -> Html ()
 createArticle = postMethodButton (fieldLink Route.createArticle)
                                  [urlInput]
                                  "Save article"
- where
-  urlInput = input_ [type_ "text", name_ "articleUri", placeholder_ "URL"]
+  where urlInput = input_ [type_ "url", name_ "articleUri", placeholder_ "URL"]
 
 changeArticleTitle :: Id Article -> Text -> Accesstoken -> Link -> Html ()
 changeArticleTitle artId artTitle = patchMethodButton
