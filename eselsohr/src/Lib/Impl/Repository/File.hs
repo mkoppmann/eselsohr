@@ -6,14 +6,10 @@ module Lib.Impl.Repository.File
   , init
   ,
 
-  -- * Error helpers
+    -- * Error helpers
     extractionError
   ) where
 
-import           Codec.Compression.Zstd         ( Decompress(..)
-                                                , compress
-                                                , decompress
-                                                )
 import qualified Codec.Serialise               as Ser
 import           Codec.Serialise.Class          ( Serialise )
 import           Lib.App                        ( AppErrorType
@@ -24,7 +20,6 @@ import           Lib.App                        ( AppErrorType
                                                 , WriteQueue
                                                 , grab
                                                 , storeError
-                                                , throwError
                                                 , throwOnNothing
                                                 )
 import           Lib.Core.Domain                ( Id
@@ -35,9 +30,6 @@ import           Prelude                 hiding ( init )
 import           UnliftIO                       ( MonadUnliftIO )
 import           UnliftIO.Directory             ( doesFileExist )
 import           UnliftIO.IO.File               ( writeBinaryFileDurableAtomic )
-
-zstdCompressionLvl :: Int
-zstdCompressionLvl = 1
 
 type WithFile env m
   = ( MonadReader env m
@@ -64,22 +56,11 @@ init :: (Serialise a, WithFile env m) => Id a -> a -> m ()
 init resId val = flip encodeFile val =<< idToPath resId
 
 encodeFile :: (Serialise a, WithFile env m) => FilePath -> a -> m ()
-encodeFile fp =
-  writeBinaryFileDurableAtomic fp
-    . compress zstdCompressionLvl
-    . toStrict
-    . Ser.serialise
+encodeFile fp = writeBinaryFileDurableAtomic fp . toStrict . Ser.serialise
 {-# INLINE encodeFile #-}
 
-decodeFile :: (Serialise a, WithError m, WithFile env m) => FilePath -> m a
-decodeFile fp =
-  Ser.deserialise . fromStrict <$> (handleDecompress =<< liftIO (readFileBS fp))
- where
-  handleDecompress :: (WithError m) => ByteString -> m ByteString
-  handleDecompress bs = case decompress bs of
-    Decompress newBs -> pure newBs
-    Error message -> decompressionException $ toText message
-    Skip -> decompressionException "The compressed frame was empty."
+decodeFile :: (Serialise a, WithFile env m) => FilePath -> m a
+decodeFile fp = Ser.deserialise . fromStrict <$> liftIO (readFileBS fp)
 {-# INLINE decodeFile #-}
 
 idToPath :: (WithFile env m) => Id a -> m FilePath
@@ -88,13 +69,6 @@ idToPath resId = do
   pure $ dataPath <> show resId <> ".bin"
 
 -- * Error helpers
-
-decompressionException :: (WithError m) => Text -> m a
-decompressionException = withFrozenCallStack . throwError . decompressionError
-
-decompressionError :: Text -> AppErrorType
-decompressionError reason =
-  storeError $ "Could not decompress loaded resource, because: " <> reason
 
 extractionError :: (WithError m) => Maybe a -> m a
 extractionError = withFrozenCallStack . throwOnNothing singleEntryError
