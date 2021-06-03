@@ -116,7 +116,7 @@ collectionOverview CollectionOverviewData {..} = do
       let petname = fromMaybe (show capId) mPetname
           expDate = maybe "Never" (toHtml . expDateToText) mExpDate
       articlesLinkA activeAcc petname
-      small_ $ "Expires on: " <> expDate
+      p_ . small_ $ "Expires on: " <> expDate
       Form.deleteUnlockLink capId acc $ collectionOverviewLink acc
 
 shareOverviewLink :: ShareOverviewLinkData -> Html ()
@@ -163,9 +163,8 @@ articleList ArticleListData {..} = do
            "Share this page"
     ]
 
-  if canCreateArticles
-    then newArticle acc . fieldLink Route.viewArticles $ Just acc
-    else pass
+  when canCreateArticles . newArticle acc $ fieldLink Route.viewArticles
+                                                      (Just acc)
 
   h1_ "Your articles"
   div_ . ul_ [] . void $ traverse_
@@ -212,6 +211,7 @@ articleItem canChangeTitle canChangeState canDelete acc (Entity artId art) =
       a_ [linkAbsHref_ . fieldLink Route.viewArticle artId $ Just acc]
         . toHtml
         $ Article.title art
+      when canChangeTitle . small_ $ editArticleA artId acc "✏️"
 
   itemMeta :: Html ()
   itemMeta = div_ [class_ "item-meta"] $ do
@@ -229,23 +229,15 @@ articleItem canChangeTitle canChangeState canDelete acc (Entity artId art) =
 
   itemMetaIcons :: Html ()
   itemMetaIcons = ul_ [class_ "item-meta-icons"] $ do
+    when canDelete . li_ $ Form.deleteArticle artId acc listArticlesLink
+
     case Article.state art of
-      Archived -> if canChangeState
-        then li_ $ Form.unreadArticle artId acc listArticlesLink
-        else pass
-      Unread -> if canChangeState
-        then li_ $ Form.archiveArticle artId acc listArticlesLink
-        else pass
-    if canChangeTitle
-      then do
+      Archived -> when canChangeState $ do
         li_ "|"
-        li_ $ editArticleA artId acc
-      else pass
-    if canDelete
-      then do
+        li_ $ Form.unreadArticle artId acc listArticlesLink
+      Unread -> when canChangeState $ do
         li_ "|"
-        li_ $ Form.deleteArticle artId acc listArticlesLink
-      else pass
+        li_ $ Form.archiveArticle artId acc listArticlesLink
 
   listArticlesLink :: Link
   listArticlesLink = fieldLink Route.viewArticles $ Just acc
@@ -258,9 +250,9 @@ articleItem canChangeTitle canChangeState canDelete acc (Entity artId art) =
     let host = URI.unRText <$> url ^? UL.uriAuthority . _Right . UL.authHost
     in  fromMaybe URI.emptyURI $ URI.mkURI =<< host
 
-editArticleA :: Id Article -> Accesstoken -> Html ()
+editArticleA :: Id Article -> Accesstoken -> Text -> Html ()
 editArticleA artId acc =
-  a_ [linkAbsHref_ . fieldLink Route.editArticle artId $ Just acc] "Edit"
+  a_ [linkAbsHref_ . fieldLink Route.editArticle artId $ Just acc] . toHtml
 
 showArticle :: ViewArticleData -> Html ()
 showArticle ViewArticleData {..} = do
@@ -275,9 +267,13 @@ showArticle ViewArticleData {..} = do
     ]
 
   h1_ . toHtml $ Article.title art
+  when canChangeArticleTitle . p_ $ editArticleA artId acc "Edit title"
   p_ . toHtml $ "Created: " <> prettyDate (Article.creation art)
   p_ . toHtml $ "State: " <> show @Text (Article.state art)
   p_ . a_ [urlHref_ aUrl] . toHtml $ render aUrl
+  when canDeleteArticle $ if canViewArticles
+    then Form.deleteArticle artId acc . fieldLink Route.viewArticles $ Just acc
+    else Form.deleteArticle artId acc $ fieldLink Route.startpage
   case Article.state art of
     Archived ->
       when canChangeArticleState
@@ -287,10 +283,6 @@ showArticle ViewArticleData {..} = do
       when canChangeArticleState
         $ Form.archiveArticle artId acc
         $ showArticleLink artId
-  when canChangeArticleTitle $ editArticleA artId acc
-  when canDeleteArticle $ if canViewArticles
-    then Form.deleteArticle artId acc . fieldLink Route.viewArticles $ Just acc
-    else Form.deleteArticle artId acc $ fieldLink Route.startpage
  where
   showArticleLink :: Id Article -> Link
   showArticleLink artId = fieldLink Route.viewArticle artId $ Just acc
