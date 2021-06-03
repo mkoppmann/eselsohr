@@ -5,6 +5,7 @@ module Lib.Web.View.Page
   , collectionOverview
   , shareOverviewLink
   , articleList
+  , newArticlePage
   , shareArticleListLink
   , showArticle
   , shareArticleLink
@@ -174,6 +175,11 @@ articleList ArticleListData {..} = do
                  acc
     )
     articles
+
+newArticlePage :: Accesstoken -> Link -> Html ()
+newArticlePage acc goto = do
+  h1_ "Add a new article"
+  Form.createArticle acc goto
 
 newArticle :: Accesstoken -> Link -> Html ()
 newArticle acc goto = do

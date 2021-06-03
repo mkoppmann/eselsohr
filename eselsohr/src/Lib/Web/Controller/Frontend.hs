@@ -51,6 +51,7 @@ frontend = Route.FrontendSite
   , Route.shareCollectionOverview = shareCollectionOverview
   , Route.viewArticles            = viewArticles
   , Route.shareViewArticles       = shareViewArticles
+  , Route.newArticle              = newArticle
   , Route.viewArticle             = viewArticle
   , Route.shareViewArticle        = shareViewArticle
   , Route.editArticle             = editArticle
@@ -138,6 +139,18 @@ shareViewArticles (Just acc) = do
           sharingPerms          = CreateSharedArticlesRefPerms { .. }
           page = Page.shareArticleListLink $ ShareArticleListLinkData { .. }
       pure $ App.render page
+
+newArticle
+  :: (ReadState m, MonadTime m, WithError m) => Maybe Accesstoken -> m HtmlPage
+newArticle Nothing    = pure notAuthorized
+newArticle (Just acc) = do
+  ctxState <- getContextState acc
+  let objRef = getObjRef ctxState
+      link   = fieldLink Route.newArticle $ Just acc
+      page   = Page.newArticlePage acc link
+  if not $ Cap.canCreateArticle objRef
+    then pure notAuthorized
+    else pure $ App.render page
 
 viewArticle
   :: (ReadState m, MonadTime m, WithError m)

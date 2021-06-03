@@ -50,6 +50,12 @@ data FrontendSite route = FrontendSite
         :> "shared-links"
         :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage
+  , newArticle ::
+      route
+        :- "articles"
+        :> "new"
+        :> QueryParam "acc" Accesstoken
+        :> Get '[HTML] HtmlPage
   , viewArticle ::
       route
         :- "articles"
