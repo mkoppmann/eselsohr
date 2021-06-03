@@ -83,7 +83,6 @@ securityHeaders =
     , "default-src 'none';\
       \ style-src 'self';\
       \ img-src 'self';\
-      \ frame-ancestors https:\
       \ form-action 'self';\
       \ upgrade-insecure-requests;"
     )
