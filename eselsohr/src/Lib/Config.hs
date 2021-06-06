@@ -22,6 +22,9 @@ import           System.FilePath                ( addTrailingPathSeparator )
 import           UnliftIO.Directory             ( XdgDirectory(XdgData)
                                                 , getXdgDirectory
                                                 )
+import           UnliftIO.Environment           ( getEnvironment
+                                                , unsetEnv
+                                                )
 
 {- | Configuration options for Eselsohr.
  Can be configured via environment variables or config file.
@@ -76,6 +79,7 @@ loadConfig mConfPath = do
   cf <- getCertFile
   kf <- getKeyFile
   ls <- getLogLevel
+  cleanEnv
   pure $ Config df mw ls sp la bu hs dh cf kf
  where
   loadEnvFile :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m ()
@@ -135,3 +139,6 @@ loadConfig mConfPath = do
 
   getKeyFile :: (MonadIO m) => m FilePath
   getKeyFile = maybe (pure "key.pem") pure =<< lookupEnv "KEY_FILE"
+
+cleanEnv :: (MonadIO m) => m ()
+cleanEnv = traverse_ (unsetEnv . fst) =<< getEnvironment
