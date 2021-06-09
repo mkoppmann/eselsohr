@@ -214,9 +214,7 @@ createLink currTime expTime = ul_ [class_ "no-bullet"] $ do
 sharingOptions :: [Html ()] -> Html ()
 sharingOptions permissionList = fieldset_ $ do
   legend_ "Permissions"
-  ul_ $ do
-    traverse_ li_ permissionList
-    li_ $ permissionField "shareLinks" "Share links"
+  ul_ $ traverse_ li_ permissionList
 
 permissionField :: Text -> Text -> Html ()
 permissionField fieldName labelText = do

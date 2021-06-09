@@ -17,7 +17,6 @@ import           Lib.Core.Effect                ( MonadRandom(..)
                                                 )
 import qualified Lib.Core.Service              as Service
 import           Lib.Web.Controller.Util        ( authAction
-                                                , getCapId
                                                 , getContextState
                                                 , getObjRef
                                                 , missingParameter
@@ -60,13 +59,12 @@ createSharedArticlesRef
   -> m Redirection
 createSharedArticlesRef PostCreateSharedArticlesRefForm {..} = do
   ctxState <- getContextState acc
-  let ogCapId = getCapId acc
-      objRef  = getObjRef ctxState
+  let objRef = getObjRef ctxState
 
   sharedRefId <- getRandomId
   let mAuthAct = Cap.createSharedRef objRef sharedRefId
   sharedRef <- maybe notAuthorized pure
-    $ Cap.createSharedArticlesRef ogCapId objRef perms
+    $ Cap.createSharedArticlesRef objRef perms
 
   authAction
     (Service.createSharedRef ctxState petname expirationDate sharedRef)
@@ -79,7 +77,7 @@ createSharedArticlesRef PostCreateSharedArticlesRefForm {..} = do
                         (Cap.maybePerm changeTitle)
                         (Cap.maybePerm changeState)
                         (Cap.maybePerm delete)
-                        (Cap.maybePerm shareLinks)
+                        (Cap.maybePerm Nothing)
 
 createSharedArticleRef
   :: (RWState m, MonadRandom m, MonadTime m, WithError m)
@@ -88,13 +86,12 @@ createSharedArticleRef
   -> m Redirection
 createSharedArticleRef artId PostCreateSharedArticleRefForm {..} = do
   ctxState <- getContextState acc
-  let ogCapId = getCapId acc
-      objRef  = getObjRef ctxState
+  let objRef = getObjRef ctxState
 
   sharedRefId <- getRandomId
   let mAuthAct = Cap.createSharedRef objRef sharedRefId
   sharedRef <- maybe notAuthorized pure
-    $ Cap.createSharedArticleRef ogCapId objRef perms artId
+    $ Cap.createSharedArticleRef objRef perms artId
 
   authAction
     (Service.createSharedRef ctxState petname expirationDate sharedRef)
@@ -106,7 +103,7 @@ createSharedArticleRef artId PostCreateSharedArticleRefForm {..} = do
                        (Cap.maybePerm changeTitle)
                        (Cap.maybePerm changeState)
                        (Cap.maybePerm delete)
-                       (Cap.maybePerm shareLinks)
+                       (Cap.maybePerm Nothing)
 
 patchArticle
   :: (RWState m, MonadTime m, WithError m)

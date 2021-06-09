@@ -82,9 +82,8 @@ data ObjectReference
   deriving stock (Eq, Generic, Show)
   deriving anyclass Serialise
 
-data SharedReference = SharedReference
-  { sharedObjRef :: !ObjectReference
-  , orgCapId     :: !(Id Capability)
+newtype SharedReference = SharedReference
+  { sharedObjRef :: ObjectReference
   }
   deriving stock (Eq, Generic, Show)
   deriving anyclass Serialise
@@ -166,19 +165,17 @@ defaultOverviewPerms :: OverviewPerms
 defaultOverviewPerms = OverviewPerms Allowed Allowed Allowed Allowed
 
 createSharedOverviewRef
-  :: Id Capability -> ObjectReference -> OverviewPerms -> Maybe ObjectReference
-createSharedOverviewRef ogCapId (OverviewRef ogPerms) newPerms =
+  :: ObjectReference -> OverviewPerms -> Maybe ObjectReference
+createSharedOverviewRef (OverviewRef ogPerms) newPerms =
   let (OverviewPerms ogP1  ogP2  ogP3  ogP4 ) = ogPerms
       (OverviewPerms newP1 newP2 newP3 newP4) = newPerms
       validPermissions                        = all
         (uncurry (>=))
         [(ogP1, newP1), (ogP2, newP2), (ogP3, newP3), (ogP4, newP4)]
   in  if validPermissions
-        then pure . SharedRef $ SharedReference (OverviewRef newPerms) ogCapId
+        then pure . SharedRef $ SharedReference (OverviewRef newPerms)
         else Nothing
-createSharedOverviewRef ogCapId (SharedRef SharedReference {..}) newPerms =
-  createSharedOverviewRef ogCapId sharedObjRef newPerms
-createSharedOverviewRef _ogCapId _otherRef _newPerms = Nothing
+createSharedOverviewRef _otherRef _newPerms = Nothing
 
 defaultArticlesRef :: ObjectReference
 defaultArticlesRef = ArticlesRef defaultArticlesPermissions
@@ -188,8 +185,8 @@ defaultArticlesPermissions =
   ArticlesPerms Allowed Allowed Allowed Allowed Allowed Allowed
 
 createSharedArticlesRef
-  :: Id Capability -> ObjectReference -> ArticlesPerms -> Maybe ObjectReference
-createSharedArticlesRef ogCapId (ArticlesRef ogPerms) newPerms =
+  :: ObjectReference -> ArticlesPerms -> Maybe ObjectReference
+createSharedArticlesRef (ArticlesRef ogPerms) newPerms =
   let (ArticlesPerms ogP1  ogP2  ogP3  ogP4  ogP5  ogP6 ) = ogPerms
       (ArticlesPerms newP1 newP2 newP3 newP4 newP5 newP6) = newPerms
       validPermissions = all
@@ -202,11 +199,9 @@ createSharedArticlesRef ogCapId (ArticlesRef ogPerms) newPerms =
         , (ogP6, newP6)
         ]
   in  if validPermissions
-        then pure . SharedRef $ SharedReference (ArticlesRef newPerms) ogCapId
+        then pure . SharedRef $ SharedReference (ArticlesRef newPerms)
         else Nothing
-createSharedArticlesRef ogCapId (SharedRef SharedReference {..}) newPerms =
-  createSharedArticlesRef ogCapId sharedObjRef newPerms
-createSharedArticlesRef _ogCapId _otherRef _newPerms = Nothing
+createSharedArticlesRef _otherRef _newPerms = Nothing
 
 defaultArticleRef :: Id Article -> ObjectReference
 defaultArticleRef artId = ArticleRef artId defaultArticlePermissions
@@ -216,12 +211,8 @@ defaultArticlePermissions =
   ArticlePerms Allowed Allowed Allowed Allowed Allowed
 
 createSharedArticleRef
-  :: Id Capability
-  -> ObjectReference
-  -> ArticlePerms
-  -> Id Article
-  -> Maybe ObjectReference
-createSharedArticleRef ogCapId (ArticlesRef ogPerms) newPerms articleId =
+  :: ObjectReference -> ArticlePerms -> Id Article -> Maybe ObjectReference
+createSharedArticleRef (ArticlesRef ogPerms) newPerms articleId =
   let ArticlesPerms {..} = ogPerms
       ArticlePerms {..}  = newPerms
       validPermissions   = all
@@ -233,11 +224,9 @@ createSharedArticleRef ogCapId (ArticlesRef ogPerms) newPerms articleId =
         , (aspShareLinks  , apShareLinks)
         ]
   in  if validPermissions
-        then pure . SharedRef $ SharedReference
-          (ArticleRef articleId newPerms)
-          ogCapId
+        then pure . SharedRef $ SharedReference (ArticleRef articleId newPerms)
         else Nothing
-createSharedArticleRef ogCapId (ArticleRef artId ogPerms) newPerms compareId =
+createSharedArticleRef (ArticleRef artId ogPerms) newPerms compareId =
   let (ArticlePerms ogP1  ogP2  ogP3  ogP4  ogP5 ) = ogPerms
       (ArticlePerms newP1 newP2 newP3 newP4 newP5) = newPerms
       validPermissions                             = (artId == compareId) && all
@@ -250,11 +239,8 @@ createSharedArticleRef ogCapId (ArticleRef artId ogPerms) newPerms compareId =
         ]
   in  if validPermissions
         then pure . SharedRef $ SharedReference (ArticleRef artId newPerms)
-                                                ogCapId
         else Nothing
-createSharedArticleRef ogCapId ((SharedRef SharedReference {..})) newPerms compareId
-  = createSharedArticleRef ogCapId sharedObjRef newPerms compareId
-createSharedArticleRef _ogCapId _otherRef _newPerms _compareId = Nothing
+createSharedArticleRef _otherRef _newPerms _compareId = Nothing
 
 getUnlockLinks :: ObjectReference -> Maybe AuthAction
 getUnlockLinks objRef = if canGetUnlockLinks objRef

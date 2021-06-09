@@ -164,7 +164,6 @@ data PostCreateSharedOverviewRefForm = PostCreateSharedOverviewRefForm
   , viewUnlockLinks   :: !(Maybe Permission)
   , createUnlockLinks :: !(Maybe Permission)
   , delete            :: !(Maybe Permission)
-  , shareLinks        :: !(Maybe Permission)
   }
   deriving stock Generic
   deriving anyclass FromForm
@@ -179,7 +178,6 @@ data PostCreateSharedArticlesRefForm = PostCreateSharedArticlesRefForm
   , changeTitle    :: !(Maybe Permission)
   , changeState    :: !(Maybe Permission)
   , delete         :: !(Maybe Permission)
-  , shareLinks     :: !(Maybe Permission)
   }
   deriving stock Generic
   deriving anyclass FromForm
@@ -193,7 +191,6 @@ data PostCreateSharedArticleRefForm = PostCreateSharedArticleRefForm
   , changeTitle    :: !(Maybe Permission)
   , changeState    :: !(Maybe Permission)
   , delete         :: !(Maybe Permission)
-  , shareLinks     :: !(Maybe Permission)
   }
   deriving stock Generic
   deriving anyclass FromForm

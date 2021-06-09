@@ -13,7 +13,6 @@ import           Lib.Core.Effect                ( MonadRandom(..)
                                                 )
 import qualified Lib.Core.Service              as Service
 import           Lib.Web.Controller.Util        ( authAction
-                                                , getCapId
                                                 , getContextState
                                                 , getObjRef
                                                 , notAuthorized
@@ -43,13 +42,12 @@ createSharedOverviewRef
   -> m Redirection
 createSharedOverviewRef PostCreateSharedOverviewRefForm {..} = do
   ctxState <- getContextState acc
-  let ogCapId = getCapId acc
-      objRef  = getObjRef ctxState
+  let objRef = getObjRef ctxState
 
   sharedRefId <- getRandomId
   let mAuthAct = Cap.createSharedRef objRef sharedRefId
   sharedRef <- maybe notAuthorized pure
-    $ Cap.createSharedOverviewRef ogCapId objRef perms
+    $ Cap.createSharedOverviewRef objRef perms
 
   authAction
     (Service.createSharedRef ctxState petname expirationDate sharedRef)
@@ -60,4 +58,4 @@ createSharedOverviewRef PostCreateSharedOverviewRefForm {..} = do
   perms = OverviewPerms (Cap.maybePerm viewUnlockLinks)
                         (Cap.maybePerm createUnlockLinks)
                         (Cap.maybePerm delete)
-                        (Cap.maybePerm shareLinks)
+                        (Cap.maybePerm Nothing)
