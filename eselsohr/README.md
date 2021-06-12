@@ -10,13 +10,13 @@ Pre-built binary releases are provided as CI artifacts.
 
 To build the project manually, you’ll need [GHC](https://en.wikipedia.org/wiki/Glasgow_Haskell_Compiler) and the [Cabal](https://www.haskell.org/cabal/) build tool.
 Download this repository and change your working directory into it.
-You can then build the executable with:
+You can then install the executable with:
 
 ```shell
-cabal install -O2 --install-method=copy
+cabal install --install-method=copy --overwrite-policy=always
 ```
 
-By default, the resulting binary gets stored in `~/.cabal/bin/eselsohr`.
+By default, the resulting binary gets stored in `~/.cabal/bin/eselsohr-exe`.
 
 ### Nix support
 
