@@ -18,12 +18,9 @@ cabal install -O2 --install-method=copy
 
 By default, the resulting binary gets stored in `~/.cabal/bin/eselsohr`.
 
-Some Linux distributions have problems with building static binaries, for example Arch Linux.
-You can generate a dynamically-linked binary by setting:
+### Nix support
 
-```shell
-cabal configure --disable-executable-static
-```
+If you have [Nix installed](https://nixos.org/download.html) with [Flakes support](https://nixos.wiki/wiki/Flakes) you can enter the development environment by running `nix develop`.
 
 ## Deploy Eselsohr
 

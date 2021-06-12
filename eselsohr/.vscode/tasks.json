@@ -1,0 +1,19 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Ghcid",
+            "type": "shell",
+            "command": "bin/run",
+            "args": [],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "runOptions": {
+                // "runOn": "folderOpen"
+            }
+        }
+    ]
+}

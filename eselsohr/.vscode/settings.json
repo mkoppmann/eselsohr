@@ -1,3 +1,4 @@
 {
-    "haskell.formattingProvider": "brittany"
+    "haskell.formattingProvider": "brittany",
+    "nixEnvSelector.nixFile": "${workspaceRoot}/shell.nix"
 }

@@ -1,9 +1,7 @@
 package *
   split-sections: True
-  executable-static: True
   executable-stripping: True
   library-stripping: True
-  debug-info: False
 
 package eselsohr
   documentation: True

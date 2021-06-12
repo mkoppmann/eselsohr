@@ -1,0 +1,6 @@
+#!/usr/bin/env nix-shell 
+#! nix-shell ../shell.nix -i bash
+set -xe
+find src -print0 -name \*.hs | xargs brittany --write-mode=inplace --ghc-options "-XTypeApplications -XPatternSynonyms"
+nixpkgs-fmt -- *.nix
+cabal-fmt -i -- *.cabal
