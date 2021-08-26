@@ -59,6 +59,7 @@ application port env@Env {..} =
     . hstsHeader
     . realIpHeader "X-Forwarded-For"
     . addHeaders securityHeaders
+    . disableCache
     -- Request middlewares
     . enforceHttps
     . methodOverridePost
@@ -74,6 +75,10 @@ application port env@Env {..} =
   hstsHeader = case envHsts of
     HstsOn  -> addHsts
     HstsOff -> noOp
+
+  disableCache :: Middleware
+  disableCache =
+    addHeaders [("Cache-Control", "no-store, must-revalidate, max-age=0")]
 
 securityHeaders :: [(ByteString, ByteString)]
 securityHeaders =
