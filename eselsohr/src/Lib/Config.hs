@@ -20,6 +20,7 @@ import           Lib.Core.Domain                ( Uri(..)
 import           Network.Wai.Handler.Warp       ( Port )
 import           System.FilePath                ( addTrailingPathSeparator )
 import           UnliftIO.Directory             ( XdgDirectory(XdgData)
+                                                , canonicalizePath
                                                 , getXdgDirectory
                                                 )
 import           UnliftIO.Environment           ( getEnvironment
@@ -91,8 +92,8 @@ loadConfig mConfPath = do
 
   getDataFolder :: (MonadIO m) => m DataPath
   getDataFolder = lookupEnv "DATA_FOLDER" >>= \case
-    Nothing -> getXdgDirectory XdgData $ addTrailingPathSeparator "eselsohr"
-    Just df -> pure $ addTrailingPathSeparator df
+    Nothing -> getXdgDirectory XdgData "eselsohr" >>= sanitizePath
+    Just df -> sanitizePath df
 
   getMaxConcurrentWrites :: (MonadIO m) => m (Maybe MaxConcurrentWrites)
   getMaxConcurrentWrites = lookupEnv "MAX_CONCURRENT_WRITES" >>= \case
@@ -110,7 +111,8 @@ loadConfig mConfPath = do
   getPort :: (MonadIO m) => m Port
   getPort = lookupEnv "PORT" >>= \case
     Nothing -> pure 6979
-    Just sp -> pure . fromMaybe 6979 $ readMaybe sp
+    Just sp -> pure . fromMaybe 6979 $ checkPort sp
+    where checkPort = isInPortRange <=< readMaybe
 
   getListenAddr :: (MonadIO m) => m String
   getListenAddr = lookupEnv "LISTEN_ADDR" >>= \case
@@ -135,10 +137,18 @@ loadConfig mConfPath = do
       pure . fromMaybe False . readMaybe . toString . toTitle $ toText dh
 
   getCertFile :: (MonadIO m) => m FilePath
-  getCertFile = maybe (pure "certificate.pem") pure =<< lookupEnv "CERT_FILE"
+  getCertFile =
+    maybe (pure "certificate.pem") sanitizePath =<< lookupEnv "CERT_FILE"
 
   getKeyFile :: (MonadIO m) => m FilePath
-  getKeyFile = maybe (pure "key.pem") pure =<< lookupEnv "KEY_FILE"
+  getKeyFile = maybe (pure "key.pem") sanitizePath =<< lookupEnv "KEY_FILE"
 
 cleanEnv :: (MonadIO m) => m ()
 cleanEnv = traverse_ (unsetEnv . fst) =<< getEnvironment
+
+sanitizePath :: (MonadIO m) => FilePath -> m FilePath
+sanitizePath p = addTrailingPathSeparator <$> canonicalizePath p
+
+isInPortRange :: Int -> Maybe Port
+isInPortRange p | p >= 0 && p <= 65535 = Just p
+                | otherwise            = Nothing
