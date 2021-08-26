@@ -57,7 +57,7 @@ application port env@Env {..} =
   -- Response middlewares
   gzip def
     . hstsHeader
-    . realIpHeader "X-Forwarded-Proto"
+    . realIpHeader "X-Forwarded-For"
     . addHeaders securityHeaders
     -- Request middlewares
     . enforceHttps
