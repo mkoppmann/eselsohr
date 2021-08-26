@@ -11,10 +11,10 @@ import           Configuration.Dotenv           ( configPath
                                                 )
 import           Control.Monad.Catch            ( MonadCatch )
 import           Data.Text                      ( toTitle )
-import           Lib.App                        ( DataPath
+import           Lib.App.Env                    ( DataPath
                                                 , MaxConcurrentWrites
                                                 )
-import           Lib.Core.Domain                ( Uri(..)
+import           Lib.Core.Domain.Uri            ( Uri(..)
                                                 , baseUri
                                                 )
 import           Network.Wai.Handler.Warp       ( Port )
@@ -70,25 +70,22 @@ data Config = Config
 loadConfig :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m Config
 loadConfig mConfPath = do
   loadEnvFile mConfPath
-  df <- getDataFolder
-  mw <- getMaxConcurrentWrites
-  sp <- getPort
-  la <- getListenAddr
-  bu <- getBaseUrl sp
-  hs <- getHttps
-  dh <- getDisableHsts
-  cf <- getCertFile
-  kf <- getKeyFile
-  ls <- getLogLevel
-  cleanEnv
-  pure $ Config df mw ls sp la bu hs dh cf kf
+  confDataFolder          <- getDataFolder
+  confMaxConcurrentWrites <- getMaxConcurrentWrites
+  confLogSeverity         <- getLogLevel
+  confServerPort          <- getPort
+  confListenAddr          <- getListenAddr
+  confBaseUrl             <- getBaseUrl confServerPort
+  confHttps               <- getHttps
+  confDisableHsts         <- getDisableHsts
+  confCertFile            <- getCertFile
+  confKeyFile             <- getKeyFile
+  clearEnv
+  pure $ Config { .. }
  where
   loadEnvFile :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m ()
-  loadEnvFile = \case
-    Nothing -> onMissingFile (void $ loadFile defaultConfig) pass
-    Just fp -> do
-      let config = defaultConfig { configPath = [fp] }
-      void $ loadFile config
+  loadEnvFile Nothing   = onMissingFile (void $ loadFile defaultConfig) pass
+  loadEnvFile (Just fp) = void . loadFile $ defaultConfig { configPath = [fp] }
 
   getDataFolder :: (MonadIO m) => m DataPath
   getDataFolder = lookupEnv "DATA_FOLDER" >>= \case
@@ -98,15 +95,14 @@ loadConfig mConfPath = do
   getMaxConcurrentWrites :: (MonadIO m) => m (Maybe MaxConcurrentWrites)
   getMaxConcurrentWrites = lookupEnv "MAX_CONCURRENT_WRITES" >>= \case
     Nothing -> pure Nothing
-    Just mw -> pure $ case readMaybe mw of
-      Nothing        -> Nothing
-      Just maxWrites -> if maxWrites > 0 then Just maxWrites else Nothing
+    Just mw -> pure $ checkWrites =<< readMaybe mw
+   where
+    checkWrites maxWrites = if maxWrites > 0 then Just maxWrites else Nothing
 
   getLogLevel :: (MonadIO m) => m Severity
   getLogLevel = lookupEnv "LOG_LEVEL" >>= \case
     Nothing -> pure Error
-    Just ls ->
-      pure . fromMaybe Error . readMaybe . toString . toTitle $ toText ls
+    Just ls -> pure . fromMaybe Error . readMaybe $ toTitleCase ls
 
   getPort :: (MonadIO m) => m Port
   getPort = lookupEnv "PORT" >>= \case
@@ -127,14 +123,12 @@ loadConfig mConfPath = do
   getHttps :: (MonadIO m) => m Bool
   getHttps = lookupEnv "HTTPS" >>= \case
     Nothing -> pure False
-    Just hs ->
-      pure . fromMaybe False . readMaybe . toString . toTitle $ toText hs
+    Just hs -> pure . fromMaybe False . readMaybe $ toTitleCase hs
 
   getDisableHsts :: (MonadIO m) => m Bool
   getDisableHsts = lookupEnv "DISABLE_HSTS" >>= \case
     Nothing -> pure False
-    Just dh ->
-      pure . fromMaybe False . readMaybe . toString . toTitle $ toText dh
+    Just dh -> pure . fromMaybe False . readMaybe $ toTitleCase dh
 
   getCertFile :: (MonadIO m) => m FilePath
   getCertFile =
@@ -143,8 +137,8 @@ loadConfig mConfPath = do
   getKeyFile :: (MonadIO m) => m FilePath
   getKeyFile = maybe (pure "key.pem") sanitizePath =<< lookupEnv "KEY_FILE"
 
-cleanEnv :: (MonadIO m) => m ()
-cleanEnv = traverse_ (unsetEnv . fst) =<< getEnvironment
+clearEnv :: (MonadIO m) => m ()
+clearEnv = traverse_ (unsetEnv . fst) =<< getEnvironment
 
 sanitizePath :: (MonadIO m) => FilePath -> m FilePath
 sanitizePath p = addTrailingPathSeparator <$> canonicalizePath p
@@ -152,3 +146,6 @@ sanitizePath p = addTrailingPathSeparator <$> canonicalizePath p
 isInPortRange :: Int -> Maybe Port
 isInPortRange p | p >= 0 && p <= 65535 = Just p
                 | otherwise            = Nothing
+
+toTitleCase :: String -> String
+toTitleCase = toString . toTitle . toText
