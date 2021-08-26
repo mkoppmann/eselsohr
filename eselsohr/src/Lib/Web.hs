@@ -58,7 +58,7 @@ application port env@Env {..} =
   gzip def
     . hstsHeader
     . realIpHeader "X-Forwarded-For"
-    . addHeaders securityHeaders
+    . addSecurityHeaders
     . disableCache
     -- Request middlewares
     . enforceHttps
@@ -80,15 +80,15 @@ application port env@Env {..} =
   disableCache =
     addHeaders [("Cache-Control", "no-store, must-revalidate, max-age=0")]
 
-securityHeaders :: [(ByteString, ByteString)]
-securityHeaders =
-  [ ("Referrer-Policy", "no-referrer")
-  , ("X-Content-Type-Options", "nosniff")
-  , ( "Content-Security-Policy"
-    , "default-src 'none';\
-      \ style-src 'self';\
-      \ img-src 'self';\
-      \ form-action 'self';\
-      \ upgrade-insecure-requests;"
-    )
-  ]
+  addSecurityHeaders :: Middleware
+  addSecurityHeaders = addHeaders
+    [ ("Referrer-Policy", "no-referrer")
+    , ("X-Content-Type-Options", "nosniff")
+    , ( "Content-Security-Policy"
+      , "default-src 'none';\
+        \ style-src 'self';\
+        \ img-src 'self';\
+        \ form-action 'self';\
+        \ upgrade-insecure-requests;"
+      )
+    ]
