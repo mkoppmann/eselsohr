@@ -17,6 +17,8 @@ import qualified Lib.Init                      as Init
 import           Lib.Persistence                ( persistenceApp )
 import           Lib.Web                        ( application )
 import           Network.TLS                    ( Version(..) )
+import           Network.TLS.Cipher             ( Cipher )
+import qualified Network.TLS.Extra.Cipher      as TLS
 import           Network.Wai.Handler.Warp       ( Settings
                                                 , defaultSettings
                                                 , runSettings
@@ -65,6 +67,7 @@ runServer Config {..} env@Env {..} = do
     let tlsOpts  = tlsSettings certFile keyFile
         tlsOpts' = tlsOpts { onInsecure         = AllowInsecure
                            , tlsAllowedVersions = [TLS13, TLS12]
+                           , tlsCiphers         = tlsCiphers
                            }
     printIntro
     race_ (persistenceApp env)
@@ -90,6 +93,24 @@ runServer Config {..} env@Env {..} = do
   protocolText :: Https -> Text
   protocolText HttpsOn  = "Access it on: https://"
   protocolText HttpsOff = "Access it on: http://"
+
+  {- | Based on the Mozilla Intermediate TLS configuration
+    https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28recommended.29
+  -}
+  tlsCiphers :: [Cipher]
+  tlsCiphers =
+    [ TLS.cipher_TLS13_AES128GCM_SHA256
+    , TLS.cipher_TLS13_AES256GCM_SHA384
+    , TLS.cipher_TLS13_CHACHA20POLY1305_SHA256
+    , TLS.cipher_ECDHE_ECDSA_AES128GCM_SHA256
+    , TLS.cipher_ECDHE_RSA_AES128GCM_SHA256
+    , TLS.cipher_ECDHE_ECDSA_AES256GCM_SHA384
+    , TLS.cipher_ECDHE_RSA_AES256GCM_SHA384
+    , TLS.cipher_ECDHE_ECDSA_CHACHA20POLY1305_SHA256
+    , TLS.cipher_ECDHE_RSA_CHACHA20POLY1305_SHA256
+    , TLS.cipher_DHE_RSA_AES128GCM_SHA256
+    , TLS.cipher_DHE_RSA_AES256GCM_SHA384
+    ]
 
 main :: Maybe FilePath -> IO ()
 main mConfPath = do
