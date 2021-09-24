@@ -3,7 +3,7 @@ name:               eselsohr
 version:            0.1.0.0
 homepage:           https://github.com/mkoppmann/eselsohr
 bug-reports:        https://github.com/mkoppmann/eselsohr/issues
-license:            OtherLicense
+license:            EUPL-1.2
 license-file:       LICENSE
 maintainer:         mkoppmann <dev@mkoppmann.at>
 author:             Michael Koppmann
