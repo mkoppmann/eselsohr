@@ -2,7 +2,7 @@
 # Metadata #
 ############
 FROM scratch
-LABEL maintainer="mkoppmann <me@mkoppmann.at>"
+LABEL maintainer="mkoppmann <dev@mkoppmann.at>"
 
 ###############
 # Build image #

@@ -1,10 +1,12 @@
 cabal-version:      2.4
 name:               eselsohr
 version:            0.1.0.0
+homepage:           https://github.com/mkoppmann/eselsohr
+bug-reports:        https://github.com/mkoppmann/eselsohr/issues
 license:            OtherLicense
 license-file:       LICENSE
-maintainer:         mkoppmann <me@mkoppmann.at>
-author:             mkoppmann
+maintainer:         mkoppmann <dev@mkoppmann.at>
+author:             Michael Koppmann
 tested-with:        ghc ==8.10.4
 category:           Web
 extra-source-files: CHANGELOG.md
