@@ -6,8 +6,6 @@ It’s still in an early stage of development and not ready for production.
 
 ## Build Eselsohr
 
-Pre-built binary releases are provided as CI artifacts.
-
 To build the project manually, you’ll need [GHC](https://en.wikipedia.org/wiki/Glasgow_Haskell_Compiler) and the [Cabal](https://www.haskell.org/cabal/) build tool.
 Download this repository and change your working directory into it.
 You can then install the executable with:
@@ -24,7 +22,7 @@ If you have [Nix installed](https://nixos.org/download.html) with [Flakes suppor
 
 ## Deploy Eselsohr
 
-Eselsohr is distributed as a single statically-linked binary and does not have any other system dependencies.
+Eselsohr is distributed as a single binary and does not have any other dependencies.
 It can be configured by using [env vars](https://en.wikipedia.org/wiki/Environment_variable) or by using a configuration file (`eselsohr --config-file /path/to/file`).
 By default it looks for an `.env` file in the current working directory.
 
