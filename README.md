@@ -6,6 +6,8 @@ It’s still in an early stage of development and not ready for production.
 
 ## Build Eselsohr
 
+Pre-built binary releases are provided as CI artifacts.
+
 To build the project manually, you’ll need [GHC](https://en.wikipedia.org/wiki/Glasgow_Haskell_Compiler) and the [Cabal](https://www.haskell.org/cabal/) build tool.
 Download this repository and change your working directory into it.
 You can then install the executable with:
