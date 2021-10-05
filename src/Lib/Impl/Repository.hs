@@ -190,7 +190,7 @@ updateSetter
   -> (a -> a)
   -> Resource
 updateSetter getter setter updater entId = gsetter getter setter setter'
-  where setter' _ oldRes = Map.adjust updater entId oldRes
+  where setter' _ = Map.adjust updater entId
 
 deleteSetter
   :: CollectionGetter a -> CollectionSetter a -> Resource -> Id a -> Resource
