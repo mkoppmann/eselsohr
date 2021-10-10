@@ -4,6 +4,18 @@ on: push
 
 jobs:
 
+  hadolint:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: 'Run Hadolint'
+      uses: hadolint/hadolint-action@v1.6.0
+      with:
+        dockerfile: Dockerfile
+
   hlint:
 
     runs-on: ubuntu-latest
