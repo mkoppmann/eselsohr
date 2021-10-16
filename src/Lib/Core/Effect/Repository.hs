@@ -92,7 +92,7 @@ getAllArt
   :: (WithError m)
   => SealedResource
   -> AuthAction
-  -> m (HashMap (Id Article) Article)
+  -> m (Map (Id Article) Article)
 getAllArt sRes authAction = case getAction authAction of
   ArticleAct artAct -> case artAct of
     ViewArticles -> pure $ Impl.getAllArt sRes
@@ -144,7 +144,7 @@ getAllCap
   :: (WithError m)
   => SealedResource
   -> AuthAction
-  -> m (HashMap (Id Capability) Capability)
+  -> m (Map (Id Capability) Capability)
 getAllCap sRes authAction = case getAction authAction of
   OverviewAct oAct -> case oAct of
     ViewUnlockLinks -> pure $ Impl.getAllCap sRes

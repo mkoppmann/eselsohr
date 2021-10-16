@@ -29,7 +29,7 @@ module Lib.Impl.Repository
   , asSingleEntry
   ) where
 
-import qualified Data.HashMap.Strict           as Map
+import qualified Data.Map.Strict               as Map
 import           Lib.App                        ( AppErrorType
                                                 , WithError
                                                 , WriteQueue
@@ -57,9 +57,9 @@ import           UnliftIO.STM                   ( writeTQueue )
 
 newtype SealedResource = SealedResource {unSealResource :: Resource}
 
-type CollectionGetter a = (Resource -> HashMap (Id a) a)
+type CollectionGetter a = (Resource -> Map (Id a) a)
 
-type CollectionSetter a = (Resource -> HashMap (Id a) a -> Resource)
+type CollectionSetter a = (Resource -> Map (Id a) a -> Resource)
 
 -- * File specific functions
 
@@ -97,7 +97,7 @@ getOneArt sRes = asSingleEntry . lookupArt sRes
 lookupArt :: SealedResource -> Id Article -> Maybe (Entity Article)
 lookupArt sRes = lookup articleGetter (unSealResource sRes)
 
-getAllArt :: SealedResource -> HashMap (Id Article) Article
+getAllArt :: SealedResource -> Map (Id Article) Article
 getAllArt = getAll articleGetter . unSealResource
 
 insertArt :: Id Article -> Article -> StoreEvent
@@ -136,7 +136,7 @@ getOneCap sRes = asSingleEntry . lookupCap sRes
 lookupCap :: SealedResource -> Id Capability -> Maybe (Entity Capability)
 lookupCap sRes = lookup capabilityGetter (unSealResource sRes)
 
-getAllCap :: SealedResource -> HashMap (Id Capability) Capability
+getAllCap :: SealedResource -> Map (Id Capability) Capability
 getAllCap = getAll capabilityGetter . unSealResource
 
 insertCap :: Id Capability -> Capability -> StoreEvent
@@ -170,7 +170,7 @@ lookup :: CollectionGetter a -> Resource -> Id a -> Maybe (Entity a)
 lookup getter res entId =
   fmap (uncurry Entity . (entId, )) . Map.lookup entId $ getter res
 
-getAll :: CollectionGetter a -> Resource -> HashMap (Id a) a
+getAll :: CollectionGetter a -> Resource -> Map (Id a) a
 getAll getter = getter
 
 insertSetter
@@ -199,7 +199,7 @@ deleteSetter getter setter = gsetter getter setter Map.delete
 gsetter
   :: CollectionGetter a
   -> CollectionSetter a
-  -> (b -> HashMap (Id a) a -> HashMap (Id a) a)
+  -> (b -> Map (Id a) a -> Map (Id a) a)
   -> Resource
   -> b
   -> Resource

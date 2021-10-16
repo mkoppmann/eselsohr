@@ -2,7 +2,7 @@ module Lib.Persistence
   ( persistenceApp
   ) where
 
-import qualified Data.HashMap.Strict           as Map
+import qualified Data.Map.Strict               as Map
 import           Lib.App                        ( AppEnv
                                                 , pattern E
                                                 , MaxConcurrentWrites
@@ -45,7 +45,7 @@ server = do
   fetchUpdates
     :: (WithError m, WithFile env m)
     => TQueue SynchronizedStoreEvent
-    -> TVar (HashMap (Id Resource) (TQueue SynchronizedStoreEvent))
+    -> TVar (Map (Id Resource) (TQueue SynchronizedStoreEvent))
     -> m Void
   fetchUpdates queue writeQueuesVar = infinitely $ atomically $ do
     update <- readTQueue queue
@@ -54,7 +54,7 @@ server = do
   addToMap
     :: Id Resource
     -> SynchronizedStoreEvent
-    -> TVar (HashMap (Id Resource) (TQueue SynchronizedStoreEvent))
+    -> TVar (Map (Id Resource) (TQueue SynchronizedStoreEvent))
     -> STM ()
   addToMap resId update writeQueuesVar = do
     writeVarsMap <- readTVar writeQueuesVar
@@ -66,13 +66,13 @@ server = do
         modifyTVar' writeQueuesVar $ Map.insert resId newWriteQueue
 
   cleanupMap
-    :: TVar (HashMap (Id Resource) (TQueue SynchronizedStoreEvent)) -> STM ()
+    :: TVar (Map (Id Resource) (TQueue SynchronizedStoreEvent)) -> STM ()
   cleanupMap writeQueuesVar =
     writeTVar writeQueuesVar =<< filterByActiveQueues writeQueuesVar
 
   processUpdates
     :: (WithError m, WithLog env m, WithFile env m)
-    => TVar (HashMap (Id Resource) (TQueue SynchronizedStoreEvent))
+    => TVar (Map (Id Resource) (TQueue SynchronizedStoreEvent))
     -> Maybe MaxConcurrentWrites
     -> m Void
   processUpdates writeQueuesVar mMaxConcurrentWrites = infinitely $ do
@@ -85,8 +85,8 @@ server = do
     atomically $ cleanupMap writeQueuesVar
 
   filterByActiveQueues
-    :: TVar (HashMap (Id Resource) (TQueue SynchronizedStoreEvent))
-    -> STM (HashMap (Id Resource) (TQueue SynchronizedStoreEvent))
+    :: TVar (Map (Id Resource) (TQueue SynchronizedStoreEvent))
+    -> STM (Map (Id Resource) (TQueue SynchronizedStoreEvent))
   filterByActiveQueues =
     readTVar
       >=> Map.toList

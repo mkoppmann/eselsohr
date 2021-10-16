@@ -7,7 +7,7 @@ module Lib.Core.Service.Article
   , deleteArticle
   ) where
 
-import qualified Data.HashMap.Strict           as Map
+import qualified Data.Map.Strict               as Map
 import qualified Data.Sequence                 as Seq
 import           Lib.App                        ( WithError )
 import           Lib.Core.Domain                ( Article(..)

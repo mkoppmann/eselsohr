@@ -4,7 +4,7 @@ module Lib.Core.Service.UnlockLink
   , deleteUnlockLink
   ) where
 
-import qualified Data.HashMap.Strict           as Map
+import qualified Data.Map.Strict               as Map
 import qualified Data.Sequence                 as Seq
 import           Data.Time                      ( UTCTime )
 import           Lib.App                        ( WithError )
