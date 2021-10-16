@@ -8,8 +8,8 @@ import           Lib.Core.Domain.Capability     ( Capability )
 import           Lib.Core.Domain.Id             ( Id )
 
 data Resource = Resource
-  { artCollection :: !(HashMap (Id Article) Article)
-  , capCollection :: !(HashMap (Id Capability) Capability)
+  { artCollection :: !(Map (Id Article) Article)
+  , capCollection :: !(Map (Id Capability) Capability)
   }
   deriving stock (Generic, Show, Eq)
   deriving anyclass Serialise
