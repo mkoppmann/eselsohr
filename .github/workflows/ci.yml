@@ -34,7 +34,7 @@ jobs:
         path: '["app/", "src/", "test/"]'
         fail-on: warning
 
-  build:
+  build-binary:
 
     needs: hlint
 

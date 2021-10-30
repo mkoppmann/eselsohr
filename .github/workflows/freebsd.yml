@@ -1,0 +1,40 @@
+name: FreeBSD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  build-binary-for-freebsd:
+
+    runs-on: macos-10.15
+
+    env:
+      CONFIG: "--enable-tests --enable-benchmarks"
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: FreeBSD-VM
+      id: build-freebsd
+      # This action currently uses FreeBSD 13
+      uses: vmactions/freebsd-vm@v0.1.5
+      with:
+        envs: 'CONFIG'
+        usesh: true
+        mem: 4096
+        prepare: pkg install -y ghc hs-cabal-install
+        run: |
+          cabal update
+          cabal build $CONFIG all
+          cabal test $CONFIG all
+          cabal install --enable-executable-static --install-method=copy --overwrite-policy=always --installdir=dist/
+          mv dist/eselsohr-exe dist/eselsohr
+
+    - name: Store application binary as artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: eselsohr
+        path: dist/eselsohr
