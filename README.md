@@ -1,5 +1,7 @@
 # Eselsohr
 
+![Badge for CI workflow status](https://github.com/mkoppmann/eselsohr/actions/workflows/ci.yml/badge.svg)
+
 Eselsohr is a self-hostable bookmark manager for storing web articles.
 Read them later or share access to your collection.
 It’s still in an early stage of development and not ready for production.
