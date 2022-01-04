@@ -26,7 +26,7 @@ jobs:
     - name: 'Set up HLint'
       uses: rwe/actions-hlint-setup@v1
       with:
-        version: '3.3.4'
+        version: '3.3.6'
 
     - name: 'Run HLint'
       uses: rwe/actions-hlint-run@v2
@@ -48,8 +48,8 @@ jobs:
     - uses: haskell/actions/setup@v1.2
       id: setup-haskell-cabal
       with:
-        ghc-version: '8.10.7'
-        cabal-version: '3.4'
+        ghc-version: '8.10'
+        cabal-version: 'latest'
 
     - name: Update Hackage snapshot
       run: |
