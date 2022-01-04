@@ -7,10 +7,10 @@ module Lib.Ui.Web.Page.ViewModel.Permission
   , toArticlePermsVm
   ) where
 
-import           Lib.Domain.Capability          ( ArticlePerms(..)
-                                                , ArticlesPerms(..)
-                                                , OverviewPerms(..)
-                                                )
+import           Lib.Domain.Capability                                ( ArticlePerms(..)
+                                                                      , ArticlesPerms(..)
+                                                                      , OverviewPerms(..)
+                                                                      )
 
 data OverviewPermsVm = OverviewPermsVm
   { viewUnlockLinksPermVm   :: !Bool

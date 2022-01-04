@@ -1,35 +1,35 @@
 module Main where
 
-import           Config                         ( Config(..)
-                                                , loadConfig
-                                                )
-import           Control.Exception              ( bracket )
-import           Hedgehog                       ( Group(..)
-                                                , checkParallel
-                                                )
-import           System.IO                      ( hSetEncoding
-                                                , utf8
-                                                )
-import           System.IO.Temp                 ( createTempDirectory )
-import           Test.Common                    ( joinSpecs )
-import           Test.Hspec                     ( Spec
-                                                , hspec
-                                                )
-import           Test.Hspec.Core.Spec           ( sequential )
-import           Test.Static                    ( staticSpecs )
-import           Test.Web.Accesstoken           ( accToUrlRoundtrip
-                                                , refToAccRoundtrip
-                                                )
-import           UnliftIO.Directory             ( getTemporaryDirectory
-                                                , removeDirectoryRecursive
-                                                )
+import           Config                                               ( Config(..)
+                                                                      , loadConfig
+                                                                      )
+import           Control.Exception                                    ( bracket )
+import           Hedgehog                                             ( Group(..)
+                                                                      , checkParallel
+                                                                      )
+import           System.IO                                            ( hSetEncoding
+                                                                      , utf8
+                                                                      )
+import           System.IO.Temp                                       ( createTempDirectory )
+import           Test.Common                                          ( joinSpecs )
+import           Test.Hspec                                           ( Spec
+                                                                      , hspec
+                                                                      )
+import           Test.Hspec.Core.Spec                                 ( sequential )
+import           Test.Static                                          ( staticSpecs )
+import           Test.Web.Accesstoken                                 ( accToUrlRoundtrip
+                                                                      , refToAccRoundtrip
+                                                                      )
+import           UnliftIO.Directory                                   ( getTemporaryDirectory
+                                                                      , removeDirectoryRecursive
+                                                                      )
 
 import qualified Init
-import qualified Lib.App.Env                   as Env
+import qualified Lib.App.Env                                         as Env
 
-import           Lib                            ( mkAppEnv )
-import           Lib.Infra.Log                  ( runAppLogIO_ )
-import           Lib.Infra.Monad                ( AppEnv )
+import           Lib                                                  ( mkAppEnv )
+import           Lib.Infra.Log                                        ( runAppLogIO_ )
+import           Lib.Infra.Monad                                      ( AppEnv )
 
 hspecTests :: AppEnv -> Spec
 hspecTests = sequential . joinSpecs "Eselsohr" [staticSpecs]

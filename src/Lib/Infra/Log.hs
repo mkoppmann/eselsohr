@@ -8,32 +8,32 @@ module Lib.Infra.Log
   , module Colog
   ) where
 
-import qualified Colog                          ( Message
-                                                , Msg(..)
-                                                , WithLog
-                                                , filterBySeverity
-                                                , richMessageAction
-                                                )
+import qualified Colog                                                ( Message
+                                                                      , Msg(..)
+                                                                      , WithLog
+                                                                      , filterBySeverity
+                                                                      , richMessageAction
+                                                                      )
 
-import           Colog                          ( pattern D
-                                                , pattern E
-                                                , pattern I
-                                                , LogAction(..)
-                                                , Severity(..)
-                                                , pattern W
-                                                , log
-                                                )
-import           Control.Monad.Except           ( liftEither )
-import           Servant                        ( Handler )
+import           Colog                                                ( pattern D
+                                                                      , pattern E
+                                                                      , pattern I
+                                                                      , LogAction(..)
+                                                                      , Severity(..)
+                                                                      , pattern W
+                                                                      , log
+                                                                      )
+import           Control.Monad.Except                                 ( liftEither )
+import           Servant                                              ( Handler )
 
-import           Lib.Domain.Error               ( isRedirect )
-import           Lib.Infra.Error                ( AppError(appErrorType)
-                                                , toHttpError
-                                                )
-import           Lib.Infra.Monad                ( App
-                                                , AppEnv
-                                                , runAppAsIO
-                                                )
+import           Lib.Domain.Error                                     ( isRedirect )
+import           Lib.Infra.Error                                      ( AppError(appErrorType)
+                                                                      , toHttpError
+                                                                      )
+import           Lib.Infra.Monad                                      ( App
+                                                                      , AppEnv
+                                                                      , runAppAsIO
+                                                                      )
 
 -- | 'Colog.WithLog' alias specialized to 'Message' data type.
 type WithLog env m = Colog.WithLog env Colog.Message m
@@ -42,8 +42,7 @@ type WithLog env m = Colog.WithLog env Colog.Message m
  @stdout@.
 -}
 mainLogAction :: MonadIO m => Severity -> LogAction m Colog.Message
-mainLogAction severity =
-  Colog.filterBySeverity severity Colog.msgSeverity Colog.richMessageAction
+mainLogAction severity = Colog.filterBySeverity severity Colog.msgSeverity Colog.richMessageAction
 
 ----------------------------------------------------------------------------
 -- Application runners with runners
@@ -51,8 +50,7 @@ mainLogAction severity =
 
 -- | Runs application as servant 'Handler'.
 runAppAsHandler :: AppEnv -> App a -> Handler a
-runAppAsHandler env app =
-  liftEither . first toHttpError =<< liftIO (runAppLogIO env app)
+runAppAsHandler env app = liftEither . first toHttpError =<< liftIO (runAppLogIO env app)
 
 -- | Runs application like 'runAppAsIO' but also logs error.
 runAppLogIO :: AppEnv -> App a -> IO (Either AppError a)
@@ -73,6 +71,4 @@ runAppLogIO_ env app = void $ runAppLogIO env app
  are no real errors so they don’t get logged.
 -}
 logMPErrorIO :: AppEnv -> AppError -> IO (Either AppError ())
-logMPErrorIO env err = if isRedirect $ appErrorType err
-  then runAppAsIO env pass
-  else runAppAsIO env . log E $ show err
+logMPErrorIO env err = if isRedirect $ appErrorType err then runAppAsIO env pass else runAppAsIO env . log E $ show err

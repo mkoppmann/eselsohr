@@ -5,44 +5,39 @@ module Lib.Ui.Web.Page.ShareArticleList
   ) where
 
 
-import           Data.Time.Clock                ( UTCTime )
+import           Data.Time.Clock                                      ( UTCTime )
 import           Lucid
-import           Lucid.Servant                  ( linkAbsHref_ )
-import           Servant                        ( fieldLink )
+import           Lucid.Servant                                        ( linkAbsHref_ )
+import           Servant                                              ( fieldLink )
 
-import qualified Lib.Domain.Authorization      as Authz
-import qualified Lib.Domain.Capability         as Cap
-import qualified Lib.Ui.Web.Page.Layout        as Layout
-import qualified Lib.Ui.Web.Page.Static        as Static
-import qualified Lib.Ui.Web.Page.ViewModel.Capability
-                                               as CapVm
-import qualified Lib.Ui.Web.Page.ViewModel.UnlockLink
-                                               as UnlockLink
-import qualified Lib.Ui.Web.Route              as Route
+import qualified Lib.Domain.Authorization                            as Authz
+import qualified Lib.Domain.Capability                               as Cap
+import qualified Lib.Ui.Web.Page.Layout                              as Layout
+import qualified Lib.Ui.Web.Page.Static                              as Static
+import qualified Lib.Ui.Web.Page.ViewModel.Capability                as CapVm
+import qualified Lib.Ui.Web.Page.ViewModel.UnlockLink                as UnlockLink
+import qualified Lib.Ui.Web.Route                                    as Route
 
-import           Lib.Domain.Authorization       ( ShareArticleListPerm )
-import           Lib.Domain.Capability          ( ObjectReference )
-import           Lib.Domain.Collection          ( Collection )
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Infra.Error                ( throwOnError )
-import           Lib.Ui.Web.Dto.Accesstoken     ( Accesstoken
-                                                , Reference(..)
-                                                )
-import           Lib.Ui.Web.Page.Shared         ( WithQuery
-                                                , createSharedArticleListRefForm
-                                                , deleteSharedArticleListRefForm
-                                                , getExpirationDates
-                                                , getSharedLinks
-                                                , lookupReferences
-                                                , navBar
-                                                )
-import           Lib.Ui.Web.Page.ViewModel.Capability
-                                                ( CapabilityVm )
-import           Lib.Ui.Web.Page.ViewModel.Permission
-                                                ( ArticlesPermsVm(..) )
-import           Lib.Ui.Web.Page.ViewModel.UnlockLink
-                                                ( UnlockLinkVm )
-import           Lib.Ui.Web.Route               ( HtmlPage )
+import           Lib.Domain.Authorization                             ( ShareArticleListPerm )
+import           Lib.Domain.Capability                                ( ObjectReference )
+import           Lib.Domain.Collection                                ( Collection )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Infra.Error                                      ( throwOnError )
+import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken
+                                                                      , Reference(..)
+                                                                      )
+import           Lib.Ui.Web.Page.Shared                               ( WithQuery
+                                                                      , createSharedArticleListRefForm
+                                                                      , deleteSharedArticleListRefForm
+                                                                      , getExpirationDates
+                                                                      , getSharedLinks
+                                                                      , lookupReferences
+                                                                      , navBar
+                                                                      )
+import           Lib.Ui.Web.Page.ViewModel.Capability                 ( CapabilityVm )
+import           Lib.Ui.Web.Page.ViewModel.Permission                 ( ArticlesPermsVm(..) )
+import           Lib.Ui.Web.Page.ViewModel.UnlockLink                 ( UnlockLinkVm )
+import           Lib.Ui.Web.Route                                     ( HtmlPage )
 
 ------------------------------------------------------------------------
 -- Handler
@@ -75,9 +70,9 @@ query Query {..} = do
       deleteArticlesPermVm   = isRight $ Authz.canDeleteArticles objRef
       shareArticleListPermVm = isRight $ Authz.canShareArticleList objRef
       sharingPerms           = ArticlesPermsVm { .. }
-  shareArticleListPerm <- throwOnError $ Authz.canShareArticleList objRef
+  shareArticleListPerm              <- throwOnError $ Authz.canShareArticleList objRef
   (earliestExpDate, defaultExpDate) <- getExpirationDates
-  sharedLinks <- getSharedLinks colId Cap.isSharedArticlesRef
+  sharedLinks                       <- getSharedLinks colId Cap.isSharedArticlesRef
   pure View { .. }
 
 ------------------------------------------------------------------------
@@ -108,9 +103,7 @@ view View {..} = do
   sharedLinkItem unlockLink = do
     li_ $ do
       articlesLinkA (unlockAcc unlockLink) . petname $ capVm unlockLink
-      deleteSharedArticleListRefForm (CapVm.id $ capVm unlockLink) acc
-        . fieldLink Route.shareArticleListPage
-        $ Just acc
+      deleteSharedArticleListRefForm (CapVm.id $ capVm unlockLink) acc . fieldLink Route.shareArticleListPage $ Just acc
 
   unlockAcc :: UnlockLinkVm -> Accesstoken
   unlockAcc = UnlockLink.acc
@@ -119,14 +112,10 @@ view View {..} = do
   capVm = UnlockLink.capVm
 
   articlesLinkA :: Accesstoken -> Text -> Html ()
-  articlesLinkA artListAcc =
-    a_ [linkAbsHref_ . fieldLink Route.articleListPage $ Just artListAcc]
-      . toHtml
+  articlesLinkA artListAcc = a_ [linkAbsHref_ . fieldLink Route.articleListPage $ Just artListAcc] . toHtml
 
   getArticlesA :: Html ()
-  getArticlesA = a_
-    [linkAbsHref_ . fieldLink Route.articleListPage $ Just acc]
-    "Back to overview"
+  getArticlesA = a_ [linkAbsHref_ . fieldLink Route.articleListPage $ Just acc] "Back to overview"
 
   petname :: CapabilityVm -> Text
   petname cap = fromMaybe (toText $ CapVm.id cap) $ CapVm.petname cap

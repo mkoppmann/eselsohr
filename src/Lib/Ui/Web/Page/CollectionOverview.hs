@@ -4,53 +4,48 @@ module Lib.Ui.Web.Page.CollectionOverview
   , view
   ) where
 
-import qualified Data.Map.Strict               as Map
-import qualified Data.Sequence                 as Seq
+import qualified Data.Map.Strict                                     as Map
+import qualified Data.Sequence                                       as Seq
 
-import           Data.Time.Clock                ( UTCTime )
+import           Data.Time.Clock                                      ( UTCTime )
 import           Lucid
-import           Lucid.Servant                  ( linkAbsHref_ )
-import           Servant                        ( Link
-                                                , fieldLink
-                                                )
+import           Lucid.Servant                                        ( linkAbsHref_ )
+import           Servant                                              ( Link
+                                                                      , fieldLink
+                                                                      )
 
-import qualified Lib.Domain.Authorization      as Authz
-import qualified Lib.Domain.Capability         as Cap
-import qualified Lib.Infra.Persistence.Model.Capability
-                                               as CapPm
-import qualified Lib.Ui.Web.Page.Layout        as Layout
-import qualified Lib.Ui.Web.Page.Static        as Static
-import qualified Lib.Ui.Web.Page.ViewModel.Capability
-                                               as CapVm
-import qualified Lib.Ui.Web.Page.ViewModel.UnlockLink
-                                               as UnlockLink
-import qualified Lib.Ui.Web.Route              as Route
+import qualified Lib.Domain.Authorization                            as Authz
+import qualified Lib.Domain.Capability                               as Cap
+import qualified Lib.Infra.Persistence.Model.Capability              as CapPm
+import qualified Lib.Ui.Web.Page.Layout                              as Layout
+import qualified Lib.Ui.Web.Page.Static                              as Static
+import qualified Lib.Ui.Web.Page.ViewModel.Capability                as CapVm
+import qualified Lib.Ui.Web.Page.ViewModel.UnlockLink                as UnlockLink
+import qualified Lib.Ui.Web.Route                                    as Route
 
-import           Lib.Domain.Authorization       ( ViewUnlockLinksPerm )
-import           Lib.Domain.Capability          ( Capability
-                                                , ObjectReference
-                                                )
-import           Lib.Domain.Collection          ( Collection )
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Infra.Error                ( throwOnError )
-import           Lib.Ui.Web.Dto.Accesstoken     ( Accesstoken
-                                                , Reference(..)
-                                                )
-import           Lib.Ui.Web.Page.Shared         ( WithQuery
-                                                , capStillValid
-                                                , createUnlockLinkForm
-                                                , deleteUnlockLinkForm
-                                                , getCapabilityMap
-                                                , getExpirationDates
-                                                , lookupReferences
-                                                , navBar
-                                                , prettyDate
-                                                )
-import           Lib.Ui.Web.Page.ViewModel.Capability
-                                                ( CapabilityVm )
-import           Lib.Ui.Web.Page.ViewModel.UnlockLink
-                                                ( UnlockLinkVm )
-import           Lib.Ui.Web.Route               ( HtmlPage )
+import           Lib.Domain.Authorization                             ( ViewUnlockLinksPerm )
+import           Lib.Domain.Capability                                ( Capability
+                                                                      , ObjectReference
+                                                                      )
+import           Lib.Domain.Collection                                ( Collection )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Infra.Error                                      ( throwOnError )
+import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken
+                                                                      , Reference(..)
+                                                                      )
+import           Lib.Ui.Web.Page.Shared                               ( WithQuery
+                                                                      , capStillValid
+                                                                      , createUnlockLinkForm
+                                                                      , deleteUnlockLinkForm
+                                                                      , getCapabilityMap
+                                                                      , getExpirationDates
+                                                                      , lookupReferences
+                                                                      , navBar
+                                                                      , prettyDate
+                                                                      )
+import           Lib.Ui.Web.Page.ViewModel.Capability                 ( CapabilityVm )
+import           Lib.Ui.Web.Page.ViewModel.UnlockLink                 ( UnlockLinkVm )
+import           Lib.Ui.Web.Route                                     ( HtmlPage )
 
 ------------------------------------------------------------------------
 -- Handler
@@ -78,20 +73,18 @@ query Query {..} = do
   let canCreateUnlockLink = isRight $ Authz.canCreateUnlockLinks objRef
       canDeleteUnlockLink = isRight $ Authz.canDeleteUnlockLinks objRef
       canShareLinks       = isRight $ Authz.canShareUnlockLinks objRef
-  viewUnlockLinksPerm <- throwOnError $ Authz.canViewUnlockLinks objRef
+  viewUnlockLinksPerm               <- throwOnError $ Authz.canViewUnlockLinks objRef
   (earliestExpDate, defaultExpDate) <- getExpirationDates
-  unlockLinks <- getUnlockLinks colId earliestExpDate
+  unlockLinks                       <- getUnlockLinks colId earliestExpDate
   pure View { .. }
 
-getUnlockLinks
-  :: WithQuery env m => Id Collection -> UTCTime -> m (Seq UnlockLinkVm)
+getUnlockLinks :: WithQuery env m => Id Collection -> UTCTime -> m (Seq UnlockLinkVm)
 getUnlockLinks colId curTime = do
   capMap <- getCapabilityMap colId
   pure $ unlockLinkVms <$> sortedCaps capMap
  where
   sortedCaps :: Map a Capability -> Seq (a, Capability)
-  sortedCaps =
-    Seq.sortOn snd . Seq.filter (filterF . snd) . Seq.fromList . Map.toList
+  sortedCaps = Seq.sortOn snd . Seq.filter (filterF . snd) . Seq.fromList . Map.toList
 
   filterF :: Capability -> Bool
   filterF cap = isStillValid cap && isViewArticles cap
@@ -124,8 +117,7 @@ view :: View -> Html ()
 view View {..} = do
   navBar
     [ when canShareLinks $ do
-        a_ [linkAbsHref_ . fieldLink Route.shareOverviewPage $ Just acc]
-           "Share this page"
+        a_ [linkAbsHref_ . fieldLink Route.shareOverviewPage $ Just acc] "Share this page"
     ]
 
   h1_ "Collection Overview Page"
@@ -148,10 +140,7 @@ view View {..} = do
     "Here you can generate a new token for accessing your article list.\
     \ They are valid for one month, unless you choose something else."
   if canCreateUnlockLink
-    then createUnlockLinkForm earliestExpDate
-                              defaultExpDate
-                              acc
-                              collectionUnlockLink
+    then createUnlockLinkForm earliestExpDate defaultExpDate acc collectionUnlockLink
     else p_ "You do not have the permission to create new access links."
  where
   renderActiveLinks :: UnlockLinkVm -> Html ()
@@ -159,9 +148,7 @@ view View {..} = do
     articlesLinkA (unlockAcc unlockLink) . petname $ capVm unlockLink
     p_ . small_ $ "Expires on: " <> expDate (capVm unlockLink)
     when canDeleteUnlockLink $ do
-      deleteUnlockLinkForm (CapVm.id $ capVm unlockLink)
-                           acc
-                           collectionUnlockLink
+      deleteUnlockLinkForm (CapVm.id $ capVm unlockLink) acc collectionUnlockLink
 
   petname :: CapabilityVm -> Text
   petname cap = fromMaybe (toText $ CapVm.id cap) $ CapVm.petname cap
@@ -179,6 +166,4 @@ view View {..} = do
   collectionUnlockLink = fieldLink Route.overviewPage $ Just acc
 
   articlesLinkA :: Accesstoken -> Text -> Html ()
-  articlesLinkA artListAcc =
-    a_ [linkAbsHref_ . fieldLink Route.articleListPage $ Just artListAcc]
-      . toHtml
+  articlesLinkA artListAcc = a_ [linkAbsHref_ . fieldLink Route.articleListPage $ Just artListAcc] . toHtml

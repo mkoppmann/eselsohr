@@ -4,37 +4,37 @@ module Lib
   , runServer
   ) where
 
-import qualified Network.TLS.Extra.Cipher      as TLS
+import qualified Network.TLS.Extra.Cipher                            as TLS
 
-import           Network.TLS                    ( Version(..) )
-import           Network.TLS.Cipher             ( Cipher )
-import           Network.Wai.Handler.Warp       ( Settings
-                                                , defaultSettings
-                                                , runSettings
-                                                , setHost
-                                                , setPort
-                                                , setServerName
-                                                )
-import           Network.Wai.Handler.WarpTLS    ( OnInsecure(..)
-                                                , TLSSettings(..)
-                                                , runTLS
-                                                , tlsSettings
-                                                )
-import           UnliftIO.Async                 ( race_ )
-import           UnliftIO.STM                   ( newTQueueIO )
+import           Network.TLS                                          ( Version(..) )
+import           Network.TLS.Cipher                                   ( Cipher )
+import           Network.Wai.Handler.Warp                             ( Settings
+                                                                      , defaultSettings
+                                                                      , runSettings
+                                                                      , setHost
+                                                                      , setPort
+                                                                      , setServerName
+                                                                      )
+import           Network.Wai.Handler.WarpTLS                          ( OnInsecure(..)
+                                                                      , TLSSettings(..)
+                                                                      , runTLS
+                                                                      , tlsSettings
+                                                                      )
+import           UnliftIO.Async                                       ( race_ )
+import           UnliftIO.STM                                         ( newTQueueIO )
 
 import qualified Config
 import qualified Init
-import qualified Lib.App.Env                   as Env
+import qualified Lib.App.Env                                         as Env
 
-import           Config                         ( Config
-                                                , loadConfig
-                                                )
-import           Lib.App.Env                    ( Https )
-import           Lib.Infra.Log                  ( mainLogAction )
-import           Lib.Infra.Monad                ( AppEnv )
-import           Lib.Infra.Persistence.Server   ( persistenceApp )
-import           Lib.Ui.Server                  ( application )
+import           Config                                               ( Config
+                                                                      , loadConfig
+                                                                      )
+import           Lib.App.Env                                          ( Https )
+import           Lib.Infra.Log                                        ( mainLogAction )
+import           Lib.Infra.Monad                                      ( AppEnv )
+import           Lib.Infra.Persistence.Server                         ( persistenceApp )
+import           Lib.Ui.Server                                        ( application )
 
 mkAppEnv :: Config -> IO AppEnv
 mkAppEnv Config.Config {..} = do
@@ -58,37 +58,24 @@ runServer Config.Config {..} env@Env.Env {..} = do
     Env.HttpsOff -> startServer
  where
   settings :: Settings
-  settings =
-    setHost (fromString confListenAddr)
-      . setPort confServerPort
-      . setServerName ""
-      $ defaultSettings
+  settings = setHost (fromString confListenAddr) . setPort confServerPort . setServerName "" $ defaultSettings
 
   startTlsServer :: FilePath -> FilePath -> IO ()
   startTlsServer certFile keyFile = do
     let tlsOpts  = tlsSettings certFile keyFile
-        tlsOpts' = tlsOpts { onInsecure         = AllowInsecure
-                           , tlsAllowedVersions = [TLS13, TLS12]
-                           , tlsCiphers         = tlsCiphers
-                           }
-    race_ (persistenceApp env)
-          (runTLS tlsOpts' settings $ application confServerPort env)
+        tlsOpts' = tlsOpts { onInsecure = AllowInsecure, tlsAllowedVersions = [TLS13, TLS12], tlsCiphers = tlsCiphers }
+    race_ (persistenceApp env) (runTLS tlsOpts' settings $ application confServerPort env)
     print @Text "Program ended"
 
   startServer :: IO ()
   startServer = do
-    race_ (persistenceApp env)
-          (runSettings settings $ application confServerPort env)
+    race_ (persistenceApp env) (runSettings settings $ application confServerPort env)
     print @Text "Program ended"
 
   printIntro :: IO ()
   printIntro = do
     print @Text "Eselsohr is now running."
-    print
-      $  protocolText https
-      <> toText confListenAddr
-      <> ":"
-      <> show confServerPort
+    print $ protocolText https <> toText confListenAddr <> ":" <> show confServerPort
 
   protocolText :: Https -> Text
   protocolText Env.HttpsOn  = "Access it on: https://"

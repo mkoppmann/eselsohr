@@ -5,21 +5,21 @@ module Lib.Ui.Web.Page.CreateArticle
 
 
 import           Lucid
-import           Servant                        ( fieldLink )
+import           Servant                                              ( fieldLink )
 
-import qualified Lib.Domain.Authorization      as Authz
-import qualified Lib.Ui.Web.Page.Layout        as Layout
-import qualified Lib.Ui.Web.Page.Static        as Static
-import qualified Lib.Ui.Web.Route              as Route
+import qualified Lib.Domain.Authorization                            as Authz
+import qualified Lib.Ui.Web.Page.Layout                              as Layout
+import qualified Lib.Ui.Web.Page.Static                              as Static
+import qualified Lib.Ui.Web.Route                                    as Route
 
-import           Lib.Domain.Authorization       ( CreateArticlesPerm )
-import           Lib.Infra.Error                ( throwOnError )
-import           Lib.Ui.Web.Dto.Accesstoken     ( Accesstoken )
-import           Lib.Ui.Web.Page.Shared         ( WithQuery
-                                                , createArticleForm
-                                                , lookupReferences
-                                                )
-import           Lib.Ui.Web.Route               ( HtmlPage )
+import           Lib.Domain.Authorization                             ( CreateArticlesPerm )
+import           Lib.Infra.Error                                      ( throwOnError )
+import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken )
+import           Lib.Ui.Web.Page.Shared                               ( WithQuery
+                                                                      , createArticleForm
+                                                                      , lookupReferences
+                                                                      )
+import           Lib.Ui.Web.Route                                     ( HtmlPage )
 
 ------------------------------------------------------------------------
 -- Handler

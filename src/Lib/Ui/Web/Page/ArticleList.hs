@@ -4,44 +4,42 @@ module Lib.Ui.Web.Page.ArticleList
   , view
   ) where
 
-import qualified Data.Map.Strict               as Map
-import qualified Data.Sequence                 as Seq
+import qualified Data.Map.Strict                                     as Map
+import qualified Data.Sequence                                       as Seq
 
 import           Lucid
-import           Lucid.Servant                  ( linkAbsHref_ )
-import           Servant                        ( Link
-                                                , fieldLink
-                                                )
+import           Lucid.Servant                                        ( linkAbsHref_ )
+import           Servant                                              ( Link
+                                                                      , fieldLink
+                                                                      )
 
-import qualified Lib.Domain.Authorization      as Authz
-import qualified Lib.Ui.Web.Page.Layout        as Layout
-import qualified Lib.Ui.Web.Page.Static        as Static
-import qualified Lib.Ui.Web.Page.ViewModel.Article
-                                               as ArticleVm
-import qualified Lib.Ui.Web.Route              as Route
+import qualified Lib.Domain.Authorization                            as Authz
+import qualified Lib.Ui.Web.Page.Layout                              as Layout
+import qualified Lib.Ui.Web.Page.Static                              as Static
+import qualified Lib.Ui.Web.Page.ViewModel.Article                   as ArticleVm
+import qualified Lib.Ui.Web.Route                                    as Route
 
-import           Lib.Domain.Article             ( Article )
-import           Lib.Domain.Authorization       ( ViewArticlesPerm )
-import           Lib.Domain.Capability          ( ObjectReference )
-import           Lib.Domain.Collection          ( Collection )
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Infra.Error                ( throwOnError )
-import           Lib.Ui.Web.Dto.Accesstoken     ( Accesstoken
-                                                , Reference(..)
-                                                )
-import           Lib.Ui.Web.Page.Shared         ( WithQuery
-                                                , createArticleForm
-                                                , deleteArticleForm
-                                                , getArticleMap
-                                                , lookupReferences
-                                                , markArticleAsReadForm
-                                                , markArticleAsUnreadForm
-                                                , navBar
-                                                , prettyDate
-                                                )
-import           Lib.Ui.Web.Page.ViewModel.Article
-                                                ( ArticleVm(..) )
-import           Lib.Ui.Web.Route               ( HtmlPage )
+import           Lib.Domain.Article                                   ( Article )
+import           Lib.Domain.Authorization                             ( ViewArticlesPerm )
+import           Lib.Domain.Capability                                ( ObjectReference )
+import           Lib.Domain.Collection                                ( Collection )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Infra.Error                                      ( throwOnError )
+import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken
+                                                                      , Reference(..)
+                                                                      )
+import           Lib.Ui.Web.Page.Shared                               ( WithQuery
+                                                                      , createArticleForm
+                                                                      , deleteArticleForm
+                                                                      , getArticleMap
+                                                                      , lookupReferences
+                                                                      , markArticleAsReadForm
+                                                                      , markArticleAsUnreadForm
+                                                                      , navBar
+                                                                      , prettyDate
+                                                                      )
+import           Lib.Ui.Web.Page.ViewModel.Article                    ( ArticleVm(..) )
+import           Lib.Ui.Web.Route                                     ( HtmlPage )
 
 ------------------------------------------------------------------------
 -- Handler
@@ -100,20 +98,14 @@ view :: View -> Html ()
 view View {..} = do
   navBar
     [ when canShareLinks . p_ $ do
-        a_ [linkAbsHref_ . fieldLink Route.shareArticleListPage $ Just acc]
-           "Share this page"
+        a_ [linkAbsHref_ . fieldLink Route.shareArticleListPage $ Just acc] "Share this page"
     ]
 
   when canCreateArticles newArticleH2
 
   h1_ "Your articles"
-  div_ . ul_ [] . void $ traverse_
-    (articleItem canChangeArticleTitle
-                 canChangeArticleState
-                 canDeleteArticle
-                 acc
-    )
-    articles
+  div_ . ul_ [] . void $ traverse_ (articleItem canChangeArticleTitle canChangeArticleState canDeleteArticle acc)
+                                   articles
  where
   newArticleH2 :: Html ()
   newArticleH2 = do
@@ -121,17 +113,14 @@ view View {..} = do
     createArticleForm acc $ fieldLink Route.articleListPage (Just acc)
 
 articleItem :: Bool -> Bool -> Bool -> Accesstoken -> ArticleVm -> Html ()
-articleItem canChangeTitle canChangeState canDelete acc artVm =
-  article_ [class_ "item"] $ do
-    itemHeader
-    itemMeta
+articleItem canChangeTitle canChangeState canDelete acc artVm = article_ [class_ "item"] $ do
+  itemHeader
+  itemMeta
  where
   itemHeader :: Html ()
   itemHeader = div_ [class_ "item-header"] $ do
     span_ [class_ "item-title"] $ do
-      a_ [linkAbsHref_ . fieldLink Route.articlePage artId $ Just acc]
-        . toHtml
-        $ ArticleVm.title artVm
+      a_ [linkAbsHref_ . fieldLink Route.articlePage artId $ Just acc] . toHtml $ ArticleVm.title artVm
       when canChangeTitle $ small_ editArticleA
 
   itemMeta :: Html ()
@@ -145,11 +134,7 @@ articleItem canChangeTitle canChangeState canDelete acc artVm =
     ul_ [class_ "item-meta-info"] $ do
       li_ . time_ [datetime_ aCreationDate] . toHtml $ aCreationDate
       li_ "|"
-      li_
-        . a_ [href_ $ ArticleVm.uri artVm]
-        . small_
-        . renderHostUrl
-        $ ArticleVm.uriHost artVm
+      li_ . a_ [href_ $ ArticleVm.uri artVm] . small_ . renderHostUrl $ ArticleVm.uriHost artVm
 
   itemMetaIcons :: Html ()
   itemMetaIcons = ul_ [class_ "item-meta-icons"] $ do
@@ -173,5 +158,4 @@ articleItem canChangeTitle canChangeState canDelete acc artVm =
   artId = ArticleVm.id artVm
 
   editArticleA :: Html ()
-  editArticleA =
-    a_ [linkAbsHref_ . fieldLink Route.editArticlePage artId $ Just acc] "✏️"
+  editArticleA = a_ [linkAbsHref_ . fieldLink Route.editArticlePage artId $ Just acc] "✏️"

@@ -4,15 +4,15 @@ module Lib.Domain.Repo.ArticleList
   , save
   ) where
 
-import           Lib.Domain.Article             ( Article )
-import           Lib.Domain.Authorization       ( ChangeStatePerm
-                                                , ChangeTitlePerm
-                                                , CreateArticlesPerm
-                                                , DeleteArticlePerm
-                                                )
-import           Lib.Domain.Collection          ( Collection )
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Domain.NonEmptyText        ( NonEmptyText )
+import           Lib.Domain.Article                                   ( Article )
+import           Lib.Domain.Authorization                             ( ChangeStatePerm
+                                                                      , ChangeTitlePerm
+                                                                      , CreateArticlesPerm
+                                                                      , DeleteArticlePerm
+                                                                      )
+import           Lib.Domain.Collection                                ( Collection )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Domain.NonEmptyText                              ( NonEmptyText )
 
 data ArticleListAction
   = AddArticle !CreateArticlesPerm !(Id Article) !Article

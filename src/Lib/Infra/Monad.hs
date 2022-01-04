@@ -4,32 +4,32 @@ module Lib.Infra.Monad
   , runAppAsIO
   ) where
 
-import           Control.Monad.Except           ( MonadError(..) )
-import           Relude.Extra                   ( firstF )
-import           UnliftIO                       ( MonadUnliftIO
-                                                , catch
-                                                , throwIO
-                                                , try
-                                                )
+import           Control.Monad.Except                                 ( MonadError(..) )
+import           Relude.Extra                                         ( firstF )
+import           UnliftIO                                             ( MonadUnliftIO
+                                                                      , catch
+                                                                      , throwIO
+                                                                      , try
+                                                                      )
 
-import qualified Lib.Infra.Adapter.Random      as RandomImpl
-import qualified Lib.Infra.Adapter.Scraper     as ScraperImpl
-import qualified Lib.Infra.Adapter.Time        as TimeImpl
-import qualified Lib.Infra.Repo.ArticleList    as ArtRepo
-import qualified Lib.Infra.Repo.CapabilityList as CapRepo
-import qualified Lib.Infra.Repo.Collection     as ColRepo
+import qualified Lib.Infra.Adapter.Random                            as RandomImpl
+import qualified Lib.Infra.Adapter.Scraper                           as ScraperImpl
+import qualified Lib.Infra.Adapter.Time                              as TimeImpl
+import qualified Lib.Infra.Repo.ArticleList                          as ArtRepo
+import qualified Lib.Infra.Repo.CapabilityList                       as CapRepo
+import qualified Lib.Infra.Repo.Collection                           as ColRepo
 
-import           Lib.App.Env                    ( Env )
-import           Lib.App.Port                   ( MonadRandom(..)
-                                                , MonadScraper(..)
-                                                , MonadTime(..)
-                                                )
-import           Lib.Domain.Repo.ArticleList    ( ArticleListRepo(..) )
-import           Lib.Domain.Repo.CapabilityList ( CapabilityListRepo(..) )
-import           Lib.Domain.Repo.Collection     ( CollectionRepo(..) )
-import           Lib.Infra.Error                ( AppError
-                                                , AppException(..)
-                                                )
+import           Lib.App.Env                                          ( Env )
+import           Lib.App.Port                                         ( MonadRandom(..)
+                                                                      , MonadScraper(..)
+                                                                      , MonadTime(..)
+                                                                      )
+import           Lib.Domain.Repo.ArticleList                          ( ArticleListRepo(..) )
+import           Lib.Domain.Repo.CapabilityList                       ( CapabilityListRepo(..) )
+import           Lib.Domain.Repo.Collection                           ( CollectionRepo(..) )
+import           Lib.Infra.Error                                      ( AppError
+                                                                      , AppException(..)
+                                                                      )
 
 -- | 'Env' data type parameterized by 'App' monad
 type AppEnv = Env App
@@ -47,8 +47,7 @@ instance MonadError AppError App where
 
   catchError :: App a -> (AppError -> App a) -> App a
   catchError action handler = App $ ReaderT $ \env ->
-    let ioAction = runApp env action
-    in  ioAction `catch` \(AppException e) -> runApp env $ handler e
+    let ioAction = runApp env action in ioAction `catch` \(AppException e) -> runApp env $ handler e
   {-# INLINE catchError #-}
 
 instance MonadRandom App where

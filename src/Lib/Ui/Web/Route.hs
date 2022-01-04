@@ -10,42 +10,42 @@ module Lib.Ui.Web.Route
   , linkAsText
   ) where
 
-import           Clay                           ( Css )
-import           Lucid                          ( Html )
-import           Servant.API                    ( (:<|>)
-                                                , (:>)
-                                                , Capture
-                                                , Delete
-                                                , FormUrlEncoded
-                                                , Get
-                                                , Link
-                                                , Patch
-                                                , Post
-                                                , QueryParam
-                                                , ReqBody
-                                                )
-import           Servant.API.Generic            ( GenericMode((:-))
-                                                , ToServantApi
-                                                )
-import           Servant.CSS.Clay               ( CSS )
-import           Servant.HTML.Lucid             ( HTML )
-import           Servant.Links                  ( linkURI )
-import           Servant.Server.Generic         ( AsServerT )
+import           Clay                                                 ( Css )
+import           Lucid                                                ( Html )
+import           Servant.API                                          ( (:<|>)
+                                                                      , (:>)
+                                                                      , Capture
+                                                                      , Delete
+                                                                      , FormUrlEncoded
+                                                                      , Get
+                                                                      , Link
+                                                                      , Patch
+                                                                      , Post
+                                                                      , QueryParam
+                                                                      , ReqBody
+                                                                      )
+import           Servant.API.Generic                                  ( GenericMode((:-))
+                                                                      , ToServantApi
+                                                                      )
+import           Servant.CSS.Clay                                     ( CSS )
+import           Servant.HTML.Lucid                                   ( HTML )
+import           Servant.Links                                        ( linkURI )
+import           Servant.Server.Generic                               ( AsServerT )
 
-import           Lib.Domain.Article             ( Article )
-import           Lib.Domain.Capability          ( Capability )
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Infra.Monad                ( App )
-import           Lib.Ui.Web.Dto.Accesstoken     ( Accesstoken )
-import           Lib.Ui.Web.Dto.Form            ( ChangeArticleStateForm
-                                                , ChangeArticleTitleForm
-                                                , CreateArticleForm
-                                                , CreateSharedArticleListRefForm
-                                                , CreateSharedArticleRefForm
-                                                , CreateSharedOverviewRefForm
-                                                , CreateUnlockLinkForm
-                                                , DeleteItemForm
-                                                )
+import           Lib.Domain.Article                                   ( Article )
+import           Lib.Domain.Capability                                ( Capability )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Infra.Monad                                      ( App )
+import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken )
+import           Lib.Ui.Web.Dto.Form                                  ( ChangeArticleStateForm
+                                                                      , ChangeArticleTitleForm
+                                                                      , CreateArticleForm
+                                                                      , CreateSharedArticleListRefForm
+                                                                      , CreateSharedArticleRefForm
+                                                                      , CreateSharedOverviewRefForm
+                                                                      , CreateUnlockLinkForm
+                                                                      , DeleteItemForm
+                                                                      )
 
 type AppServer = AsServerT App
 

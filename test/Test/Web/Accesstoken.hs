@@ -3,21 +3,21 @@ module Test.Web.Accesstoken
   , accToUrlRoundtrip
   ) where
 
-import           Hedgehog                       ( (===)
-                                                , Property
-                                                , PropertyT
-                                                , property
-                                                , tripping
-                                                )
-import           Web.HttpApiData                ( parseUrlPiece
-                                                , toUrlPiece
-                                                )
+import           Hedgehog                                             ( (===)
+                                                                      , Property
+                                                                      , PropertyT
+                                                                      , property
+                                                                      , tripping
+                                                                      )
+import           Web.HttpApiData                                      ( parseUrlPiece
+                                                                      , toUrlPiece
+                                                                      )
 
-import           Lib.Infra.Adapter.Random       ( getRandomId )
-import           Lib.Ui.Web.Dto.Accesstoken     ( Reference(..)
-                                                , mkAccesstoken
-                                                , toReference
-                                                )
+import           Lib.Infra.Adapter.Random                             ( getRandomId )
+import           Lib.Ui.Web.Dto.Accesstoken                           ( Reference(..)
+                                                                      , mkAccesstoken
+                                                                      , toReference
+                                                                      )
 
 refToAccRoundtrip :: Property
 refToAccRoundtrip = property $ do

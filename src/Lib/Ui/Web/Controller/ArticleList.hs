@@ -2,70 +2,65 @@ module Lib.Ui.Web.Controller.ArticleList
   ( articleList
   ) where
 
-import qualified Lib.App.Command               as Command
-import qualified Lib.Domain.Uri                as Uri
-import qualified Lib.Ui.Web.Page.Article       as ArticlePage
-import qualified Lib.Ui.Web.Page.ArticleList   as ArticleListPage
-import qualified Lib.Ui.Web.Page.CreateArticle as CreateArticlePage
-import qualified Lib.Ui.Web.Page.EditArticle   as EditArticlePage
-import qualified Lib.Ui.Web.Page.ShareArticle  as ShareArticlePage
-import qualified Lib.Ui.Web.Page.ShareArticleList
-                                               as ShareArticleListPage
-import qualified Lib.Ui.Web.Route              as Route
+import qualified Lib.App.Command                                     as Command
+import qualified Lib.Domain.Uri                                      as Uri
+import qualified Lib.Ui.Web.Page.Article                             as ArticlePage
+import qualified Lib.Ui.Web.Page.ArticleList                         as ArticleListPage
+import qualified Lib.Ui.Web.Page.CreateArticle                       as CreateArticlePage
+import qualified Lib.Ui.Web.Page.EditArticle                         as EditArticlePage
+import qualified Lib.Ui.Web.Page.ShareArticle                        as ShareArticlePage
+import qualified Lib.Ui.Web.Page.ShareArticleList                    as ShareArticleListPage
+import qualified Lib.Ui.Web.Route                                    as Route
 
-import           Lib.App.Port                   ( MonadScraper )
-import           Lib.Domain.Article             ( Article )
-import           Lib.Domain.Capability          ( Capability
-                                                , mkArticlePerms
-                                                , mkArticlesPerms
-                                                )
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Domain.Repo.ArticleList    ( ArticleListRepo )
-import           Lib.Domain.Repo.CapabilityList ( CapabilityListRepo )
-import           Lib.Infra.Error                ( redirectTo
-                                                , throwOnError
-                                                , throwOnErrorM
-                                                )
-import           Lib.Ui.Web.Dto.Accesstoken     ( collectionId )
-import           Lib.Ui.Web.Dto.ExpirationDate  ( ExpirationDate(..) )
-import           Lib.Ui.Web.Dto.Form            ( ChangeArticleStateForm(..)
-                                                , ChangeArticleTitleForm(..)
-                                                , CreateArticleForm(..)
-                                                , CreateSharedArticleListRefForm(..)
-                                                , CreateSharedArticleRefForm(..)
-                                                , DeleteItemForm(..)
-                                                )
-import           Lib.Ui.Web.Page.Shared         ( WithQuery
-                                                , lookupReferences
-                                                )
-import           Lib.Ui.Web.Route               ( AppServer
-                                                , ArticleListSite
-                                                , Redirection
-                                                )
+import           Lib.App.Port                                         ( MonadScraper )
+import           Lib.Domain.Article                                   ( Article )
+import           Lib.Domain.Capability                                ( Capability
+                                                                      , mkArticlePerms
+                                                                      , mkArticlesPerms
+                                                                      )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Domain.Repo.ArticleList                          ( ArticleListRepo )
+import           Lib.Domain.Repo.CapabilityList                       ( CapabilityListRepo )
+import           Lib.Infra.Error                                      ( redirectTo
+                                                                      , throwOnError
+                                                                      , throwOnErrorM
+                                                                      )
+import           Lib.Ui.Web.Dto.Accesstoken                           ( collectionId )
+import           Lib.Ui.Web.Dto.ExpirationDate                        ( ExpirationDate(..) )
+import           Lib.Ui.Web.Dto.Form                                  ( ChangeArticleStateForm(..)
+                                                                      , ChangeArticleTitleForm(..)
+                                                                      , CreateArticleForm(..)
+                                                                      , CreateSharedArticleListRefForm(..)
+                                                                      , CreateSharedArticleRefForm(..)
+                                                                      , DeleteItemForm(..)
+                                                                      )
+import           Lib.Ui.Web.Page.Shared                               ( WithQuery
+                                                                      , lookupReferences
+                                                                      )
+import           Lib.Ui.Web.Route                                     ( AppServer
+                                                                      , ArticleListSite
+                                                                      , Redirection
+                                                                      )
 
 articleList :: ArticleListSite AppServer
-articleList = Route.ArticleListSite
-  { Route.articleListPage            = ArticleListPage.handler
-  , Route.createArticlePage          = CreateArticlePage.handler
-  , Route.createArticle              = createArticle
-  , Route.articlePage                = ArticlePage.handler
-  , Route.editArticlePage            = EditArticlePage.handler
-  , Route.changeArticleTitle         = changeArticleTitle
-  , Route.markArticleAsRead          = markArticleAsRead
-  , Route.markArticleAsUnread        = markArticleAsUnread
-  , Route.deleteArticle              = deleteArticle
-  , Route.shareArticleListPage       = ShareArticleListPage.handler
-  , Route.createSharedArticleListRef = createSharedArticleListRef
-  , Route.deleteSharedArticleListRef = deleteSharedArticleListRef
-  , Route.shareArticlePage           = ShareArticlePage.handler
-  , Route.createSharedArticleRef     = createSharedArticleRef
-  , Route.deleteSharedArticleRef     = deleteSharedArticleRef
-  }
+articleList = Route.ArticleListSite { Route.articleListPage            = ArticleListPage.handler
+                                    , Route.createArticlePage          = CreateArticlePage.handler
+                                    , Route.createArticle              = createArticle
+                                    , Route.articlePage                = ArticlePage.handler
+                                    , Route.editArticlePage            = EditArticlePage.handler
+                                    , Route.changeArticleTitle         = changeArticleTitle
+                                    , Route.markArticleAsRead          = markArticleAsRead
+                                    , Route.markArticleAsUnread        = markArticleAsUnread
+                                    , Route.deleteArticle              = deleteArticle
+                                    , Route.shareArticleListPage       = ShareArticleListPage.handler
+                                    , Route.createSharedArticleListRef = createSharedArticleListRef
+                                    , Route.deleteSharedArticleListRef = deleteSharedArticleListRef
+                                    , Route.shareArticlePage           = ShareArticlePage.handler
+                                    , Route.createSharedArticleRef     = createSharedArticleRef
+                                    , Route.deleteSharedArticleRef     = deleteSharedArticleRef
+                                    }
 
-createArticle
-  :: (ArticleListRepo m, MonadScraper m, WithQuery env m)
-  => CreateArticleForm
-  -> m Redirection
+createArticle :: (ArticleListRepo m, MonadScraper m, WithQuery env m) => CreateArticleForm -> m Redirection
 createArticle CreateArticleForm {..} = do
   (ref, objRef) <- lookupReferences acc
   command       <- throwOnError . mkCommand objRef $ collectionId ref
@@ -76,11 +71,7 @@ createArticle CreateArticleForm {..} = do
     uri <- Uri.mkUri articleUri
     Right Command.CreateArticle { .. }
 
-changeArticleTitle
-  :: (ArticleListRepo m, WithQuery env m)
-  => Id Article
-  -> ChangeArticleTitleForm
-  -> m Redirection
+changeArticleTitle :: (ArticleListRepo m, WithQuery env m) => Id Article -> ChangeArticleTitleForm -> m Redirection
 changeArticleTitle artId ChangeArticleTitleForm {..} = do
   (ref, objRef) <- lookupReferences acc
   let command = mkCommand objRef $ collectionId ref
@@ -91,11 +82,7 @@ changeArticleTitle artId ChangeArticleTitleForm {..} = do
     let title = articleTitle
     Command.ChangeArticleTitle { .. }
 
-markArticleAsRead
-  :: (ArticleListRepo m, WithQuery env m)
-  => Id Article
-  -> ChangeArticleStateForm
-  -> m Redirection
+markArticleAsRead :: (ArticleListRepo m, WithQuery env m) => Id Article -> ChangeArticleStateForm -> m Redirection
 markArticleAsRead artId ChangeArticleStateForm {..} = do
   (ref, objRef) <- lookupReferences acc
   let command = mkCommand objRef $ collectionId ref
@@ -103,11 +90,7 @@ markArticleAsRead artId ChangeArticleStateForm {..} = do
   redirectTo goto
   where mkCommand objRef colId = Command.MarkArticleAsRead { .. }
 
-markArticleAsUnread
-  :: (ArticleListRepo m, WithQuery env m)
-  => Id Article
-  -> ChangeArticleStateForm
-  -> m Redirection
+markArticleAsUnread :: (ArticleListRepo m, WithQuery env m) => Id Article -> ChangeArticleStateForm -> m Redirection
 markArticleAsUnread artId ChangeArticleStateForm {..} = do
   (ref, objRef) <- lookupReferences acc
   let command = mkCommand objRef $ collectionId ref
@@ -115,11 +98,7 @@ markArticleAsUnread artId ChangeArticleStateForm {..} = do
   redirectTo goto
   where mkCommand objRef colId = Command.MarkArticleAsUnread { .. }
 
-deleteArticle
-  :: (ArticleListRepo m, WithQuery env m)
-  => Id Article
-  -> DeleteItemForm
-  -> m Redirection
+deleteArticle :: (ArticleListRepo m, WithQuery env m) => Id Article -> DeleteItemForm -> m Redirection
 deleteArticle artId DeleteItemForm {..} = do
   (ref, objRef) <- lookupReferences acc
   let command = mkCommand objRef $ collectionId ref
@@ -128,9 +107,7 @@ deleteArticle artId DeleteItemForm {..} = do
   where mkCommand objRef colId = Command.DeleteArticle { .. }
 
 createSharedArticleListRef
-  :: (CapabilityListRepo m, WithQuery env m)
-  => CreateSharedArticleListRefForm
-  -> m Redirection
+  :: (CapabilityListRepo m, WithQuery env m) => CreateSharedArticleListRefForm -> m Redirection
 createSharedArticleListRef CreateSharedArticleListRefForm {..} = do
   (ref, objRef) <- lookupReferences acc
   let command = mkCommand objRef $ collectionId ref
@@ -150,10 +127,7 @@ createSharedArticleListRef CreateSharedArticleListRefForm {..} = do
     Command.AddShareArticleList { .. }
 
 deleteSharedArticleListRef
-  :: (CapabilityListRepo m, WithQuery env m)
-  => Id Capability
-  -> DeleteItemForm
-  -> m Redirection
+  :: (CapabilityListRepo m, WithQuery env m) => Id Capability -> DeleteItemForm -> m Redirection
 deleteSharedArticleListRef capId DeleteItemForm {..} = do
   (ref, objRef) <- lookupReferences acc
   let command = mkCommand objRef $ collectionId ref
@@ -162,10 +136,7 @@ deleteSharedArticleListRef capId DeleteItemForm {..} = do
   where mkCommand objRef colId = Command.DeleteShareArticleList { .. }
 
 createSharedArticleRef
-  :: (CapabilityListRepo m, WithQuery env m)
-  => Id Article
-  -> CreateSharedArticleRefForm
-  -> m Redirection
+  :: (CapabilityListRepo m, WithQuery env m) => Id Article -> CreateSharedArticleRefForm -> m Redirection
 createSharedArticleRef artId CreateSharedArticleRefForm {..} = do
   (ref, objRef) <- lookupReferences acc
   let command = mkCommand objRef $ collectionId ref
@@ -173,23 +144,16 @@ createSharedArticleRef artId CreateSharedArticleRefForm {..} = do
   redirectTo goto
  where
   mkCommand objRef colId = do
-    let mPetname    = petname
-        mExpDate    = unExpirationDate <$> expirationDate
-        share       = False
-        sharedPerms = mkArticlePerms artId
-                                     (isJust viewArticle)
-                                     (isJust changeTitle)
-                                     (isJust changeState)
-                                     (isJust delete)
-                                     share
+    let
+      mPetname = petname
+      mExpDate = unExpirationDate <$> expirationDate
+      share    = False
+      sharedPerms =
+        mkArticlePerms artId (isJust viewArticle) (isJust changeTitle) (isJust changeState) (isJust delete) share
     Command.AddShareArticle { .. }
 
 deleteSharedArticleRef
-  :: (CapabilityListRepo m, WithQuery env m)
-  => Id Article
-  -> Id Capability
-  -> DeleteItemForm
-  -> m Redirection
+  :: (CapabilityListRepo m, WithQuery env m) => Id Article -> Id Capability -> DeleteItemForm -> m Redirection
 deleteSharedArticleRef artId capId DeleteItemForm {..} = do
   (ref, objRef) <- lookupReferences acc
   let command = mkCommand objRef $ collectionId ref

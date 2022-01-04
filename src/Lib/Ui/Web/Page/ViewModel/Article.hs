@@ -4,19 +4,19 @@ module Lib.Ui.Web.Page.ViewModel.Article
   , fromDomain
   ) where
 
-import           Data.Time.Clock                ( UTCTime )
-import           Prelude                 hiding ( id
-                                                , state
-                                                )
+import           Data.Time.Clock                                      ( UTCTime )
+import           Prelude                                       hiding ( id
+                                                                      , state
+                                                                      )
 
-import qualified Lib.Domain.Article            as Article
+import qualified Lib.Domain.Article                                  as Article
 
-import           Lib.Domain.Article             ( Article
-                                                , ArticleState
-                                                )
+import           Lib.Domain.Article                                   ( Article
+                                                                      , ArticleState
+                                                                      )
 
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Domain.Uri                as Uri
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Domain.Uri                                      as Uri
 
 data ArticleVm = ArticleVm
   { id       :: !(Id Article)

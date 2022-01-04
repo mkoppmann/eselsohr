@@ -7,17 +7,17 @@ module Lib.Domain.Article
   , titleFromText
   ) where
 
-import           Data.Time.Clock                ( UTCTime )
-import           Prelude                 hiding ( id
-                                                , state
-                                                )
+import           Data.Time.Clock                                      ( UTCTime )
+import           Prelude                                       hiding ( id
+                                                                      , state
+                                                                      )
 
-import qualified Lib.Domain.NonEmptyText       as NET
+import qualified Lib.Domain.NonEmptyText                             as NET
 
-import           Lib.Domain.Error               ( AppErrorType )
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Domain.NonEmptyText        ( NonEmptyText )
-import           Lib.Domain.Uri                 ( Uri )
+import           Lib.Domain.Error                                     ( AppErrorType )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Domain.NonEmptyText                              ( NonEmptyText )
+import           Lib.Domain.Uri                                       ( Uri )
 
 data Article = Article
   { id       :: !(Id Article)

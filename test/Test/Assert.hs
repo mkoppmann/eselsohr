@@ -31,20 +31,20 @@ module Test.Assert
   , redirects
   ) where
 
-import           Test.Hspec                     ( Expectation
-                                                , expectationFailure
-                                                , shouldBe
-                                                , shouldSatisfy
-                                                )
+import           Test.Hspec                                           ( Expectation
+                                                                      , expectationFailure
+                                                                      , shouldBe
+                                                                      , shouldSatisfy
+                                                                      )
 
-import           Lib.Domain.Error               ( AppErrorType
-                                                , isRedirect
-                                                )
-import           Lib.Infra.Error                ( AppError(..) )
-import           Lib.Infra.Monad                ( App
-                                                , AppEnv
-                                                , runAppAsIO
-                                                )
+import           Lib.Domain.Error                                     ( AppErrorType
+                                                                      , isRedirect
+                                                                      )
+import           Lib.Infra.Error                                      ( AppError(..) )
+import           Lib.Infra.Monad                                      ( App
+                                                                      , AppEnv
+                                                                      , runAppAsIO
+                                                                      )
 
 -- | Checks that given action runs successfully.
 succeeds :: (Show a) => App a -> AppEnv -> Expectation
@@ -59,19 +59,14 @@ satisfies app p env = runAppAsIO env app >>= \case
 -- | Checks whether action fails and returns given error.
 failsWith :: (Show a) => App a -> AppErrorType -> AppEnv -> Expectation
 failsWith app err env = runAppAsIO env app >>= \case
-  Left AppError {..} -> appErrorType `shouldBe` err
-  Right a ->
-    expectationFailure
-      $  "Expected 'Failure' with: "
-      <> show err
-      <> " but got: "
-      <> show a
+  Left  AppError {..} -> appErrorType `shouldBe` err
+  Right a             -> expectationFailure $ "Expected 'Failure' with: " <> show err <> " but got: " <> show a
 
 -- | Checks whether action issues a redirect.
 redirects :: (Show a) => App a -> AppEnv -> Expectation
 redirects app env = runAppAsIO env app >>= \case
-  Left AppError {..} -> isRedirect appErrorType `shouldBe` True
-  Right a -> expectationFailure $ "Expected redirect but got: " <> show a
+  Left  AppError {..} -> isRedirect appErrorType `shouldBe` True
+  Right a             -> expectationFailure $ "Expected redirect but got: " <> show a
 
 -- | Checks whether action returns expected value.
 equals :: (Show a, Eq a) => App a -> a -> AppEnv -> Expectation

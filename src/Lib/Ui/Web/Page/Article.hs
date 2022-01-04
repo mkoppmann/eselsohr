@@ -6,39 +6,37 @@ module Lib.Ui.Web.Page.Article
 
 
 import           Lucid
-import           Lucid.Servant                  ( linkAbsHref_ )
-import           Servant                        ( Link
-                                                , fieldLink
-                                                )
+import           Lucid.Servant                                        ( linkAbsHref_ )
+import           Servant                                              ( Link
+                                                                      , fieldLink
+                                                                      )
 
-import qualified Lib.Domain.Authorization      as Authz
-import qualified Lib.Ui.Web.Page.Layout        as Layout
-import qualified Lib.Ui.Web.Page.Static        as Static
-import qualified Lib.Ui.Web.Page.ViewModel.Article
-                                               as ArticleVm
-import qualified Lib.Ui.Web.Route              as Route
+import qualified Lib.Domain.Authorization                            as Authz
+import qualified Lib.Ui.Web.Page.Layout                              as Layout
+import qualified Lib.Ui.Web.Page.Static                              as Static
+import qualified Lib.Ui.Web.Page.ViewModel.Article                   as ArticleVm
+import qualified Lib.Ui.Web.Route                                    as Route
 
-import           Lib.Domain.Article             ( Article )
-import           Lib.Domain.Authorization       ( ViewArticlePerm )
-import           Lib.Domain.Capability          ( ObjectReference )
-import           Lib.Domain.Collection          ( Collection )
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Infra.Error                ( throwOnError )
-import           Lib.Ui.Web.Dto.Accesstoken     ( Accesstoken
-                                                , Reference(..)
-                                                )
-import           Lib.Ui.Web.Page.Shared         ( WithQuery
-                                                , deleteArticleForm
-                                                , getArticle
-                                                , lookupReferences
-                                                , markArticleAsReadForm
-                                                , markArticleAsUnreadForm
-                                                , navBar
-                                                , prettyDate
-                                                )
-import           Lib.Ui.Web.Page.ViewModel.Article
-                                                ( ArticleVm )
-import           Lib.Ui.Web.Route               ( HtmlPage )
+import           Lib.Domain.Article                                   ( Article )
+import           Lib.Domain.Authorization                             ( ViewArticlePerm )
+import           Lib.Domain.Capability                                ( ObjectReference )
+import           Lib.Domain.Collection                                ( Collection )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Infra.Error                                      ( throwOnError )
+import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken
+                                                                      , Reference(..)
+                                                                      )
+import           Lib.Ui.Web.Page.Shared                               ( WithQuery
+                                                                      , deleteArticleForm
+                                                                      , getArticle
+                                                                      , lookupReferences
+                                                                      , markArticleAsReadForm
+                                                                      , markArticleAsUnreadForm
+                                                                      , navBar
+                                                                      , prettyDate
+                                                                      )
+import           Lib.Ui.Web.Page.ViewModel.Article                    ( ArticleVm )
+import           Lib.Ui.Web.Route                                     ( HtmlPage )
 
 ------------------------------------------------------------------------
 -- Handler
@@ -64,12 +62,11 @@ data Query = Query
 
 query :: WithQuery env m => Query -> m View
 query Query {..} = do
-  let
-    canViewArticles       = isRight $ Authz.canViewArticles objRef
-    canChangeArticleTitle = isRight $ Authz.canChangeArticleTitle objRef artId
-    canChangeArticleState = isRight $ Authz.canChangeArticleState objRef artId
-    canDeleteArticle      = isRight $ Authz.canDeleteArticle objRef artId
-    canShareLinks         = isRight $ Authz.canShareArticle objRef artId
+  let canViewArticles       = isRight $ Authz.canViewArticles objRef
+      canChangeArticleTitle = isRight $ Authz.canChangeArticleTitle objRef artId
+      canChangeArticleState = isRight $ Authz.canChangeArticleState objRef artId
+      canDeleteArticle      = isRight $ Authz.canDeleteArticle objRef artId
+      canShareLinks         = isRight $ Authz.canShareArticle objRef artId
   viewArticlePerm <- throwOnError $ Authz.canViewArticle objRef artId
   article         <- getArticle colId artId
   pure View { .. }
@@ -94,8 +91,7 @@ view View {..} = do
   navBar
     [ when canViewArticles getArticlesA
     , when canShareLinks $ do
-      a_ [linkAbsHref_ . fieldLink Route.shareArticlePage artId $ Just acc]
-         "Share this page"
+      a_ [linkAbsHref_ . fieldLink Route.shareArticlePage artId $ Just acc] "Share this page"
     ]
 
   h1_ . toHtml $ ArticleVm.title article
@@ -104,14 +100,11 @@ view View {..} = do
   p_ . toHtml $ "State: " <> show @Text (ArticleVm.state article)
   p_ . a_ [href_ artUrl] . toHtml $ artUrl
   when canDeleteArticle $ if canViewArticles
-    then deleteArticleForm artId acc . fieldLink Route.articleListPage $ Just
-      acc
+    then deleteArticleForm artId acc . fieldLink Route.articleListPage $ Just acc
     else deleteArticleForm artId acc $ fieldLink Route.startpage
   case ArticleVm.state article of
-    ArticleVm.Read -> when canChangeArticleState
-      $ markArticleAsUnreadForm artId acc showArticleLink
-    ArticleVm.Unread -> when canChangeArticleState
-      $ markArticleAsReadForm artId acc showArticleLink
+    ArticleVm.Read   -> when canChangeArticleState $ markArticleAsUnreadForm artId acc showArticleLink
+    ArticleVm.Unread -> when canChangeArticleState $ markArticleAsReadForm artId acc showArticleLink
  where
   showArticleLink :: Link
   showArticleLink = fieldLink Route.articlePage artId $ Just acc
@@ -123,11 +116,7 @@ view View {..} = do
   artUrl = ArticleVm.uri article
 
   getArticlesA :: Html ()
-  getArticlesA = a_
-    [linkAbsHref_ . fieldLink Route.articleListPage $ Just acc]
-    "Back to overview"
+  getArticlesA = a_ [linkAbsHref_ . fieldLink Route.articleListPage $ Just acc] "Back to overview"
 
   editArticleA :: Html ()
-  editArticleA = a_
-    [linkAbsHref_ . fieldLink Route.editArticlePage artId $ Just acc]
-    "Edit title"
+  editArticleA = a_ [linkAbsHref_ . fieldLink Route.editArticlePage artId $ Just acc] "Edit title"
