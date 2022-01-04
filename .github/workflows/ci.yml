@@ -3,39 +3,35 @@ name: CI
 on: push
 
 jobs:
-
   hadolint:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: 'Run Hadolint'
-      uses: hadolint/hadolint-action@v1.6.0
-      with:
-        dockerfile: Dockerfile
+      - name: "Run Hadolint"
+        uses: hadolint/hadolint-action@v1.6.0
+        with:
+          dockerfile: Dockerfile
 
   hlint:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: 'Set up HLint'
-      uses: rwe/actions-hlint-setup@v1
-      with:
-        version: '3.3.4'
+      - name: "Set up HLint"
+        uses: rwe/actions-hlint-setup@v1
+        with:
+          version: "3.3.6"
 
-    - name: 'Run HLint'
-      uses: rwe/actions-hlint-run@v2
-      with:
-        path: '["app/", "src/", "test/"]'
-        fail-on: warning
+      - name: "Run HLint"
+        uses: rwe/actions-hlint-run@v2
+        with:
+          path: '["app/", "src/", "test/"]'
+          fail-on: warning
 
   build-binary:
-
     needs: hlint
 
     runs-on: ubuntu-latest
@@ -44,48 +40,48 @@ jobs:
       CONFIG: "--enable-tests --enable-benchmarks"
 
     steps:
-    - uses: actions/checkout@v2
-    - uses: haskell/actions/setup@v1.2
-      id: setup-haskell-cabal
-      with:
-        ghc-version: '8.10.7'
-        cabal-version: '3.4'
+      - uses: actions/checkout@v2
+      - uses: haskell/actions/setup@v1.2
+        id: setup-haskell-cabal
+        with:
+          ghc-version: "8.10"
+          cabal-version: "latest"
 
-    - name: Update Hackage snapshot
-      run: |
-        cabal update
-        cabal freeze $CONFIG
+      - name: Update Hackage snapshot
+        run: |
+          cabal update
+          cabal freeze $CONFIG
 
-    - name: Cache dependencies
-      uses: actions/cache@v2
-      with:
-        path: |
-          ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-          dist-newstyle
-        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ matrix.ghc }}-
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: |
+            ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+            dist-newstyle
+          key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.ghc }}-
 
-    - name: Build dependencies
-      run: cabal build --only-dependencies $CONFIG
+      - name: Build dependencies
+        run: cabal build --only-dependencies $CONFIG
 
-    - name: Build application
-      run: cabal build $CONFIG all
+      - name: Build application
+        run: cabal build $CONFIG all
 
-    - name: Run tests
-      run: cabal test $CONFIG all
+      - name: Run tests
+        run: cabal test $CONFIG all
 
-    - name: Generate documentation
-      run: cabal haddock $CONFIG all
+      - name: Generate documentation
+        run: cabal haddock $CONFIG all
 
-    - name: Install binary
-      run: cabal install --enable-executable-static --install-method=copy --overwrite-policy=always --installdir=dist/
+      - name: Install binary
+        run: cabal install --enable-executable-static --install-method=copy --overwrite-policy=always --installdir=dist/
 
-    - name: Rename binary
-      run: mv dist/eselsohr-exe dist/eselsohr
+      - name: Rename binary
+        run: mv dist/eselsohr-exe dist/eselsohr
 
-    - name: Store application binary as artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: eselsohr
-        path: dist/eselsohr
+      - name: Store application binary as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: eselsohr
+          path: dist/eselsohr
