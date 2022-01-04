@@ -358,8 +358,13 @@ deleteShareArticle DeleteShareArticle {..} = case Authz.canShareArticle objRef a
 
 createCollection :: (CollectionRepo m, MonadRandom m) => m (Id Collection, Id Capability)
 createCollection = do
-  colId <- Port.getRandomId
-  capId <- Port.getRandomId
-  let cap = Cap.mkCapability capId Cap.defaultOverviewRef Nothing Nothing
-  ColRepo.createCollection colId capId cap
-  pure (colId, capId)
+  colId                   <- Port.getRandomId
+  collectionAlreadyExists <- ColRepo.exists colId
+  if collectionAlreadyExists then createCollection else createCollection' colId
+ where
+  createCollection' :: (CollectionRepo m, MonadRandom m) => Id Collection -> m (Id Collection, Id Capability)
+  createCollection' colId = do
+    capId <- Port.getRandomId
+    let cap = Cap.mkCapability capId Cap.defaultOverviewRef Nothing Nothing
+    ColRepo.createCollection colId capId cap
+    pure (colId, capId)
