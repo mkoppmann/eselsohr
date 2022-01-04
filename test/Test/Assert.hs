@@ -31,17 +31,19 @@ module Test.Assert
   , redirects
   ) where
 
-import           Lib.App                        ( App
-                                                , AppEnv
-                                                , AppError(..)
-                                                , AppErrorType
-                                                , isRedirect
-                                                , runAppAsIO
-                                                )
 import           Test.Hspec                     ( Expectation
                                                 , expectationFailure
                                                 , shouldBe
                                                 , shouldSatisfy
+                                                )
+
+import           Lib.Domain.Error               ( AppErrorType
+                                                , isRedirect
+                                                )
+import           Lib.Infra.Error                ( AppError(..) )
+import           Lib.Infra.Monad                ( App
+                                                , AppEnv
+                                                , runAppAsIO
                                                 )
 
 -- | Checks that given action runs successfully.

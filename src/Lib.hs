@@ -4,21 +4,10 @@ module Lib
   , runServer
   ) where
 
-import           Lib.App                        ( AppEnv
-                                                , Env(..)
-                                                , Hsts(..)
-                                                , Https(..)
-                                                , mainLogAction
-                                                )
-import           Lib.Config                     ( Config(..)
-                                                , loadConfig
-                                                )
-import qualified Lib.Init                      as Init
-import           Lib.Persistence                ( persistenceApp )
-import           Lib.Web                        ( application )
+import qualified Network.TLS.Extra.Cipher      as TLS
+
 import           Network.TLS                    ( Version(..) )
 import           Network.TLS.Cipher             ( Cipher )
-import qualified Network.TLS.Extra.Cipher      as TLS
 import           Network.Wai.Handler.Warp       ( Settings
                                                 , defaultSettings
                                                 , runSettings
@@ -34,49 +23,60 @@ import           Network.Wai.Handler.WarpTLS    ( OnInsecure(..)
 import           UnliftIO.Async                 ( race_ )
 import           UnliftIO.STM                   ( newTQueueIO )
 
-mkAppEnv :: Config -> IO AppEnv
-mkAppEnv Config {..} = do
-  writeQueue <- newTQueueIO
+import qualified Config
+import qualified Init
+import qualified Lib.App.Env                   as Env
 
-  let envDataFolder          = confDataFolder
-      envMaxConcurrentWrites = confMaxConcurrentWrites
-      envWriteQueue          = writeQueue
-      envLogAction           = mainLogAction confLogSeverity
-      envBaseUrl             = confBaseUrl
-      envHttps               = if confHttps then HttpsOn else HttpsOff
-      envHsts                = if confDisableHsts then HstsOff else HstsOn
-  pure Env { .. }
+import           Config                         ( Config
+                                                , loadConfig
+                                                )
+import           Lib.App.Env                    ( Https )
+import           Lib.Infra.Log                  ( mainLogAction )
+import           Lib.Infra.Monad                ( AppEnv )
+import           Lib.Infra.Persistence.Server   ( persistenceApp )
+import           Lib.Ui.Server                  ( application )
+
+mkAppEnv :: Config -> IO AppEnv
+mkAppEnv Config.Config {..} = do
+  newWriteQueue <- newTQueueIO
+  let dataFolder          = confDataFolder
+      maxConcurrentWrites = confMaxConcurrentWrites
+      writeQueue          = newWriteQueue
+      logAction           = mainLogAction confLogSeverity
+      baseUrl             = confBaseUrl
+      https               = if confHttps then Env.HttpsOn else Env.HttpsOff
+      hsts                = if confDisableHsts then Env.HstsOff else Env.HstsOn
+  pure $ Env.Env { .. }
 
 runServer :: Config -> AppEnv -> IO ()
-runServer Config {..} env@Env {..} = do
-  Init.datafolder envDataFolder
+runServer Config.Config {..} env@Env.Env {..} = do
+  Init.datafolder dataFolder
   Init.useRestrictedHttpManager
-
-  let settings =
-        setHost (fromString confListenAddr)
-          . setPort confServerPort
-          . setServerName ""
-          $ defaultSettings
-
-  case envHttps of
-    HttpsOn  -> startTlsServer confCertFile confKeyFile settings
-    HttpsOff -> startServer settings
+  printIntro
+  case https of
+    Env.HttpsOn  -> startTlsServer confCertFile confKeyFile
+    Env.HttpsOff -> startServer
  where
-  startTlsServer :: FilePath -> FilePath -> Settings -> IO ()
-  startTlsServer certFile keyFile settings = do
+  settings :: Settings
+  settings =
+    setHost (fromString confListenAddr)
+      . setPort confServerPort
+      . setServerName ""
+      $ defaultSettings
+
+  startTlsServer :: FilePath -> FilePath -> IO ()
+  startTlsServer certFile keyFile = do
     let tlsOpts  = tlsSettings certFile keyFile
         tlsOpts' = tlsOpts { onInsecure         = AllowInsecure
                            , tlsAllowedVersions = [TLS13, TLS12]
                            , tlsCiphers         = tlsCiphers
                            }
-    printIntro
     race_ (persistenceApp env)
           (runTLS tlsOpts' settings $ application confServerPort env)
     print @Text "Program ended"
 
-  startServer :: Settings -> IO ()
-  startServer settings = do
-    printIntro
+  startServer :: IO ()
+  startServer = do
     race_ (persistenceApp env)
           (runSettings settings $ application confServerPort env)
     print @Text "Program ended"
@@ -85,14 +85,14 @@ runServer Config {..} env@Env {..} = do
   printIntro = do
     print @Text "Eselsohr is now running."
     print
-      $  protocolText envHttps
+      $  protocolText https
       <> toText confListenAddr
       <> ":"
       <> show confServerPort
 
   protocolText :: Https -> Text
-  protocolText HttpsOn  = "Access it on: https://"
-  protocolText HttpsOff = "Access it on: http://"
+  protocolText Env.HttpsOn  = "Access it on: https://"
+  protocolText Env.HttpsOff = "Access it on: http://"
 
   {- | Based on the Mozilla Intermediate TLS configuration
     https://wiki.mozilla.org/Security/Server_Side_TLS#Intermediate_compatibility_.28recommended.29
@@ -116,4 +116,6 @@ main :: Maybe FilePath -> IO ()
 main mConfPath = do
   hSetBuffering stdout NoBuffering
   hSetBuffering stderr NoBuffering
-  loadConfig mConfPath >>= \conf -> mkAppEnv conf >>= runServer conf
+  conf <- loadConfig mConfPath
+  env  <- mkAppEnv conf
+  runServer conf env
