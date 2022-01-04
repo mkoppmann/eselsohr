@@ -1,4 +1,5 @@
 {
     "haskell.formattingProvider": "brittany",
-    "nixEnvSelector.nixFile": "${workspaceRoot}/shell.nix"
+    "nixEnvSelector.nixFile": "${workspaceRoot}/shell.nix",
+    "editor.tabSize": 2
 }

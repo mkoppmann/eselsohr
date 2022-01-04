@@ -2,11 +2,12 @@ module Servant.CSS.Clay
   ( CSS
   ) where
 
+import qualified Network.HTTP.Media            as M
+
 import           Clay                           ( Css
                                                 , pretty
                                                 , renderWith
                                                 )
-import qualified Network.HTTP.Media            as M
 import           Servant                        ( Accept(..)
                                                 , MimeRender(..)
                                                 )

@@ -9,20 +9,23 @@ module Lib.App.Env
   , Env(..)
   , Has(..)
   , grab
+  , HasWriteQueue(..)
+  , envWriteQueue
   ) where
 
 import           Colog                          ( HasLog(..)
                                                 , LogAction
                                                 , Message
                                                 )
-import           Lib.Core.Domain                ( SynchronizedStoreEvent
-                                                , Uri
-                                                )
 import           UnliftIO.STM                   ( TQueue )
+
+import           Lib.Domain.Repo          ( RepositoryCommandSync )
+import           Lib.Domain.Uri                 ( Uri )
+
 
 type DataPath = FilePath
 
-type WriteQueue = TQueue SynchronizedStoreEvent
+type WriteQueue m = TQueue (RepositoryCommandSync m)
 
 type MaxConcurrentWrites = Int
 
@@ -31,48 +34,57 @@ data Https = HttpsOn | HttpsOff
 data Hsts = HstsOn | HstsOff
 
 data Env (m :: Type -> Type) = Env
-  { envDataFolder          :: !DataPath
-  , envWriteQueue          :: !WriteQueue
-  , envMaxConcurrentWrites :: !(Maybe MaxConcurrentWrites)
-  , envLogAction           :: !(LogAction m Message)
-  , envBaseUrl             :: !Uri
-  , envHttps               :: !Https
-  , envHsts                :: !Hsts
+  { dataFolder          :: !DataPath
+  , writeQueue          :: !(WriteQueue m)
+  , maxConcurrentWrites :: !(Maybe MaxConcurrentWrites)
+  , logAction           :: !(LogAction m Message)
+  , baseUrl             :: !Uri
+  , https               :: !Https
+  , hsts                :: !Hsts
   }
 
 instance HasLog (Env m) Message m where
   getLogAction :: Env m -> LogAction m Message
-  getLogAction = envLogAction
+  getLogAction = logAction
   {-# INLINE getLogAction #-}
 
   setLogAction :: LogAction m Message -> Env m -> Env m
-  setLogAction newAction env = env { envLogAction = newAction }
+  setLogAction newAction env = env { logAction = newAction }
   {-# INLINE setLogAction #-}
 
 class Has field env where
   obtain :: env -> field
 
 instance Has DataPath (Env m) where
-  obtain = envDataFolder
+  obtain = dataFolder
 
-instance Has WriteQueue (Env m) where
-  obtain = envWriteQueue
+instance Has (WriteQueue m) (Env m) where
+  obtain = writeQueue
 
 instance Has (Maybe MaxConcurrentWrites) (Env m) where
-  obtain = envMaxConcurrentWrites
+  obtain = maxConcurrentWrites
 
 instance Has (LogAction m Message) (Env m) where
-  obtain = envLogAction
+  obtain = logAction
 
 instance Has Uri (Env m) where
-  obtain = envBaseUrl
+  obtain = baseUrl
 
 instance Has Https (Env m) where
-  obtain = envHttps
+  obtain = https
 
 instance Has Hsts (Env m) where
-  obtain = envHsts
+  obtain = hsts
 
 grab :: forall field env m . (MonadReader env m, Has field env) => m field
 grab = asks $ obtain @field
 {-# INLINE grab #-}
+
+class HasWriteQueue env m where
+  getWriteQueue :: env -> WriteQueue m
+
+instance HasWriteQueue (Env m) m where
+  getWriteQueue = writeQueue
+
+envWriteQueue :: forall env m . (MonadReader env m, HasWriteQueue env m) => m (WriteQueue m)
+envWriteQueue = asks getWriteQueue

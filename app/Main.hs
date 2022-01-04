@@ -1,6 +1,5 @@
 module Main where
 
-import qualified Lib
 import           Options.Applicative            ( (<**>)
                                                 , Parser
                                                 , ParserInfo
@@ -16,6 +15,8 @@ import           Options.Applicative            ( (<**>)
                                                 , short
                                                 , strOption
                                                 )
+
+import qualified Lib
 
 newtype ExeConfig = ExeConfig
   { envPath :: Maybe FilePath

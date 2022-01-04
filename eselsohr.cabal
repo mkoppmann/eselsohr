@@ -1,74 +1,83 @@
 cabal-version:      2.4
 name:               eselsohr
 version:            0.1.0.0
-homepage:           https://github.com/mkoppmann/eselsohr
-bug-reports:        https://github.com/mkoppmann/eselsohr/issues
 license:            EUPL-1.2
 license-file:       LICENSE
 maintainer:         mkoppmann <dev@mkoppmann.at>
 author:             Michael Koppmann
 tested-with:        ghc ==8.10.7
+homepage:           https://github.com/mkoppmann/eselsohr
+bug-reports:        https://github.com/mkoppmann/eselsohr/issues
 category:           Web
 extra-source-files: CHANGELOG.md
 
 library
     exposed-modules:
+        Config
+        Init
         Lib
-        Lib.App
+        Lib.App.Command
         Lib.App.Env
-        Lib.App.Error
-        Lib.App.Log
-        Lib.App.Monad
-        Lib.Config
-        Lib.Core.Domain
-        Lib.Core.Domain.Accesstoken
-        Lib.Core.Domain.Article
-        Lib.Core.Domain.Capability
-        Lib.Core.Domain.Context
-        Lib.Core.Domain.Entity
-        Lib.Core.Domain.ExpirationDate
-        Lib.Core.Domain.Id
-        Lib.Core.Domain.Resource
-        Lib.Core.Domain.StoreEvent
-        Lib.Core.Domain.Uri
-        Lib.Core.Effect
-        Lib.Core.Effect.Repository
-        Lib.Core.Effect.Random
-        Lib.Core.Effect.Scraper
-        Lib.Core.Effect.Time
-        Lib.Core.Service
-        Lib.Core.Service.Article
-        Lib.Core.Service.Collection
-        Lib.Core.Service.SharedReference
-        Lib.Core.Service.UnlockLink
-        Lib.Core.Service.Util
-        Lib.Impl.Repository.File
-        Lib.Impl.Repository
-        Lib.Impl.Random
-        Lib.Impl.Scraper
-        Lib.Impl.Time
-        Lib.Init
-        Lib.Persistence
-        Lib.Web
-        Lib.Web.Controller
-        Lib.Web.Controller.Article
-        Lib.Web.Controller.Collection
-        Lib.Web.Controller.Frontend
-        Lib.Web.Controller.SharedReference
-        Lib.Web.Controller.UnlockLink
-        Lib.Web.Controller.Util
-        Lib.Web.Route
-        Lib.Web.Route.Article
-        Lib.Web.Route.Collection
-        Lib.Web.Route.Frontend
-        Lib.Web.Route.SharedReference
-        Lib.Web.Route.UnlockLink
-        Lib.Web.Route.Util
-        Lib.Web.Types
-        Lib.Web.View.App
-        Lib.Web.View.Form
-        Lib.Web.View.Page
-        Lib.Web.View.Style
+        Lib.App.Port
+        Lib.Domain.Article
+        Lib.Domain.ArticleList
+        Lib.Domain.Authorization
+        Lib.Domain.Capability
+        Lib.Domain.CapabilityList
+        Lib.Domain.Collection
+        Lib.Domain.Error
+        Lib.Domain.Id
+        Lib.Domain.NonEmptyText
+        Lib.Domain.Repo
+        Lib.Domain.Repo.ArticleList
+        Lib.Domain.Repo.CapabilityList
+        Lib.Domain.Repo.Collection
+        Lib.Domain.Uri
+        Lib.Infra.Adapter.Random
+        Lib.Infra.Adapter.Scraper
+        Lib.Infra.Adapter.Time
+        Lib.Infra.Error
+        Lib.Infra.Log
+        Lib.Infra.Monad
+        Lib.Infra.Persistence.File
+        Lib.Infra.Persistence.Model.Article
+        Lib.Infra.Persistence.Model.ArticleList
+        Lib.Infra.Persistence.Model.Capability
+        Lib.Infra.Persistence.Model.CapabilityList
+        Lib.Infra.Persistence.Model.Collection
+        Lib.Infra.Persistence.Model.Id
+        Lib.Infra.Persistence.Model.Shared
+        Lib.Infra.Persistence.Model.Uri
+        Lib.Infra.Persistence.Queue
+        Lib.Infra.Persistence.Server
+        Lib.Infra.Repo.ArticleList
+        Lib.Infra.Repo.CapabilityList
+        Lib.Infra.Repo.Collection
+        Lib.Ui.Server
+        Lib.Ui.Web.Controller.ArticleList
+        Lib.Ui.Web.Controller.Collection
+        Lib.Ui.Web.Controller.Static
+        Lib.Ui.Web.Dto.Accesstoken
+        Lib.Ui.Web.Dto.ExpirationDate
+        Lib.Ui.Web.Dto.Form
+        Lib.Ui.Web.Dto.Id
+        Lib.Ui.Web.Page.Article
+        Lib.Ui.Web.Page.ArticleList
+        Lib.Ui.Web.Page.CreateArticle
+        Lib.Ui.Web.Page.EditArticle
+        Lib.Ui.Web.Page.Layout
+        Lib.Ui.Web.Page.ShareArticle
+        Lib.Ui.Web.Page.ShareArticleList
+        Lib.Ui.Web.Page.ShareCollectionOverview
+        Lib.Ui.Web.Page.Shared
+        Lib.Ui.Web.Page.Static
+        Lib.Ui.Web.Page.Style
+        Lib.Ui.Web.Page.CollectionOverview
+        Lib.Ui.Web.Page.ViewModel.Article
+        Lib.Ui.Web.Page.ViewModel.Capability
+        Lib.Ui.Web.Page.ViewModel.Permission
+        Lib.Ui.Web.Page.ViewModel.UnlockLink
+        Lib.Ui.Web.Route
         Net.IPv6.Helper
         Network.Wai.Middleware.AddHsts
         Network.Wai.Middleware.NoOp
@@ -82,7 +91,7 @@ library
         MultiParamTypeClasses FlexibleInstances ConstraintKinds DerivingVia
         DerivingStrategies RecordWildCards InstanceSigs DeriveGeneric
         PatternSynonyms DeriveAnyClass DeriveTraversable TupleSections
-        AllowAmbiguousTypes
+        AllowAmbiguousTypes DuplicateRecordFields StandaloneDeriving
 
     ghc-options:
         -Wall -Wcompat -Widentities -Wincomplete-uni-patterns
@@ -91,7 +100,6 @@ library
         -fwrite-ide-info -hiedir=.hie -Wunused-packages -j -freverse-errors
 
     build-depends:
-        aeson >=1.5.5 && <2.1,
         base >=4.14.1 && <4.17,
         base32 >=0.2.0 && <0.3,
         clay >=0.13.3 && <0.14,
@@ -126,7 +134,7 @@ library
         wai-enforce-https >=0.0.2 && <0.1,
         wai-extra >=3.1.4.0 && <3.2,
         warp >=3.3.13 && <3.4,
-        warp-tls >=3.3.0 && <3.4,
+        warp-tls >=3.3.0 && <3.4
 
     mixins:
         base hiding (Prelude),
@@ -150,8 +158,8 @@ test-suite eselsohr-test
     other-modules:
         Test.Assert
         Test.Common
-        Test.Core.Domain.Accesstoken
         Test.Static
+        Test.Web.Accesstoken
 
     default-language:   Haskell2010
     default-extensions:

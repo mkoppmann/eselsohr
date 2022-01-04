@@ -2,14 +2,15 @@ module Test.Static
   ( staticSpecs
   ) where
 
-import           Lib.App                        ( AppEnv )
-import           Lib.Web.Controller             ( startpage )
 import           Test.Assert                    ( succeeds )
 import           Test.Common                    ( joinSpecs )
 import           Test.Hspec                     ( Spec
                                                 , describe
                                                 , it
                                                 )
+
+import           Lib.Infra.Monad                ( AppEnv )
+import           Lib.Ui.Web.Controller.Static   ( startpage )
 
 staticSpecs :: AppEnv -> Spec
 staticSpecs = joinSpecs "Static Resources" [startpageSpec]
