@@ -1,5 +1,6 @@
 module Lib.Infra.Repo.Collection
-  ( createCollection
+  ( exists
+  , createCollection
   ) where
 
 import qualified Data.Map.Strict                                     as Map
@@ -12,6 +13,9 @@ import           Lib.Domain.Capability                                ( Capabili
 import           Lib.Domain.Collection                                ( Collection )
 import           Lib.Domain.Id                                        ( Id )
 import           Lib.Infra.Persistence.File                           ( WithFile )
+
+exists :: (WithFile env m) => Id Collection -> m Bool
+exists = File.exists
 
 createCollection :: (WithFile env m) => Id Collection -> Id Capability -> Capability -> m ()
 createCollection colId capId cap = File.init colId collectionPm

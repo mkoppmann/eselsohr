@@ -1,7 +1,6 @@
 module Lib.Domain.Uri
   ( Uri(..)
   , mkUri
-  , baseUri
   , getHostname
   ) where
 
@@ -95,8 +94,3 @@ getHostname (Uri uri) = getHostname' uri
 
 getHostname' :: URI -> Maybe Text
 getHostname' uri = U.unRText <$> uri ^? UL.uriAuthority . _Right . UL.authHost
-
-baseUri :: Text -> Uri
-baseUri url = case U.mkURI url of
-  Left  err -> error . (<>) "Invalid base url: " . toText $ displayException err
-  Right uri -> Uri uri

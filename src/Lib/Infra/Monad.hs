@@ -68,6 +68,7 @@ instance CapabilityListRepo App where
   saveAll = CapRepo.saveAll
 
 instance CollectionRepo App where
+  exists           = ColRepo.exists
   createCollection = ColRepo.createCollection
 
 {- | Helper for running route handlers in IO. Catches exception of type

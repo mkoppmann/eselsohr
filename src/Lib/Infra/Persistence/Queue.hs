@@ -8,9 +8,7 @@ module Lib.Infra.Persistence.Queue
 import qualified Data.Map.Strict                                     as Map
 
 import           UnliftIO                                             ( MonadUnliftIO )
-import           UnliftIO.Async                                       ( mapConcurrently_
-                                                                      , pooledMapConcurrentlyN_
-                                                                      )
+import           UnliftIO.Async                                       ( mapConcurrently_ )
 import           UnliftIO.STM                                         ( TQueue
                                                                       , isEmptyTQueue
                                                                       , newTQueue
@@ -22,16 +20,14 @@ import           UnliftIO.STM                                         ( TQueue
 
 import qualified Lib.Domain.Repo                                     as Repo
 
-import           Lib.App.Env                                          ( Has
-                                                                      , HasWriteQueue
-                                                                      , MaxConcurrentWrites
+import           Lib.App.Env                                          ( HasWriteQueue
                                                                       , envWriteQueue
                                                                       )
 import           Lib.Domain.Collection                                ( Collection )
 import           Lib.Domain.Id                                        ( Id )
 import           Lib.Domain.Repo                                      ( RepositoryCommandSync )
 
-type WithQueue env m = (MonadReader env m, HasWriteQueue env m, Has (Maybe MaxConcurrentWrites) env, MonadUnliftIO m)
+type WithQueue env m = (MonadReader env m, HasWriteQueue env m, MonadUnliftIO m)
 
 type CommandQueue m = TQueue (RepositoryCommandSync m)
 type WorkerQueueMap m = Map (Id Collection) (CommandQueue m)
@@ -62,14 +58,12 @@ fetchUpdates commandQueue workerQueueMap = infinitely . atomically $ do
         writeTQueue newWorkerQueue command
         modifyTVar' workerQueueMap $ Map.insert colId newWorkerQueue
 
-processUpdates :: (WithQueue env m) => TVar (WorkerQueueMap m) -> Maybe MaxConcurrentWrites -> m Void
-processUpdates workerQueueMap mMaxConcurrentWrites = infinitely $ do
+processUpdates :: (WithQueue env m) => TVar (WorkerQueueMap m) -> m Void
+processUpdates workerQueueMap = infinitely $ do
   todoQueues <- atomically $ do
     activeList <- filterByActiveQueues workerQueueMap
     if not $ null activeList then pure activeList else retrySTM
-  case mMaxConcurrentWrites of
-    Nothing        -> mapConcurrently_ worker todoQueues
-    Just maxWrites -> pooledMapConcurrentlyN_ maxWrites worker todoQueues
+  mapConcurrently_ worker todoQueues
   atomically cleanupMap
  where
   cleanupMap :: STM ()

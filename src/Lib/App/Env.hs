@@ -3,7 +3,6 @@
 module Lib.App.Env
   ( DataPath
   , WriteQueue
-  , MaxConcurrentWrites
   , Https(..)
   , Hsts(..)
   , Env(..)
@@ -20,14 +19,10 @@ import           Colog                                                ( HasLog(.
 import           UnliftIO.STM                                         ( TQueue )
 
 import           Lib.Domain.Repo                                      ( RepositoryCommandSync )
-import           Lib.Domain.Uri                                       ( Uri )
-
 
 type DataPath = FilePath
 
 type WriteQueue m = TQueue (RepositoryCommandSync m)
-
-type MaxConcurrentWrites = Int
 
 data Https = HttpsOn | HttpsOff
 
@@ -36,9 +31,7 @@ data Hsts = HstsOn | HstsOff
 data Env (m :: Type -> Type) = Env
   { dataFolder          :: !DataPath
   , writeQueue          :: !(WriteQueue m)
-  , maxConcurrentWrites :: !(Maybe MaxConcurrentWrites)
   , logAction           :: !(LogAction m Message)
-  , baseUrl             :: !Uri
   , https               :: !Https
   , hsts                :: !Hsts
   }
@@ -61,14 +54,8 @@ instance Has DataPath (Env m) where
 instance Has (WriteQueue m) (Env m) where
   obtain = writeQueue
 
-instance Has (Maybe MaxConcurrentWrites) (Env m) where
-  obtain = maxConcurrentWrites
-
 instance Has (LogAction m Message) (Env m) where
   obtain = logAction
-
-instance Has Uri (Env m) where
-  obtain = baseUrl
 
 instance Has Https (Env m) where
   obtain = https
