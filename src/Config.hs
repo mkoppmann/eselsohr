@@ -21,9 +21,7 @@ import           UnliftIO.Environment                                 ( getEnvir
                                                                       , unsetEnv
                                                                       )
 
-import           Lib.App.Env                                          ( DataPath
-                                                                      , MaxConcurrentWrites
-                                                                      )
+import           Lib.App.Env                                          ( DataPath )
 import           Lib.Domain.Uri                                       ( Uri
                                                                       , baseUri
                                                                       )
@@ -34,53 +32,47 @@ import           Lib.Domain.Uri                                       ( Uri
 data Config = Config
   { -- | File path to the data folder, where all collection are getting stored.
     -- Defaults to: 'XdgData'
-    confDataFolder          :: !DataPath
-  , -- | Number of max concurrently run write operations.
-    -- Set a limit to avoid resource exhaustion.
-    -- Must be larger or equal than 1.
-    -- Defaults to: 'Nothing'
-    confMaxConcurrentWrites :: !(Maybe MaxConcurrentWrites)
+    confDataFolder  :: !DataPath
   , -- | Severity level for the logger component.
     -- Defaults to: 'Error'
-    confLogSeverity         :: !Severity
+    confLogSeverity :: !Severity
   , -- | Port number on which the web server will listen.
     -- Defaults to: @6979@
-    confServerPort          :: !Port
+    confServerPort  :: !Port
   , -- | Address where the web server will listen.
     -- Defaults to: @127.0.0.1@
-    confListenAddr          :: !String
+    confListenAddr  :: !String
   , -- | Base URL to generate HTML links.
     -- Defaults to @http://localhost@
-    confBaseUrl             :: !Uri
+    confBaseUrl     :: !Uri
   , -- | Send @HSTS@ HTTP header.
     -- Automatically enabled when @X-Forwarded-Proto@ HTTP header is set to
     -- @https@.
     -- Defaults to: 'False'
-    confHttps               :: !Bool
+    confHttps       :: !Bool
   , -- | Do not send @HSTS@ HTTP header, when @HTTPS@ is set.
     -- Defaults to: 'False'
-    confDisableHsts         :: !Bool
+    confDisableHsts :: !Bool
   , -- | File path to the TLS certificate file.
     -- Defaults to: 'certificate.pem'
-    confCertFile            :: !FilePath
+    confCertFile    :: !FilePath
   , -- | File path to the TLS key file.
     -- Defaults to: 'key.pem'
-    confKeyFile             :: !FilePath
+    confKeyFile     :: !FilePath
   }
 
 loadConfig :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m Config
 loadConfig mConfPath = do
   loadEnvFile mConfPath
-  confDataFolder          <- getDataFolder
-  confMaxConcurrentWrites <- getMaxConcurrentWrites
-  confLogSeverity         <- getLogLevel
-  confServerPort          <- getPort
-  confListenAddr          <- getListenAddr
-  confBaseUrl             <- getBaseUrl confServerPort
-  confHttps               <- getHttps
-  confDisableHsts         <- getDisableHsts
-  confCertFile            <- getCertFile
-  confKeyFile             <- getKeyFile
+  confDataFolder  <- getDataFolder
+  confLogSeverity <- getLogLevel
+  confServerPort  <- getPort
+  confListenAddr  <- getListenAddr
+  confBaseUrl     <- getBaseUrl confServerPort
+  confHttps       <- getHttps
+  confDisableHsts <- getDisableHsts
+  confCertFile    <- getCertFile
+  confKeyFile     <- getKeyFile
   clearEnv
   pure $ Config { .. }
  where
@@ -92,12 +84,6 @@ loadConfig mConfPath = do
   getDataFolder = lookupEnv "DATA_FOLDER" >>= \case
     Nothing -> getXdgDirectory XdgData "eselsohr" >>= sanitizePath
     Just df -> sanitizePath df
-
-  getMaxConcurrentWrites :: (MonadIO m) => m (Maybe MaxConcurrentWrites)
-  getMaxConcurrentWrites = lookupEnv "MAX_CONCURRENT_WRITES" >>= \case
-    Nothing -> pure Nothing
-    Just mw -> pure $ checkWrites =<< readMaybe mw
-    where checkWrites maxWrites = if maxWrites > 0 then Just maxWrites else Nothing
 
   getLogLevel :: (MonadIO m) => m Severity
   getLogLevel = lookupEnv "LOG_LEVEL" >>= \case

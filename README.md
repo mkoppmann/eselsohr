@@ -34,10 +34,6 @@ The following values can be set:
 
 * `DATA_FOLDER`: File path where data is getting persisted.
     Defaults to [XdgData](https://hackage.haskell.org/package/directory-1.3.6.1/docs/System-Directory.html#v:XdgData).
-* `MAX_CONCURRENT_WRITES`: Number of max concurrently run write operations.
-    Set a limit to avoid resource exhaustion.
-    Must be larger or equal than 1.
-    Not set by default.
 * `LOG_LEVEL`: Level for the built-in logger.
     Defaults to [Error](https://hackage.haskell.org/package/co-log-core-0.2.1.1/docs/Colog-Core-Severity.html#t:Severity).
 * `PORT`: Port number on which the web server will listen.
