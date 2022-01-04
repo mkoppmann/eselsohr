@@ -22,9 +22,6 @@ import           UnliftIO.Environment                                 ( getEnvir
                                                                       )
 
 import           Lib.App.Env                                          ( DataPath )
-import           Lib.Domain.Uri                                       ( Uri
-                                                                      , baseUri
-                                                                      )
 
 {- | Configuration options for Eselsohr.
  Can be configured via environment variables or config file.
@@ -42,9 +39,6 @@ data Config = Config
   , -- | Address where the web server will listen.
     -- Defaults to: @127.0.0.1@
     confListenAddr  :: !String
-  , -- | Base URL to generate HTML links.
-    -- Defaults to @http://localhost@
-    confBaseUrl     :: !Uri
   , -- | Send @HSTS@ HTTP header.
     -- Automatically enabled when @X-Forwarded-Proto@ HTTP header is set to
     -- @https@.
@@ -68,7 +62,6 @@ loadConfig mConfPath = do
   confLogSeverity <- getLogLevel
   confServerPort  <- getPort
   confListenAddr  <- getListenAddr
-  confBaseUrl     <- getBaseUrl confServerPort
   confHttps       <- getHttps
   confDisableHsts <- getDisableHsts
   confCertFile    <- getCertFile
@@ -99,11 +92,6 @@ loadConfig mConfPath = do
   getListenAddr = lookupEnv "LISTEN_ADDR" >>= \case
     Nothing -> pure "127.0.0.1"
     Just la -> pure la
-
-  getBaseUrl :: (MonadIO m) => Port -> m Uri
-  getBaseUrl port = lookupEnv "BASE_URL" >>= \case
-    Nothing -> pure . baseUri $ "http://localhost:" <> show port <> "/"
-    Just bu -> pure . baseUri $ toText bu
 
   getHttps :: (MonadIO m) => m Bool
   getHttps = lookupEnv "HTTPS" >>= \case

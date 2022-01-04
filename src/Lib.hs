@@ -42,7 +42,6 @@ mkAppEnv Config.Config {..} = do
   let dataFolder = confDataFolder
       writeQueue = newWriteQueue
       logAction  = mainLogAction confLogSeverity
-      baseUrl    = confBaseUrl
       https      = if confHttps then Env.HttpsOn else Env.HttpsOff
       hsts       = if confDisableHsts then Env.HstsOff else Env.HstsOn
   pure $ Env.Env { .. }

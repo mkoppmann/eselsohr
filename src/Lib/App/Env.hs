@@ -19,7 +19,6 @@ import           Colog                                                ( HasLog(.
 import           UnliftIO.STM                                         ( TQueue )
 
 import           Lib.Domain.Repo                                      ( RepositoryCommandSync )
-import           Lib.Domain.Uri                                       ( Uri )
 
 type DataPath = FilePath
 
@@ -33,7 +32,6 @@ data Env (m :: Type -> Type) = Env
   { dataFolder          :: !DataPath
   , writeQueue          :: !(WriteQueue m)
   , logAction           :: !(LogAction m Message)
-  , baseUrl             :: !Uri
   , https               :: !Https
   , hsts                :: !Hsts
   }
@@ -58,9 +56,6 @@ instance Has (WriteQueue m) (Env m) where
 
 instance Has (LogAction m Message) (Env m) where
   obtain = logAction
-
-instance Has Uri (Env m) where
-  obtain = baseUrl
 
 instance Has Https (Env m) where
   obtain = https

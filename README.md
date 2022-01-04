@@ -40,8 +40,6 @@ The following values can be set:
     Defaults to `6979`.
 * `LISTEN_ADDR`: Address where the web server will listen.
     Defaults to `127.0.0.1`.
-* `BASE_URL`: Base URL to generate HTML links.
-    Defaults to `http://localhost`.
 * `HTTPS`: Send `HSTS` HTTP header.
     Automatically enabled when `X-Forwarded-Proto` HTTP header is set to `https`.
     Defaults to `False`.
