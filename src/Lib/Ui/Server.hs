@@ -41,16 +41,16 @@ server env =
 
 application :: Port -> AppEnv -> Application
 application port env@Env.Env {..} =
-  -- Response middlewares
-  gzip def
-    . hstsHeader
-    . realIpHeader "X-Forwarded-For"
-    . addSecurityHeaders
-    . disableCache
+  serve (Proxy @Api) (server env)
     -- Request middlewares
-    . enforceHttps
-    . methodOverridePost
-    $ serve (Proxy @Api) (server env)
+    & methodOverridePost
+    & enforceHttps
+    -- Response middlewares
+    & disableCache
+    & addSecurityHeaders
+    & realIpHeader "X-Forwarded-For"
+    & hstsHeader
+    & gzip def
  where
   enforceHttps :: Middleware
   enforceHttps = case https of

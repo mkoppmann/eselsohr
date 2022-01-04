@@ -23,7 +23,8 @@ newtype ExeConfig = ExeConfig
   }
 
 config :: Parser ExeConfig
-config = ExeConfig <$> optional (strOption (long "config-file" <> short 'c' <> help "Path to the env config file"))
+config = ExeConfig <$> configFile
+  where configFile = optional (strOption (long "config-file" <> short 'c' <> help "Path to the env config file"))
 
 main :: IO ()
 main = Lib.main . envPath =<< execParser opts

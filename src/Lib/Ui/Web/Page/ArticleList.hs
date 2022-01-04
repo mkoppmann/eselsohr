@@ -74,10 +74,8 @@ query Query {..} = do
   pure View { .. }
 
 getArticles :: WithQuery env m => Id Collection -> m (Seq ArticleVm)
-getArticles = pure . fromMap . toArticleVm <=< getArticleMap
- where
-  toArticleVm = fmap ArticleVm.fromDomain
-  fromMap     = Seq.fromList . Map.elems
+getArticles = pure . Seq.fromList . Map.elems . toArticleVm <=< getArticleMap
+  where toArticleVm = fmap ArticleVm.fromDomain
 
 ------------------------------------------------------------------------
 -- View

@@ -8,6 +8,8 @@ module Lib.Ui.Web.Dto.Accesstoken
 import qualified Codec.Serialise                                     as Ser
 import qualified Text.Show
 
+import qualified Lib.Domain.Id                                       as Id
+
 import           Codec.Serialise.Class                                ( Serialise )
 import           Codec.Serialise.UUID                                 ( )
 import           Data.ByteString.Lazy.Base32                          ( decodeBase32
@@ -20,10 +22,7 @@ import           Web.HttpApiData                                      ( FromHttp
 
 import           Lib.Domain.Capability                                ( Capability )
 import           Lib.Domain.Collection                                ( Collection )
-import           Lib.Domain.Id                                        ( Id
-                                                                      , fromUuid
-                                                                      , toUuid
-                                                                      )
+import           Lib.Domain.Id                                        ( Id )
 
 data Reference = Reference
   { collectionId :: !(Id Collection)
@@ -39,10 +38,10 @@ data ReferenceDto = ReferenceDto
   deriving anyclass Serialise
 
 fromDomain :: Reference -> ReferenceDto
-fromDomain Reference {..} = ReferenceDto (toUuid collectionId) (toUuid capabilityId)
+fromDomain Reference {..} = ReferenceDto (Id.toUuid collectionId) (Id.toUuid capabilityId)
 
 toDomain :: ReferenceDto -> Reference
-toDomain ReferenceDto {..} = Reference (fromUuid collectionIdUuid) (fromUuid capbilityIdUuid)
+toDomain ReferenceDto {..} = Reference (Id.fromUuid collectionIdUuid) (Id.fromUuid capbilityIdUuid)
 
 newtype Accesstoken = Accesstoken {unAccesstoken :: LByteString}
   deriving (Eq) via LByteString

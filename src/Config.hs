@@ -107,8 +107,7 @@ loadConfig mConfPath = do
   getPort :: (MonadIO m) => m Port
   getPort = lookupEnv "PORT" >>= \case
     Nothing -> pure 6979
-    Just sp -> pure . fromMaybe 6979 $ checkPort sp
-    where checkPort = isInPortRange <=< readMaybe
+    Just sp -> pure . fromMaybe 6979 $ isInPortRange =<< readMaybe sp
 
   getListenAddr :: (MonadIO m) => m String
   getListenAddr = lookupEnv "LISTEN_ADDR" >>= \case

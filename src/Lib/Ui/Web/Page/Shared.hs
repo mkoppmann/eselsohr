@@ -148,16 +148,19 @@ getSharedLinks :: (WithQuery env m) => Id Collection -> (ObjectReference -> Bool
 getSharedLinks colId sharedRefFilter = do
   capPmMap <- getCapabilityListPm colId
   caps     <- throwOnError (traverse CapPm.toDomain capPmMap)
-  pure $ unlockLinkVms <$> filteredCaps caps
+  pure . fmap toUnlockLink . filterCaps $ mapToSeq caps
  where
-  filteredCaps :: Map a Capability -> Seq (a, Capability)
-  filteredCaps = Seq.filter (filterF . snd) . Seq.fromList . Map.toList
+  mapToSeq :: Map k a -> Seq (k, a)
+  mapToSeq = Seq.fromList . Map.toList
+
+  filterCaps :: Seq (a, Capability) -> Seq (a, Capability)
+  filterCaps = Seq.filter (filterF . snd)
+
+  toUnlockLink :: (Id Capability, Capability) -> UnlockLinkVm
+  toUnlockLink = uncurry (UnlockLink.fromDomain colId)
 
   filterF :: Capability -> Bool
   filterF = sharedRefFilter . Capability.objectReference
-
-  unlockLinkVms :: (Id Capability, Capability) -> UnlockLinkVm
-  unlockLinkVms = uncurry (UnlockLink.fromDomain colId)
 
 ------------------------------------------------------------------------
 -- HTML

@@ -40,9 +40,8 @@ commit :: (WithQueue env m) => Id Collection -> m () -> m ()
 commit colId repoAction = do
   queue   <- envWriteQueue
   syncVar <- newEmptyTMVarIO
-  let rc  = Repo.RepositoryCommand colId repoAction
-      rcS = Repo.RepositoryCommandSync syncVar rc
-  atomically $ writeTQueue queue rcS
+  let repoCommand = Repo.RepositoryCommandSync syncVar $ Repo.RepositoryCommand colId repoAction
+  atomically $ writeTQueue queue repoCommand
   -- Waiting for repo action to finish. This needs to be in a separate atomic
   -- operation, because else we get a live lock.
   atomically $ takeTMVar syncVar

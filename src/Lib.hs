@@ -64,13 +64,16 @@ runServer Config.Config {..} env@Env.Env {..} = do
   startTlsServer certFile keyFile = do
     let tlsOpts  = tlsSettings certFile keyFile
         tlsOpts' = tlsOpts { onInsecure = AllowInsecure, tlsAllowedVersions = [TLS13, TLS12], tlsCiphers = tlsCiphers }
-    race_ (persistenceApp env) (runTLS tlsOpts' settings $ application confServerPort env)
+    race_ runPersistence (runTLS tlsOpts' settings $ application confServerPort env)
     print @Text "Program ended"
 
   startServer :: IO ()
   startServer = do
-    race_ (persistenceApp env) (runSettings settings $ application confServerPort env)
+    race_ runPersistence (runSettings settings $ application confServerPort env)
     print @Text "Program ended"
+
+  runPersistence :: IO ()
+  runPersistence = persistenceApp env
 
   printIntro :: IO ()
   printIntro = do

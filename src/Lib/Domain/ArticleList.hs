@@ -61,7 +61,7 @@ from the 'ArticleList'. This function does not fail, if the article was already
 deleted, because delete is idempotent.
  -}
 removeArticle :: DeleteArticlePerm -> ArticleList -> ArticleList
-removeArticle perm = wrapMap $ Map.delete artId where artId = Authz.deleteArticleId perm
+removeArticle perm = wrapMap . Map.delete $ Authz.deleteArticleId perm
 
 ------------------------------------------------------------------------
 -- Conversion

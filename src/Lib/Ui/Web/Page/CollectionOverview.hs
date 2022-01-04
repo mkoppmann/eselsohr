@@ -81,10 +81,16 @@ query Query {..} = do
 getUnlockLinks :: WithQuery env m => Id Collection -> UTCTime -> m (Seq UnlockLinkVm)
 getUnlockLinks colId curTime = do
   capMap <- getCapabilityMap colId
-  pure $ unlockLinkVms <$> sortedCaps capMap
+  pure . fmap toUnlockLink . filterAndSortCaps $ mapToSeq capMap
  where
-  sortedCaps :: Map a Capability -> Seq (a, Capability)
-  sortedCaps = Seq.sortOn snd . Seq.filter (filterF . snd) . Seq.fromList . Map.toList
+  mapToSeq :: Map k a -> Seq (k, a)
+  mapToSeq = Seq.fromList . Map.toList
+
+  filterAndSortCaps :: Seq (a, Capability) -> Seq (a, Capability)
+  filterAndSortCaps = Seq.sortOn snd . Seq.filter (filterF . snd)
+
+  toUnlockLink :: (Id Capability, Capability) -> UnlockLinkVm
+  toUnlockLink = uncurry (UnlockLink.fromDomain colId)
 
   filterF :: Capability -> Bool
   filterF cap = isStillValid cap && isViewArticles cap
@@ -94,9 +100,6 @@ getUnlockLinks colId curTime = do
 
   isViewArticles :: Capability -> Bool
   isViewArticles = isRight . Authz.canViewArticles . Cap.objectReference
-
-  unlockLinkVms :: (Id Capability, Capability) -> UnlockLinkVm
-  unlockLinkVms = uncurry (UnlockLink.fromDomain colId)
 
 ------------------------------------------------------------------------
 -- View
