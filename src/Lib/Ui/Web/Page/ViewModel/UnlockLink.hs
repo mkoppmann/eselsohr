@@ -3,18 +3,16 @@ module Lib.Ui.Web.Page.ViewModel.UnlockLink
   , fromDomain
   ) where
 
-import qualified Lib.Ui.Web.Page.ViewModel.Capability
-                                               as CapabilityVm
+import qualified Lib.Ui.Web.Page.ViewModel.Capability                as CapabilityVm
 
-import           Lib.Domain.Capability          ( Capability )
-import           Lib.Domain.Collection          ( Collection )
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Ui.Web.Dto.Accesstoken     ( Accesstoken
-                                                , Reference(..)
-                                                , mkAccesstoken
-                                                )
-import           Lib.Ui.Web.Page.ViewModel.Capability
-                                                ( CapabilityVm )
+import           Lib.Domain.Capability                                ( Capability )
+import           Lib.Domain.Collection                                ( Collection )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken
+                                                                      , Reference(..)
+                                                                      , mkAccesstoken
+                                                                      )
+import           Lib.Ui.Web.Page.ViewModel.Capability                 ( CapabilityVm )
 
 data UnlockLinkVm = UnlockLinkVm
   { capVm :: !CapabilityVm

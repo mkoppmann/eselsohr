@@ -9,10 +9,10 @@ module Lib.Ui.Web.Dto.Form
   , DeleteItemForm(..)
   ) where
 
-import           Web.FormUrlEncoded             ( FromForm )
+import           Web.FormUrlEncoded                                   ( FromForm )
 
-import           Lib.Ui.Web.Dto.Accesstoken     ( Accesstoken )
-import           Lib.Ui.Web.Dto.ExpirationDate  ( ExpirationDate )
+import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken )
+import           Lib.Ui.Web.Dto.ExpirationDate                        ( ExpirationDate )
 
 data CreateArticleForm = CreateArticleForm
   { acc        :: !Accesstoken

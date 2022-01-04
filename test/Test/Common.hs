@@ -3,11 +3,11 @@ module Test.Common
   ( joinSpecs
   ) where
 
-import           Test.Hspec                     ( Spec
-                                                , describe
-                                                )
+import           Test.Hspec                                           ( Spec
+                                                                      , describe
+                                                                      )
 
-import           Lib.Infra.Monad                ( AppEnv )
+import           Lib.Infra.Monad                                      ( AppEnv )
 
 -- | Joins list of specs into single test group with given name.
 joinSpecs :: String -> [AppEnv -> Spec] -> AppEnv -> Spec

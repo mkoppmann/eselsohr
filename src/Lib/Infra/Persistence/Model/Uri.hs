@@ -4,10 +4,10 @@ module Lib.Infra.Persistence.Model.Uri
   , toDomain
   ) where
 
-import qualified Lib.Domain.Uri                as Domain
+import qualified Lib.Domain.Uri                                      as Domain
 
-import           Lib.Domain.Error               ( AppErrorType )
-import           Lib.Domain.Uri                 ( Uri )
+import           Lib.Domain.Error                                     ( AppErrorType )
+import           Lib.Domain.Uri                                       ( Uri )
 
 type UriPm = Text
 

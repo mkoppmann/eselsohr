@@ -3,8 +3,8 @@ module Lib.Domain.Repo
   , RepositoryCommandSync(..)
   ) where
 
-import           Lib.Domain.Collection          ( Collection )
-import           Lib.Domain.Id                  ( Id )
+import           Lib.Domain.Collection                                ( Collection )
+import           Lib.Domain.Id                                        ( Id )
 
 data RepositoryCommand m = RepositoryCommand
   { collectionId :: !(Id Collection)

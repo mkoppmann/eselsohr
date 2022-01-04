@@ -3,11 +3,11 @@ module Lib.Domain.NonEmptyText
   , fromText
   ) where
 
-import qualified Data.Text                     as T
+import qualified Data.Text                                           as T
 
-import           Lib.Domain.Error               ( AppErrorType
-                                                , invalid
-                                                )
+import           Lib.Domain.Error                                     ( AppErrorType
+                                                                      , invalid
+                                                                      )
 
 newtype NonEmptyText = NonEmptyText Text
   deriving (Show) via Text

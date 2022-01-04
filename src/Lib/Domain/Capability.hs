@@ -45,13 +45,13 @@ module Lib.Domain.Capability
   , createSharedArticleRef
   ) where
 
-import qualified Data.Text                     as Text
+import qualified Data.Text                                           as Text
 
-import           Data.Time.Clock                ( UTCTime )
-import           Prelude                 hiding ( id )
+import           Data.Time.Clock                                      ( UTCTime )
+import           Prelude                                       hiding ( id )
 
-import           Lib.Domain.Article             ( Article )
-import           Lib.Domain.Id                  ( Id )
+import           Lib.Domain.Article                                   ( Article )
+import           Lib.Domain.Id                                        ( Id )
 
 ------------------------------------------------------------------------
 -- Capability
@@ -71,18 +71,12 @@ instance Eq Capability where
 instance Ord Capability where
   compare a b = compare (expirationDate a) (expirationDate b)
 
-mkCapability
-  :: Id Capability
-  -> ObjectReference
-  -> Maybe Text
-  -> Maybe UTCTime
-  -> Capability
-mkCapability capId objRef mPetname = Capability capId objRef checkedPetname
+mkCapability :: Id Capability -> ObjectReference -> Maybe Text -> Maybe UTCTime -> Capability
+mkCapability id objectReference mPetname expirationDate = Capability { .. }
  where
-  checkedPetname = checkForEmptyPetname mPetname
-  checkForEmptyPetname Nothing = Nothing
-  checkForEmptyPetname (Just pName) | Text.null pName = Nothing
-                                    | otherwise       = Just pName
+  petname = case mPetname of
+    Nothing      -> Nothing
+    (Just pName) -> if Text.null pName then Nothing else Just pName
 
 ------------------------------------------------------------------------
 -- Object references
@@ -128,38 +122,31 @@ data ArticlePerms = ArticlePerms
   deriving stock (Eq, Ord, Read, Show)
 
 mkOverviewPerms :: Bool -> Bool -> Bool -> Bool -> OverviewPerms
-mkOverviewPerms canView canCreate canDelete canShare = OverviewPerms view
-                                                                     create
-                                                                     delete
-                                                                     share
+mkOverviewPerms canView canCreate canDelete canShare = OverviewPerms { .. }
  where
-  view   = if canView then Just ViewUnlockLinks else Nothing
-  create = if canCreate then Just CreateUnlockLinks else Nothing
-  delete = if canDelete then Just DeleteUnlockLinks else Nothing
-  share  = if canShare then Just ShareUnlockLinks else Nothing
+  viewUnlockLinksPerm   = if canView then Just ViewUnlockLinks else Nothing
+  createUnlockLinksPerm = if canCreate then Just CreateUnlockLinks else Nothing
+  deleteUnlockLinksPerm = if canDelete then Just DeleteUnlockLinks else Nothing
+  shareUnlockLinksPerm  = if canShare then Just ShareUnlockLinks else Nothing
 
-mkArticlesPerms
-  :: Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> ArticlesPerms
-mkArticlesPerms canView canCreate canChangeTitles canChangeStates canDelete canShare
-  = ArticlesPerms view create changeTitles changeStates delete share
+mkArticlesPerms :: Bool -> Bool -> Bool -> Bool -> Bool -> Bool -> ArticlesPerms
+mkArticlesPerms canView canCreate canChangeTitles canChangeStates canDelete canShare = ArticlesPerms { .. }
  where
-  view         = if canView then Just ViewArticles else Nothing
-  create       = if canCreate then Just CreateArticles else Nothing
-  changeTitles = if canChangeTitles then Just ChangeTitles else Nothing
-  changeStates = if canChangeStates then Just ChangeStates else Nothing
-  delete       = if canDelete then Just DeleteArticles else Nothing
-  share        = if canShare then Just ShareArticleList else Nothing
+  viewArticlesPerm     = if canView then Just ViewArticles else Nothing
+  createArticlesPerm   = if canCreate then Just CreateArticles else Nothing
+  changeTitlesPerm     = if canChangeTitles then Just ChangeTitles else Nothing
+  changeStatesPerm     = if canChangeStates then Just ChangeStates else Nothing
+  deleteArticlesPerm   = if canDelete then Just DeleteArticles else Nothing
+  shareArticleListPerm = if canShare then Just ShareArticleList else Nothing
 
-mkArticlePerms
-  :: Id Article -> Bool -> Bool -> Bool -> Bool -> Bool -> ArticlePerms
-mkArticlePerms artId canView canChangeTitle canChangeState canDelete canShare =
-  ArticlePerms view changeTitle changeState delete share
+mkArticlePerms :: Id Article -> Bool -> Bool -> Bool -> Bool -> Bool -> ArticlePerms
+mkArticlePerms artId canView canChangeTitle canChangeState canDelete canShare = ArticlePerms { .. }
  where
-  view        = if canView then Just $ ViewArticle artId else Nothing
-  changeTitle = if canChangeTitle then Just $ ChangeTitle artId else Nothing
-  changeState = if canChangeState then Just $ ChangeState artId else Nothing
-  delete      = if canDelete then Just $ DeleteArticle artId else Nothing
-  share       = if canShare then Just $ ShareArticle artId else Nothing
+  viewArticlePerm   = if canView then Just $ ViewArticle artId else Nothing
+  changeTitlePerm   = if canChangeTitle then Just $ ChangeTitle artId else Nothing
+  changeStatePerm   = if canChangeState then Just $ ChangeState artId else Nothing
+  deleteArticlePerm = if canDelete then Just $ DeleteArticle artId else Nothing
+  shareArticlePerm  = if canShare then Just $ ShareArticle artId else Nothing
 
 isSharedRef :: ObjectReference -> Bool
 isSharedRef (SharedRef _) = True
@@ -200,16 +187,12 @@ defaultOverviewRef :: ObjectReference
 defaultOverviewRef = OverviewRef defaultOverviewPerms
 
 defaultOverviewPerms :: OverviewPerms
-defaultOverviewPerms = OverviewPerms (Just ViewUnlockLinks)
-                                     (Just CreateUnlockLinks)
-                                     (Just DeleteUnlockLinks)
-                                     (Just ShareUnlockLinks)
+defaultOverviewPerms =
+  OverviewPerms (Just ViewUnlockLinks) (Just CreateUnlockLinks) (Just DeleteUnlockLinks) (Just ShareUnlockLinks)
 
-createSharedOverviewRef
-  :: ObjectReference -> OverviewPerms -> Maybe ObjectReference
-createSharedOverviewRef (OverviewRef ogPerms) newPerms = if ogPerms >= newPerms
-  then pure . SharedRef . SharedReference $ OverviewRef newPerms
-  else Nothing
+createSharedOverviewRef :: ObjectReference -> OverviewPerms -> Maybe ObjectReference
+createSharedOverviewRef (OverviewRef ogPerms) newPerms =
+  if ogPerms >= newPerms then pure . SharedRef . SharedReference $ OverviewRef newPerms else Nothing
 createSharedOverviewRef _otherRef _newPerms = Nothing
 
 ------------------------------------------------------------------------
@@ -240,11 +223,9 @@ defaultArticlesPermissions = ArticlesPerms (Just ViewArticles)
                                            (Just DeleteArticles)
                                            (Just ShareArticleList)
 
-createSharedArticlesRef
-  :: ObjectReference -> ArticlesPerms -> Maybe ObjectReference
-createSharedArticlesRef (ArticlesRef ogPerms) newPerms = if ogPerms >= newPerms
-  then pure . SharedRef . SharedReference $ ArticlesRef newPerms
-  else Nothing
+createSharedArticlesRef :: ObjectReference -> ArticlesPerms -> Maybe ObjectReference
+createSharedArticlesRef (ArticlesRef ogPerms) newPerms =
+  if ogPerms >= newPerms then pure . SharedRef . SharedReference $ ArticlesRef newPerms else Nothing
 createSharedArticlesRef _otherRef _newPerms = Nothing
 
 ------------------------------------------------------------------------
@@ -262,8 +243,7 @@ newtype DeleteArticle = DeleteArticle (Id Article)
 newtype ShareArticle = ShareArticle (Id Article)
   deriving stock (Eq, Ord, Read, Show)
 
-createSharedArticleRef
-  :: ObjectReference -> ArticlePerms -> Id Article -> Maybe ObjectReference
+createSharedArticleRef :: ObjectReference -> ArticlePerms -> Id Article -> Maybe ObjectReference
 createSharedArticleRef (ArticlesRef ogPerms) newPerms articleId =
   let ArticlesPerms {..} = ogPerms
       ArticlePerms {..}  = newPerms
@@ -276,11 +256,8 @@ createSharedArticleRef (ArticlesRef ogPerms) newPerms articleId =
         , permToBool (shareArticleListPerm, shareArticlePerm)
         ]
       validPermissions = all (uncurry (>=)) permissionList
-  in  if validPermissions
-        then pure . SharedRef . SharedReference $ ArticleRef articleId newPerms
-        else Nothing
-createSharedArticleRef (ArticleRef artId ogPerms) newPerms compareId =
-  if ogPerms >= newPerms && artId == compareId
-    then pure . SharedRef . SharedReference $ ArticleRef artId newPerms
-    else Nothing
+  in  if validPermissions then pure . SharedRef . SharedReference $ ArticleRef articleId newPerms else Nothing
+createSharedArticleRef (ArticleRef artId ogPerms) newPerms compareId = if ogPerms >= newPerms && artId == compareId
+  then pure . SharedRef . SharedReference $ ArticleRef artId newPerms
+  else Nothing
 createSharedArticleRef _otherRef _newPerms _compareId = Nothing

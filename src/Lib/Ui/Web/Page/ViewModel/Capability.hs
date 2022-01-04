@@ -3,13 +3,13 @@ module Lib.Ui.Web.Page.ViewModel.Capability
   , fromDomain
   ) where
 
-import           Data.Time.Clock                ( UTCTime )
-import           Prelude                 hiding ( id )
+import           Data.Time.Clock                                      ( UTCTime )
+import           Prelude                                       hiding ( id )
 
-import qualified Lib.Domain.Capability         as Capability
+import qualified Lib.Domain.Capability                               as Capability
 
-import           Lib.Domain.Capability          ( Capability )
-import           Lib.Domain.Id                  ( Id )
+import           Lib.Domain.Capability                                ( Capability )
+import           Lib.Domain.Id                                        ( Id )
 
 data CapabilityVm = CapabilityVm
   { id             :: !(Id Capability)

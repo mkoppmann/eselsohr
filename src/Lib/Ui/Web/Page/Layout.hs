@@ -4,12 +4,12 @@ module Lib.Ui.Web.Page.Layout
   ) where
 
 import           Lucid
-import           Lucid.Servant                  ( linkAbsHref_ )
-import           Servant                        ( fieldLink )
+import           Lucid.Servant                                        ( linkAbsHref_ )
+import           Servant                                              ( fieldLink )
 
-import qualified Lib.Ui.Web.Route              as Route
+import qualified Lib.Ui.Web.Route                                    as Route
 
-import           Lib.Ui.Web.Route               ( HtmlPage )
+import           Lib.Ui.Web.Route                                     ( HtmlPage )
 
 render :: Html () -> Html ()
 render page = doctypehtml_ $ do

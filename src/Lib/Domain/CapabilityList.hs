@@ -13,32 +13,26 @@ module Lib.Domain.CapabilityList
   , toMap
   ) where
 
-import qualified Data.Map.Strict               as Map
+import qualified Data.Map.Strict                                     as Map
 
-import           Lib.Domain.Authorization       ( CreateUnlockLinksPerm
-                                                , DeleteUnlockLinksPerm
-                                                , ShareArticleListPerm
-                                                , ShareArticlePerm
-                                                , ShareUnlockLinksPerm
-                                                )
-import           Lib.Domain.Capability          ( Capability )
-import           Lib.Domain.Error               ( AppErrorType
-                                                , notFound
-                                                , serverError
-                                                )
-import           Lib.Domain.Id                  ( Id )
+import           Lib.Domain.Authorization                             ( CreateUnlockLinksPerm
+                                                                      , DeleteUnlockLinksPerm
+                                                                      , ShareArticleListPerm
+                                                                      , ShareArticlePerm
+                                                                      , ShareUnlockLinksPerm
+                                                                      )
+import           Lib.Domain.Capability                                ( Capability )
+import           Lib.Domain.Error                                     ( AppErrorType
+                                                                      , notFound
+                                                                      , serverError
+                                                                      )
+import           Lib.Domain.Id                                        ( Id )
 
 newtype CapabilityList = CapabilityList (Map (Id Capability) Capability)
 
-type AddCapability a
-  =  a
-  -> Id Capability
-  -> Capability
-  -> CapabilityList
-  -> Either AppErrorType CapabilityList
+type AddCapability a = a -> Id Capability -> Capability -> CapabilityList -> Either AppErrorType CapabilityList
 
-type RemoveCapability a
-  = a -> Id Capability -> CapabilityList -> CapabilityList
+type RemoveCapability a = a -> Id Capability -> CapabilityList -> CapabilityList
 
 addUnlockLink :: AddCapability CreateUnlockLinksPerm
 addUnlockLink _perm = addCapability
@@ -80,15 +74,10 @@ deleted, because delete is idempotent.
 removeShareArticle :: RemoveCapability ShareArticlePerm
 removeShareArticle _perm = removeCapability
 
-addCapability
-  :: Id Capability
-  -> Capability
-  -> CapabilityList
-  -> Either AppErrorType CapabilityList
+addCapability :: Id Capability -> Capability -> CapabilityList -> Either AppErrorType CapabilityList
 addCapability capId cap capList = case lookup capId capList of
   Left  _notFound -> pure $ wrapMap (Map.insert capId cap) capList
-  Right _cap      -> Left $ serverError
-    "A capability with this id was already added. Please try again."
+  Right _cap      -> Left $ serverError "A capability with this id was already added. Please try again."
 
 removeCapability :: Id Capability -> CapabilityList -> CapabilityList
 removeCapability capId = wrapMap $ Map.delete capId
@@ -111,6 +100,5 @@ lookup capId = maybeToRight notFound . Map.lookup capId . coerce
 
 type Update a = (a -> a)
 
-wrapMap
-  :: Update (Map (Id Capability) Capability) -> CapabilityList -> CapabilityList
+wrapMap :: Update (Map (Id Capability) Capability) -> CapabilityList -> CapabilityList
 wrapMap f = coerce . f . coerce

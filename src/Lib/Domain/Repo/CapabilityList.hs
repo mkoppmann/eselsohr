@@ -4,15 +4,15 @@ module Lib.Domain.Repo.CapabilityList
   , save
   ) where
 
-import           Lib.Domain.Authorization       ( CreateUnlockLinksPerm
-                                                , DeleteUnlockLinksPerm
-                                                , ShareArticleListPerm
-                                                , ShareArticlePerm
-                                                , ShareUnlockLinksPerm
-                                                )
-import           Lib.Domain.Capability          ( Capability )
-import           Lib.Domain.Collection          ( Collection )
-import           Lib.Domain.Id                  ( Id )
+import           Lib.Domain.Authorization                             ( CreateUnlockLinksPerm
+                                                                      , DeleteUnlockLinksPerm
+                                                                      , ShareArticleListPerm
+                                                                      , ShareArticlePerm
+                                                                      , ShareUnlockLinksPerm
+                                                                      )
+import           Lib.Domain.Capability                                ( Capability )
+import           Lib.Domain.Collection                                ( Collection )
+import           Lib.Domain.Id                                        ( Id )
 
 data CapabilityListAction
   = AddUnlockLink !CreateUnlockLinksPerm !(Id Capability) !Capability

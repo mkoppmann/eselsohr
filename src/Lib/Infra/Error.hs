@@ -15,29 +15,29 @@ module Lib.Infra.Error
   , redirectTo
   ) where
 
-import qualified Control.Monad.Except          as E
+import qualified Control.Monad.Except                                as E
 
-import           Control.Monad.Except           ( MonadError )
-import           GHC.Stack                      ( SrcLoc(..) )
-import           Servant                        ( err303
-                                                , err307
-                                                , err400
-                                                , err403
-                                                , err404
-                                                , err413
-                                                , err417
-                                                , err500
-                                                , errBody
-                                                , errHeaders
-                                                )
-import qualified Servant.Server                as Servant
-                                                ( ServerError )
+import           Control.Monad.Except                                 ( MonadError )
+import           GHC.Stack                                            ( SrcLoc(..) )
+import           Servant                                              ( err303
+                                                                      , err307
+                                                                      , err400
+                                                                      , err403
+                                                                      , err404
+                                                                      , err413
+                                                                      , err417
+                                                                      , err500
+                                                                      , errBody
+                                                                      , errHeaders
+                                                                      )
+import qualified Servant.Server                                      as Servant
+                                                                      ( ServerError )
 
-import           Lib.Domain.Error               ( AppErrorType(..)
-                                                , IError(..)
-                                                , notFound
-                                                , redirect303
-                                                )
+import           Lib.Domain.Error                                     ( AppErrorType(..)
+                                                                      , IError(..)
+                                                                      , notFound
+                                                                      , redirect303
+                                                                      )
 
 -- | Type alias for errors.
 type WithError m = (MonadError AppError m, HasCallStack)
@@ -63,8 +63,7 @@ toSourcePosition cs = SourcePosition showCallStack
     (_, loc) : (callerName, _) : _rest -> showLoc callerName loc
 
   showLoc :: String -> SrcLoc -> Text
-  showLoc name SrcLoc {..} =
-    toText srcLocModule <> "." <> toText name <> "#" <> show srcLocStartLine
+  showLoc name SrcLoc {..} = toText srcLocModule <> "." <> toText name <> "#" <> show srcLocStartLine
 
 {- | Exception wrapper around 'AppError'. Useful when you need to throw/catch
  'AppError' as 'Exception'.
@@ -86,16 +85,15 @@ data AppError = AppError
 toHttpError :: AppError -> Servant.ServerError
 toHttpError (AppError _callStack errorType) = case errorType of
   InternalError err -> case err of
-    NotFound          -> err404
-    ServerError   msg -> err500 { errBody = encodeUtf8 msg }
-    NotAuthorized msg -> err403 { errBody = encodeUtf8 msg }
-    MissingParameter name ->
-      err400 { errBody = "Parameter not found: " <> encodeUtf8 name }
-    Invalid    msg     -> err417 { errBody = encodeUtf8 msg }
-    StoreError e       -> err500 { errBody = encodeUtf8 e }
-    LimitError         -> err413 { errBody = "Request is over the limits" }
-    Redirect303 linkTo -> err303 { errHeaders = [("Location", linkTo)] }
-    Redirect307 linkTo -> err307 { errHeaders = [("Location", linkTo)] }
+    NotFound              -> err404
+    ServerError      msg  -> err500 { errBody = encodeUtf8 msg }
+    NotAuthorized    msg  -> err403 { errBody = encodeUtf8 msg }
+    MissingParameter name -> err400 { errBody = "Parameter not found: " <> encodeUtf8 name }
+    Invalid          msg  -> err417 { errBody = encodeUtf8 msg }
+    StoreError       e    -> err500 { errBody = encodeUtf8 e }
+    LimitError            -> err413 { errBody = "Request is over the limits" }
+    Redirect303 linkTo    -> err303 { errHeaders = [("Location", linkTo)] }
+    Redirect307 linkTo    -> err307 { errHeaders = [("Location", linkTo)] }
 
 ----------------------------------------------------------------------------
 -- Helpers
@@ -111,8 +109,7 @@ throwOnNothing err = withFrozenCallStack . maybe (throwError err) pure
  the value does not exist
 -}
 throwOnNothingM :: WithError m => AppErrorType -> m (Maybe a) -> m a
-throwOnNothingM err action =
-  withFrozenCallStack . throwOnNothing err =<< action
+throwOnNothingM err action = withFrozenCallStack . throwOnNothing err =<< action
 
 {- | Similar to 'throwOnNothing' but throws a 'NotFound' if the value does not
  exist

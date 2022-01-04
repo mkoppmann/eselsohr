@@ -4,10 +4,10 @@ module Lib.App.Port
   , MonadTime(..)
   ) where
 
-import           Data.Time.Clock                ( UTCTime )
+import           Data.Time.Clock                                      ( UTCTime )
 
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Domain.Uri                 ( Uri )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Domain.Uri                                       ( Uri )
 
 class (Monad m) => MonadRandom m where
   getRandomId :: m (Id a)

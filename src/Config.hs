@@ -3,30 +3,30 @@ module Config
   , loadConfig
   ) where
 
-import           Colog                          ( Severity(Error) )
-import           Configuration.Dotenv           ( configPath
-                                                , defaultConfig
-                                                , loadFile
-                                                , onMissingFile
-                                                )
-import           Control.Monad.Catch            ( MonadCatch )
-import           Data.Text                      ( toTitle )
-import           Network.Wai.Handler.Warp       ( Port )
-import           System.FilePath                ( addTrailingPathSeparator )
-import           UnliftIO.Directory             ( XdgDirectory(XdgData)
-                                                , canonicalizePath
-                                                , getXdgDirectory
-                                                )
-import           UnliftIO.Environment           ( getEnvironment
-                                                , unsetEnv
-                                                )
+import           Colog                                                ( Severity(Error) )
+import           Configuration.Dotenv                                 ( configPath
+                                                                      , defaultConfig
+                                                                      , loadFile
+                                                                      , onMissingFile
+                                                                      )
+import           Control.Monad.Catch                                  ( MonadCatch )
+import           Data.Text                                            ( toTitle )
+import           Network.Wai.Handler.Warp                             ( Port )
+import           System.FilePath                                      ( addTrailingPathSeparator )
+import           UnliftIO.Directory                                   ( XdgDirectory(XdgData)
+                                                                      , canonicalizePath
+                                                                      , getXdgDirectory
+                                                                      )
+import           UnliftIO.Environment                                 ( getEnvironment
+                                                                      , unsetEnv
+                                                                      )
 
-import           Lib.App.Env                    ( DataPath
-                                                , MaxConcurrentWrites
-                                                )
-import           Lib.Domain.Uri                 ( Uri
-                                                , baseUri
-                                                )
+import           Lib.App.Env                                          ( DataPath
+                                                                      , MaxConcurrentWrites
+                                                                      )
+import           Lib.Domain.Uri                                       ( Uri
+                                                                      , baseUri
+                                                                      )
 
 {- | Configuration options for Eselsohr.
  Can be configured via environment variables or config file.
@@ -97,8 +97,7 @@ loadConfig mConfPath = do
   getMaxConcurrentWrites = lookupEnv "MAX_CONCURRENT_WRITES" >>= \case
     Nothing -> pure Nothing
     Just mw -> pure $ checkWrites =<< readMaybe mw
-   where
-    checkWrites maxWrites = if maxWrites > 0 then Just maxWrites else Nothing
+    where checkWrites maxWrites = if maxWrites > 0 then Just maxWrites else Nothing
 
   getLogLevel :: (MonadIO m) => m Severity
   getLogLevel = lookupEnv "LOG_LEVEL" >>= \case
@@ -108,8 +107,7 @@ loadConfig mConfPath = do
   getPort :: (MonadIO m) => m Port
   getPort = lookupEnv "PORT" >>= \case
     Nothing -> pure 6979
-    Just sp -> pure . fromMaybe 6979 $ checkPort sp
-    where checkPort = isInPortRange <=< readMaybe
+    Just sp -> pure . fromMaybe 6979 $ isInPortRange =<< readMaybe sp
 
   getListenAddr :: (MonadIO m) => m String
   getListenAddr = lookupEnv "LISTEN_ADDR" >>= \case
@@ -132,8 +130,7 @@ loadConfig mConfPath = do
     Just dh -> pure . fromMaybe False . readMaybe $ toTitleCase dh
 
   getCertFile :: (MonadIO m) => m FilePath
-  getCertFile =
-    maybe (pure "certificate.pem") sanitizePath =<< lookupEnv "CERT_FILE"
+  getCertFile = maybe (pure "certificate.pem") sanitizePath =<< lookupEnv "CERT_FILE"
 
   getKeyFile :: (MonadIO m) => m FilePath
   getKeyFile = maybe (pure "key.pem") sanitizePath =<< lookupEnv "KEY_FILE"

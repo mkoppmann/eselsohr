@@ -3,14 +3,12 @@ module Lib.Infra.Persistence.Model.Collection
   , mkCollection
   ) where
 
-import qualified Data.Map.Strict               as Map
+import qualified Data.Map.Strict                                     as Map
 
-import           Codec.Serialise.Class          ( Serialise )
+import           Codec.Serialise.Class                                ( Serialise )
 
-import           Lib.Infra.Persistence.Model.ArticleList
-                                                ( ArticleListPm )
-import           Lib.Infra.Persistence.Model.CapabilityList
-                                                ( CapabilityListPm )
+import           Lib.Infra.Persistence.Model.ArticleList              ( ArticleListPm )
+import           Lib.Infra.Persistence.Model.CapabilityList           ( CapabilityListPm )
 
 data CollectionPm = CollectionPm
   { articleList    :: !ArticleListPm

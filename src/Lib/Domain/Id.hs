@@ -5,9 +5,9 @@ module Lib.Domain.Id
   , toUuid
   ) where
 
-import           Data.UUID                      ( UUID
-                                                , nil
-                                                )
+import           Data.UUID                                            ( UUID
+                                                                      , nil
+                                                                      )
 
 newtype Id a = Id {unId :: UUID}
   deriving (Eq, Ord, Read, Show) via UUID

@@ -6,7 +6,7 @@ module Lib.Ui.Web.Page.Static
 
 import           Lucid
 
-import           Lib.Ui.Web.Page.Shared         ( createCollectionForm )
+import           Lib.Ui.Web.Page.Shared                               ( createCollectionForm )
 
 startPage :: Html ()
 startPage = do
@@ -20,8 +20,7 @@ startPage = do
 invalidToken :: Html ()
 invalidToken = do
   h1_ "Invalid token"
-  p_
-    "The token you’ve provided was not accepted. This can have multiple\
+  p_ "The token you’ve provided was not accepted. This can have multiple\
     \ reasons:"
   ul_ $ do
     li_ "The token was not created by this system"

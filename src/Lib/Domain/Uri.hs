@@ -5,28 +5,28 @@ module Lib.Domain.Uri
   , getHostname
   ) where
 
-import qualified Net.IPv4                      as IPv4
-import qualified Net.IPv6                      as IPv6
-import qualified Net.IPv6.Helper               as IPv6
+import qualified Net.IPv4                                            as IPv4
+import qualified Net.IPv6                                            as IPv6
+import qualified Net.IPv6.Helper                                     as IPv6
 import qualified Text.Show
-import qualified Text.URI                      as U
-import qualified Text.URI.Lens                 as UL
+import qualified Text.URI                                            as U
+import qualified Text.URI.Lens                                       as UL
 import qualified Validation
 
-import           Lens.Micro                     ( (^.)
-                                                , (^?)
-                                                , _Right
-                                                )
-import           Text.URI                       ( URI )
-import           Validation                     ( Validation
-                                                , failure
-                                                , validateAll
-                                                , validationToEither
-                                                )
+import           Lens.Micro                                           ( (^.)
+                                                                      , (^?)
+                                                                      , _Right
+                                                                      )
+import           Text.URI                                             ( URI )
+import           Validation                                           ( Validation
+                                                                      , failure
+                                                                      , validateAll
+                                                                      , validationToEither
+                                                                      )
 
-import           Lib.Domain.Error               ( AppErrorType
-                                                , invalid
-                                                )
+import           Lib.Domain.Error                                     ( AppErrorType
+                                                                      , invalid
+                                                                      )
 
 newtype Uri = Uri {unUri :: U.URI}
 
@@ -55,26 +55,18 @@ instance Show UriValidationError where
 
 mkUri :: Text -> Either AppErrorType Uri
 mkUri url = case U.mkURI url of
-  Left err -> Left . invalid . toText $ displayException err
-  Right uri ->
-    validationToEither . bimap (invalid . show) Uri $ validateUri uri
+  Left  err -> Left . invalid . toText $ displayException err
+  Right uri -> validationToEither . bimap (invalid . show) Uri $ validateUri uri
  where
   validateUri :: URI -> Validation (NonEmpty UriValidationError) URI
-  validateUri = validateAll
-    [ validatePort
-    , validateProtocol
-    , validateHostname
-    , validateIPv4
-    , validateIPv6
-    ]
+  validateUri = validateAll [validatePort, validateProtocol, validateHostname, validateIPv4, validateIPv6]
 
   validatePort :: URI -> Validation (NonEmpty UriValidationError) URI
-  validatePort uri =
-    case join $ uri ^? UL.uriAuthority . _Right . UL.authPort of
-      Just 80         -> Validation.Success uri
-      Just 443        -> Validation.Success uri
-      Nothing         -> Validation.Success uri
-      _nonAllowedPort -> failure ForbiddenPort
+  validatePort uri = case join $ uri ^? UL.uriAuthority . _Right . UL.authPort of
+    Just 80         -> Validation.Success uri
+    Just 443        -> Validation.Success uri
+    Nothing         -> Validation.Success uri
+    _nonAllowedPort -> failure ForbiddenPort
 
   validateProtocol :: URI -> Validation (NonEmpty UriValidationError) URI
   validateProtocol uri = case U.unRText <$> uri ^. UL.uriScheme of
@@ -90,15 +82,13 @@ mkUri url = case U.mkURI url of
 
   validateIPv4 :: URI -> Validation (NonEmpty UriValidationError) URI
   validateIPv4 uri = case IPv4.public <$> (IPv4.decode =<< getHostname' uri) of
-    Nothing -> Validation.Success uri
-    Just isPub ->
-      if isPub then Validation.Success uri else failure ForbiddenIPv4Range
+    Nothing    -> Validation.Success uri
+    Just isPub -> if isPub then Validation.Success uri else failure ForbiddenIPv4Range
 
   validateIPv6 :: URI -> Validation (NonEmpty UriValidationError) URI
   validateIPv6 uri = case IPv6.public <$> (IPv6.decode =<< getHostname' uri) of
-    Nothing -> Validation.Success uri
-    Just isPub ->
-      if isPub then Validation.Success uri else failure ForbiddenIPv6Range
+    Nothing    -> Validation.Success uri
+    Just isPub -> if isPub then Validation.Success uri else failure ForbiddenIPv6Range
 
 getHostname :: Uri -> Maybe Text
 getHostname (Uri uri) = getHostname' uri

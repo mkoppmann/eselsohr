@@ -13,14 +13,14 @@ module Lib.App.Env
   , envWriteQueue
   ) where
 
-import           Colog                          ( HasLog(..)
-                                                , LogAction
-                                                , Message
-                                                )
-import           UnliftIO.STM                   ( TQueue )
+import           Colog                                                ( HasLog(..)
+                                                                      , LogAction
+                                                                      , Message
+                                                                      )
+import           UnliftIO.STM                                         ( TQueue )
 
-import           Lib.Domain.Repo          ( RepositoryCommandSync )
-import           Lib.Domain.Uri                 ( Uri )
+import           Lib.Domain.Repo                                      ( RepositoryCommandSync )
+import           Lib.Domain.Uri                                       ( Uri )
 
 
 type DataPath = FilePath

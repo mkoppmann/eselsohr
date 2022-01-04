@@ -6,22 +6,21 @@ module Lib.Infra.Persistence.File
   , save
   ) where
 
-import qualified Codec.Serialise               as Ser
+import qualified Codec.Serialise                                     as Ser
 
-import           Codec.Serialise.Class          ( Serialise )
-import           Prelude                 hiding ( init )
-import           UnliftIO                       ( MonadUnliftIO )
-import           UnliftIO.Directory             ( doesFileExist )
-import           UnliftIO.IO.File               ( writeBinaryFileDurableAtomic )
+import           Codec.Serialise.Class                                ( Serialise )
+import           Prelude                                       hiding ( init )
+import           UnliftIO                                             ( MonadUnliftIO )
+import           UnliftIO.Directory                                   ( doesFileExist )
+import           UnliftIO.IO.File                                     ( writeBinaryFileDurableAtomic )
 
-import           Lib.App.Env                    ( DataPath
-                                                , Has
-                                                , grab
-                                                )
-import           Lib.Domain.Collection          ( Collection )
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Infra.Persistence.Model.Collection
-                                                ( CollectionPm )
+import           Lib.App.Env                                          ( DataPath
+                                                                      , Has
+                                                                      , grab
+                                                                      )
+import           Lib.Domain.Collection                                ( Collection )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Infra.Persistence.Model.Collection               ( CollectionPm )
 
 type WithFile env m = (MonadReader env m, Has DataPath env, MonadUnliftIO m)
 
@@ -37,11 +36,7 @@ load colId getter = do
 init :: (Serialise a, WithFile env m) => Id Collection -> a -> m ()
 init colId val = flip encodeFile val =<< idToPath colId
 
-save
-  :: (WithFile env m)
-  => (CollectionPm -> m CollectionPm)
-  -> Id Collection
-  -> m ()
+save :: (WithFile env m) => (CollectionPm -> m CollectionPm) -> Id Collection -> m ()
 save updater colId = do
   filePath <- idToPath colId
   colWm    <- decodeFile filePath

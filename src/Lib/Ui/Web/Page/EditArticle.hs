@@ -6,30 +6,29 @@ module Lib.Ui.Web.Page.EditArticle
 
 
 import           Lucid
-import           Servant                        ( fieldLink )
+import           Servant                                              ( fieldLink )
 
-import qualified Lib.Domain.Authorization      as Authz
-import qualified Lib.Ui.Web.Page.Layout        as Layout
-import qualified Lib.Ui.Web.Page.Static        as Static
-import qualified Lib.Ui.Web.Page.ViewModel.Article
-                                               as ArticleVm
-import qualified Lib.Ui.Web.Route              as Route
+import qualified Lib.Domain.Authorization                            as Authz
+import qualified Lib.Ui.Web.Page.Layout                              as Layout
+import qualified Lib.Ui.Web.Page.Static                              as Static
+import qualified Lib.Ui.Web.Page.ViewModel.Article                   as ArticleVm
+import qualified Lib.Ui.Web.Route                                    as Route
 
-import           Lib.Domain.Article             ( Article )
-import           Lib.Domain.Authorization       ( ChangeTitlePerm )
-import           Lib.Domain.Capability          ( ObjectReference )
-import           Lib.Domain.Collection          ( Collection )
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Infra.Error                ( throwOnError )
-import           Lib.Ui.Web.Dto.Accesstoken     ( Accesstoken
-                                                , Reference(..)
-                                                )
-import           Lib.Ui.Web.Page.Shared         ( WithQuery
-                                                , changeArticleTitleForm
-                                                , getArticle
-                                                , lookupReferences
-                                                )
-import           Lib.Ui.Web.Route               ( HtmlPage )
+import           Lib.Domain.Article                                   ( Article )
+import           Lib.Domain.Authorization                             ( ChangeTitlePerm )
+import           Lib.Domain.Capability                                ( ObjectReference )
+import           Lib.Domain.Collection                                ( Collection )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Infra.Error                                      ( throwOnError )
+import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken
+                                                                      , Reference(..)
+                                                                      )
+import           Lib.Ui.Web.Page.Shared                               ( WithQuery
+                                                                      , changeArticleTitleForm
+                                                                      , getArticle
+                                                                      , lookupReferences
+                                                                      )
+import           Lib.Ui.Web.Route                                     ( HtmlPage )
 
 ------------------------------------------------------------------------
 -- Handler

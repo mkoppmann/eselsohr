@@ -2,7 +2,7 @@ module Lib.Ui.Web.Page.Style
   ( app
   ) where
 
-import qualified Clay.Flexbox                  as CF
+import qualified Clay.Flexbox                                        as CF
 
 import           Clay
 

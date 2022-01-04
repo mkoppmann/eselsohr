@@ -4,23 +4,21 @@ module Lib.Infra.Persistence.Model.Article
   , toDomain
   ) where
 
-import           Codec.Serialise.Class          ( Serialise )
-import           Codec.Serialise.UUID           ( )
-import           Data.Time.Clock                ( UTCTime )
-import           Prelude                 hiding ( id
-                                                , state
-                                                )
+import           Codec.Serialise.Class                                ( Serialise )
+import           Codec.Serialise.UUID                                 ( )
+import           Data.Time.Clock                                      ( UTCTime )
+import           Prelude                                       hiding ( id
+                                                                      , state
+                                                                      )
 
-import qualified Lib.Domain.Article            as Domain
-import qualified Lib.Infra.Persistence.Model.Uri
-                                               as Uri
+import qualified Lib.Domain.Article                                  as Domain
+import qualified Lib.Infra.Persistence.Model.Uri                     as Uri
 
-import           Lib.Domain.Article             ( Article )
-import           Lib.Domain.Error               ( AppErrorType )
-import           Lib.Domain.Id                  ( Id )
-import           Lib.Infra.Persistence.Model.Id ( )
-import           Lib.Infra.Persistence.Model.Shared
-                                                ( readOrMappingError )
+import           Lib.Domain.Article                                   ( Article )
+import           Lib.Domain.Error                                     ( AppErrorType )
+import           Lib.Domain.Id                                        ( Id )
+import           Lib.Infra.Persistence.Model.Id                       ( )
+import           Lib.Infra.Persistence.Model.Shared                   ( readOrMappingError )
 
 data ArticlePm = ArticlePm
   { id       :: !(Id Article)
