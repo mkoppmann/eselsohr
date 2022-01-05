@@ -1,6 +1,7 @@
 module Lib
   ( main
   , mkAppEnv
+  , warpSettings
   , runServer
   ) where
 
@@ -8,7 +9,8 @@ import qualified Network.TLS.Extra.Cipher                            as TLS
 
 import           Network.TLS                                          ( Version(..) )
 import           Network.TLS.Cipher                                   ( Cipher )
-import           Network.Wai.Handler.Warp                             ( Settings
+import           Network.Wai.Handler.Warp                             ( Port
+                                                                      , Settings
                                                                       , defaultSettings
                                                                       , runSettings
                                                                       , setHost
@@ -56,19 +58,19 @@ runServer Config.Config {..} env@Env.Env {..} = do
     Env.HttpsOn  -> startTlsServer confCertFile confKeyFile
     Env.HttpsOff -> startServer
  where
-  settings :: Settings
-  settings = setHost (fromString confListenAddr) . setPort confServerPort . setServerName "" $ defaultSettings
+  warpSettings' :: Settings
+  warpSettings' = warpSettings confListenAddr confServerPort
 
   startTlsServer :: FilePath -> FilePath -> IO ()
   startTlsServer certFile keyFile = do
     let tlsOpts  = tlsSettings certFile keyFile
         tlsOpts' = tlsOpts { onInsecure = AllowInsecure, tlsAllowedVersions = [TLS13, TLS12], tlsCiphers = tlsCiphers }
-    race_ runPersistence (runTLS tlsOpts' settings $ application confServerPort env)
+    race_ runPersistence (runTLS tlsOpts' warpSettings' $ application confServerPort env)
     print @Text "Program ended"
 
   startServer :: IO ()
   startServer = do
-    race_ runPersistence (runSettings settings $ application confServerPort env)
+    race_ runPersistence (runSettings warpSettings' $ application confServerPort env)
     print @Text "Program ended"
 
   runPersistence :: IO ()
@@ -100,6 +102,9 @@ runServer Config.Config {..} env@Env.Env {..} = do
     , TLS.cipher_DHE_RSA_AES128GCM_SHA256
     , TLS.cipher_DHE_RSA_AES256GCM_SHA384
     ]
+
+warpSettings :: String -> Port -> Settings
+warpSettings listenAddr port = setHost (fromString listenAddr) . setPort port . setServerName "" $ defaultSettings
 
 main :: Maybe FilePath -> IO ()
 main mConfPath = do

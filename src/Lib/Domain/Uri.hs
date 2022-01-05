@@ -1,10 +1,12 @@
 module Lib.Domain.Uri
   ( Uri(..)
+  , UriValidationError(..)
   , mkUri
   , unfilteredUri
   , getHostname
   ) where
 
+import qualified Data.Text                                           as T
 import qualified Net.IPv4                                            as IPv4
 import qualified Net.IPv6                                            as IPv6
 import qualified Net.IPv6.Helper                                     as IPv6
@@ -29,6 +31,7 @@ import           Lib.Domain.Error                                     ( AppError
                                                                       )
 
 newtype Uri = Uri {unUri :: U.URI}
+  deriving (Eq, Show) via U.URI
 
 instance ToText Uri where
   toText = toText . U.render . coerce
@@ -86,9 +89,18 @@ mkUri url = case U.mkURI url of
     Just isPub -> if isPub then Validation.Success uri else failure ForbiddenIPv4Range
 
   validateIPv6 :: URI -> Validation (NonEmpty UriValidationError) URI
-  validateIPv6 uri = case IPv6.public <$> (IPv6.decode =<< getHostname' uri) of
+  validateIPv6 uri = case IPv6.public <$> (IPv6.decode =<< getHostnameFromIpv6 uri) of
     Nothing    -> Validation.Success uri
     Just isPub -> if isPub then Validation.Success uri else failure ForbiddenIPv6Range
+
+  getHostnameFromIpv6 :: URI -> Maybe Text
+  getHostnameFromIpv6 = fmap dropIPv6Brackets . getHostname'
+
+  {- | Literal IPv6 addresses are put into brackets in URLs:
+  https://www.ietf.org/rfc/rfc2732.txt
+  -}
+  dropIPv6Brackets :: Text -> Text
+  dropIPv6Brackets = T.dropEnd 1 . T.drop 1
 
 {- | Returns an 'Uri' like 'mkUri' does but with no applied validation. Use
 with caution.

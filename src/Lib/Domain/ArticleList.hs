@@ -8,6 +8,7 @@ module Lib.Domain.ArticleList
   , mkArticleList
   , fromMap
   , toMap
+  , articleAlreadyExists
   ) where
 
 import qualified Data.Map.Strict                                     as Map
@@ -29,11 +30,12 @@ import           Lib.Domain.Id                                        ( Id )
 import           Lib.Domain.NonEmptyText                              ( NonEmptyText )
 
 newtype ArticleList = ArticleList (Map (Id Article) Article)
+  deriving (Eq, Show) via (Map (Id Article) Article)
 
 addArticle :: CreateArticlesPerm -> Id Article -> Article -> ArticleList -> Either AppErrorType ArticleList
 addArticle _perm artId art artList = case lookup artId artList of
   Left  _notFound -> pure $ wrapMap (Map.insert artId art) artList
-  Right _art      -> Left $ serverError "An article with this id was already added. Please try again."
+  Right _art      -> Left articleAlreadyExists
 
 changeArticleTitle :: ChangeTitlePerm -> NonEmptyText -> ArticleList -> Either AppErrorType ArticleList
 changeArticleTitle perm newTitle artList = do
@@ -64,7 +66,7 @@ removeArticle :: DeleteArticlePerm -> ArticleList -> ArticleList
 removeArticle perm = wrapMap . Map.delete $ Authz.deleteArticleId perm
 
 ------------------------------------------------------------------------
--- Conversion
+-- Util
 ------------------------------------------------------------------------
 
 mkArticleList :: ArticleList
@@ -75,6 +77,9 @@ fromMap = coerce
 
 toMap :: ArticleList -> Map (Id Article) Article
 toMap = coerce
+
+articleAlreadyExists :: AppErrorType
+articleAlreadyExists = serverError "An article with this id was already added. Please try again."
 
 lookup :: Id Article -> ArticleList -> Either AppErrorType Article
 lookup artId = maybeToRight notFound . Map.lookup artId . coerce

@@ -26,6 +26,7 @@ data Article = Article
   , state    :: !ArticleState
   , creation :: !UTCTime
   }
+  deriving stock Show
 
 instance Eq Article where
   (==) a b = id a == id b
@@ -43,6 +44,10 @@ markAsUnread art = art { state = Unread }
 
 markAsRead :: Article -> Article
 markAsRead art = art { state = Read }
+
+------------------------------------------------------------------------
+-- Util
+------------------------------------------------------------------------
 
 titleFromText :: Text -> Either AppErrorType NonEmptyText
 titleFromText title = NET.fromText title "Article title cannot be empty"

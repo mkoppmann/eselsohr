@@ -1,10 +1,10 @@
 {- | We use @hspec@ testing framework and it doesn't support monad transformers.
  At this moment there's no testing framework that supports monad transformers. So
- we need to pass @AppEnv@ manually to every function.
- All functions take `AppEnv` as last argument. Like this one:
+ we need to pass @TestAppEnv@ manually to every function.
+ All functions take `TestAppEnv` as last argument. Like this one:
 
  @
- satisfies :: App a -> (a -> Bool) -> AppEnv -> Expectation
+ satisfies :: App a -> (a -> Bool) -> TestAppEnv -> Expectation
  @
 
  Because of that, there're multiple ways to write tests:
@@ -23,12 +23,15 @@
  env & action @? isJust
  @
 -}
-module Test.Assert
+
+module Test.TestAssert
   ( succeeds
   , satisfies
   , failsWith
-  , redirects
+  , failsWithEither
   , equals
+  , redirects
+  , defaultTestEnv
   ) where
 
 import           Test.Hspec                                           ( Expectation
@@ -41,35 +44,56 @@ import           Lib.Domain.Error                                     ( AppError
                                                                       , isRedirect
                                                                       )
 import           Lib.Infra.Error                                      ( AppError(..) )
-import           Lib.Infra.Monad                                      ( App
-                                                                      , AppEnv
+import           Lib.Infra.Log                                        ( Severity(..)
+                                                                      , mainLogAction
+                                                                      )
+import           Lib.Infra.Persistence.Model.Collection               ( mkCollection )
+import           Test.App.Env                                         ( TestEnv(..) )
+import           Test.Infra.Monad                                     ( TestApp
+                                                                      , TestAppEnv
                                                                       , runAppAsIO
                                                                       )
 
 -- | Checks that given action runs successfully.
-succeeds :: (Show a) => App a -> AppEnv -> Expectation
+succeeds :: (Show a) => TestApp a -> TestAppEnv -> Expectation
 succeeds = (`satisfies` const True)
 
 -- | Checks whether return result of the action satisfies given predicate.
-satisfies :: (Show a) => App a -> (a -> Bool) -> AppEnv -> Expectation
+satisfies :: (Show a) => TestApp a -> (a -> Bool) -> TestAppEnv -> Expectation
 satisfies app p env = runAppAsIO env app >>= \case
   Left  e -> expectationFailure $ "Expected 'Success' but got: " <> show e
   Right a -> a `shouldSatisfy` p
 
 -- | Checks whether action fails and returns given error.
-failsWith :: (Show a) => App a -> AppErrorType -> AppEnv -> Expectation
+failsWith :: (Show a) => TestApp a -> AppErrorType -> TestAppEnv -> Expectation
 failsWith app err env = runAppAsIO env app >>= \case
   Left  AppError {..} -> appErrorType `shouldBe` err
   Right a             -> expectationFailure $ "Expected 'Failure' with: " <> show err <> " but got: " <> show a
 
+-- | Checks whether action fails with an Either and returns given error.
+failsWithEither
+  :: (Eq a, Show a) => TestApp (Either AppErrorType a) -> Either AppErrorType a -> TestAppEnv -> Expectation
+failsWithEither app err env = runAppAsIO env app >>= \case
+  Left  AppError {..} -> Left appErrorType `shouldBe` err
+  Right result        -> case result of
+    Left  failure -> Left failure `shouldBe` err
+    Right a       -> expectationFailure $ "Expected 'Failure' with: " <> show err <> " but got: " <> show a
+
+-- | Checks whether action returns expected value.
+equals :: (Show a, Eq a) => TestApp a -> a -> TestAppEnv -> Expectation
+equals app v env = runAppAsIO env app >>= \case
+  Right a -> a `shouldBe` v
+  Left  e -> expectationFailure $ "Expected 'Success' but got: " <> show e
+
 -- | Checks whether action issues a redirect.
-redirects :: (Show a) => App a -> AppEnv -> Expectation
+redirects :: (Show a) => TestApp a -> TestAppEnv -> Expectation
 redirects app env = runAppAsIO env app >>= \case
   Left  AppError {..} -> isRedirect appErrorType `shouldBe` True
   Right a             -> expectationFailure $ "Expected redirect but got: " <> show a
 
--- | Checks whether action returns expected value.
-equals :: (Show a, Eq a) => App a -> a -> AppEnv -> Expectation
-equals app v env = runAppAsIO env app >>= \case
-  Right a -> a `shouldBe` v
-  Left  e -> expectationFailure $ "Expected 'Success' but got: " <> show e
+-- | Provides a default 'TestAppEnv'.
+defaultTestEnv :: IO TestAppEnv
+defaultTestEnv = do
+  let logAction = mainLogAction Debug
+  collectionState <- newIORef mkCollection
+  pure $ TestEnv { .. }

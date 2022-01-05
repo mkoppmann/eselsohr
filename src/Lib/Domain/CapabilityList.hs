@@ -11,6 +11,7 @@ module Lib.Domain.CapabilityList
   , mkCapabilityList
   , fromMap
   , toMap
+  , capabilityAlreadyExists
   ) where
 
 import qualified Data.Map.Strict                                     as Map
@@ -29,6 +30,7 @@ import           Lib.Domain.Error                                     ( AppError
 import           Lib.Domain.Id                                        ( Id )
 
 newtype CapabilityList = CapabilityList (Map (Id Capability) Capability)
+  deriving (Eq, Show) via (Map (Id Capability) Capability)
 
 type AddCapability a = a -> Id Capability -> Capability -> CapabilityList -> Either AppErrorType CapabilityList
 
@@ -77,13 +79,13 @@ removeShareArticle _perm = removeCapability
 addCapability :: Id Capability -> Capability -> CapabilityList -> Either AppErrorType CapabilityList
 addCapability capId cap capList = case lookup capId capList of
   Left  _notFound -> pure $ wrapMap (Map.insert capId cap) capList
-  Right _cap      -> Left $ serverError "A capability with this id was already added. Please try again."
+  Right _cap      -> Left capabilityAlreadyExists
 
 removeCapability :: Id Capability -> CapabilityList -> CapabilityList
 removeCapability capId = wrapMap $ Map.delete capId
 
 ------------------------------------------------------------------------
--- Conversion
+-- Util
 ------------------------------------------------------------------------
 
 mkCapabilityList :: CapabilityList
@@ -94,6 +96,9 @@ fromMap = coerce
 
 toMap :: CapabilityList -> Map (Id Capability) Capability
 toMap = coerce
+
+capabilityAlreadyExists :: AppErrorType
+capabilityAlreadyExists = serverError "A capability with this id was already added. Please try again."
 
 lookup :: Id Capability -> CapabilityList -> Either AppErrorType Capability
 lookup capId = maybeToRight notFound . Map.lookup capId . coerce
