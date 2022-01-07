@@ -6,6 +6,7 @@ module Lib.Infra.Persistence.Model.Uri
 
 import qualified Lib.Domain.Uri                                      as Domain
 
+import           Lib.App.Env                                          ( Environment )
 import           Lib.Domain.Error                                     ( AppErrorType )
 import           Lib.Domain.Uri                                       ( Uri )
 
@@ -14,5 +15,5 @@ type UriPm = Text
 fromDomain :: Uri -> UriPm
 fromDomain = toText
 
-toDomain :: UriPm -> Either AppErrorType Uri
+toDomain :: Environment -> UriPm -> Either AppErrorType Uri
 toDomain = Domain.mkUri

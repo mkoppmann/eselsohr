@@ -23,7 +23,8 @@ import           Lib.Infra.Error                                      ( throwOnE
 import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken
                                                                       , Reference(..)
                                                                       )
-import           Lib.Ui.Web.Page.Shared                               ( WithQuery
+import           Lib.Ui.Web.Page.Shared                               ( WithAppEnv
+                                                                      , WithQuery
                                                                       , changeArticleTitleForm
                                                                       , getArticle
                                                                       , lookupReferences
@@ -34,7 +35,7 @@ import           Lib.Ui.Web.Route                                     ( HtmlPage
 -- Handler
 ------------------------------------------------------------------------
 
-handler :: WithQuery env m => Id Article -> Maybe Accesstoken -> m HtmlPage
+handler :: (WithAppEnv env m, WithQuery env m) => Id Article -> Maybe Accesstoken -> m HtmlPage
 handler _artId Nothing    = Layout.renderM Static.notAuthorized
 handler artId  (Just acc) = do
   (ref, objRef) <- lookupReferences acc
@@ -52,7 +53,7 @@ data Query = Query
   , colId  :: !(Id Collection)
   }
 
-query :: WithQuery env m => Query -> m View
+query :: (WithAppEnv env m, WithQuery env m) => Query -> m View
 query Query {..} = do
   changeTitlePerm <- throwOnError $ Authz.canChangeArticleTitle objRef artId
   article         <- getArticle colId artId

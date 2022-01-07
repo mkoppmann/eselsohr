@@ -28,7 +28,8 @@ import           Lib.Infra.Error                                      ( throwOnE
 import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken
                                                                       , Reference(..)
                                                                       )
-import           Lib.Ui.Web.Page.Shared                               ( WithQuery
+import           Lib.Ui.Web.Page.Shared                               ( WithAppEnv
+                                                                      , WithQuery
                                                                       , createArticleForm
                                                                       , deleteArticleForm
                                                                       , getArticleMap
@@ -45,7 +46,7 @@ import           Lib.Ui.Web.Route                                     ( HtmlPage
 -- Handler
 ------------------------------------------------------------------------
 
-handler :: WithQuery env m => Maybe Accesstoken -> m HtmlPage
+handler :: (WithAppEnv env m, WithQuery env m) => Maybe Accesstoken -> m HtmlPage
 handler Nothing    = Layout.renderM Static.notAuthorized
 handler (Just acc) = do
   (ref, objRef) <- lookupReferences acc
@@ -62,7 +63,7 @@ data Query = Query
   , colId  :: !(Id Collection)
   }
 
-query :: WithQuery env m => Query -> m View
+query :: (WithAppEnv env m, WithQuery env m) => Query -> m View
 query Query {..} = do
   let canCreateArticles     = isRight $ Authz.canCreateArticles objRef
       canChangeArticleTitle = isRight $ Authz.canChangeTitles objRef
@@ -73,7 +74,7 @@ query Query {..} = do
   articles         <- getArticles colId
   pure View { .. }
 
-getArticles :: WithQuery env m => Id Collection -> m (Seq ArticleVm)
+getArticles :: (WithAppEnv env m, WithQuery env m) => Id Collection -> m (Seq ArticleVm)
 getArticles = pure . Seq.fromList . Map.elems . toArticleVm <=< getArticleMap
   where toArticleVm = fmap ArticleVm.fromDomain
 

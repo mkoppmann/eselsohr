@@ -14,6 +14,7 @@ import           Prelude                                       hiding ( id
 import qualified Lib.Domain.Article                                  as Domain
 import qualified Lib.Infra.Persistence.Model.Uri                     as Uri
 
+import           Lib.App.Env                                          ( Environment )
 import           Lib.Domain.Article                                   ( Article )
 import           Lib.Domain.Error                                     ( AppErrorType )
 import           Lib.Domain.Id                                        ( Id )
@@ -39,10 +40,10 @@ fromDomain domArt = do
       creation = Domain.creation domArt
   ArticlePm { .. }
 
-toDomain :: ArticlePm -> Either AppErrorType Article
-toDomain ArticlePm {..} = do
+toDomain :: Environment -> ArticlePm -> Either AppErrorType Article
+toDomain env ArticlePm {..} = do
   let domId = id
   domTitle <- Domain.titleFromText title
-  domUri   <- Uri.toDomain uri
+  domUri   <- Uri.toDomain env uri
   domState <- readOrMappingError state
   pure $ Domain.Article domId domTitle domUri domState creation

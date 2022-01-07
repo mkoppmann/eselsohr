@@ -39,11 +39,12 @@ import           Lib.Ui.Server                                        ( applicat
 mkAppEnv :: Config -> IO AppEnv
 mkAppEnv Config.Config {..} = do
   newWriteQueue <- newTQueueIO
-  let dataFolder = confDataFolder
-      writeQueue = newWriteQueue
-      logAction  = mainLogAction confLogSeverity
-      https      = if confHttps then Env.HttpsOn else Env.HttpsOff
-      hsts       = if confDisableHsts then Env.HstsOff else Env.HstsOn
+  let dataFolder  = confDataFolder
+      writeQueue  = newWriteQueue
+      logAction   = mainLogAction confLogSeverity
+      https       = if confHttps then Env.HttpsOn else Env.HttpsOff
+      hsts        = if confDisableHsts then Env.HstsOff else Env.HstsOn
+      environment = confEnvironment
   pure $ Env.Env { .. }
 
 runServer :: Config -> AppEnv -> IO ()

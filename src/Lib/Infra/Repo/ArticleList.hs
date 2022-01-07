@@ -10,6 +10,10 @@ import qualified Lib.Infra.Persistence.File                          as File
 import qualified Lib.Infra.Persistence.Model.ArticleList             as ArtListPm
 import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
 
+import           Lib.App.Env                                          ( Environment
+                                                                      , Has
+                                                                      , grab
+                                                                      )
 import           Lib.App.Port                                         ( MonadRandom )
 import           Lib.Domain.Article                                   ( Article )
 import           Lib.Domain.ArticleList                               ( ArticleList )
@@ -26,17 +30,21 @@ import           Lib.Infra.Persistence.Queue                          ( WithQueu
                                                                       , commit
                                                                       )
 
+type WithAppEnv env m = (MonadReader env m, Has Environment env)
+
 nextId :: (MonadRandom m) => m (Id Article)
 nextId = Port.getRandomId
 
-saveAll :: (WithError m, WithFile env m, WithQueue env m) => Id Collection -> Seq ArticleListAction -> m ()
+saveAll
+  :: (WithAppEnv env m, WithError m, WithFile env m, WithQueue env m) => Id Collection -> Seq ArticleListAction -> m ()
 saveAll colId updates = do
   let action = File.save updater colId
   commit colId action
  where
-  updater :: WithError m => CollectionPm -> m CollectionPm
+  updater :: (WithAppEnv env m, WithError m) => CollectionPm -> m CollectionPm
   updater colPm = do
-    artList    <- throwOnError . ArtListPm.toDomain $ ColPm.articleList colPm
+    appEnv     <- grab @Environment
+    artList    <- throwOnError . ArtListPm.toDomain appEnv $ ColPm.articleList colPm
     newArtList <- throwOnError $ foldlM apply artList updates
     pure $ colPm { ColPm.articleList = ArtListPm.fromDomain newArtList }
 

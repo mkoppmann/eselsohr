@@ -1,7 +1,8 @@
 module Lib.Ui.Web.Page.Shared
   (
     -- * Query related
-    WithQuery
+    WithAppEnv
+  , WithQuery
   , lookupReferences
   , getArticleListPm
   , getArticleMap
@@ -59,6 +60,10 @@ import qualified Lib.Ui.Web.Page.ViewModel.Article                   as ArticleV
 import qualified Lib.Ui.Web.Page.ViewModel.UnlockLink                as UnlockLink
 import qualified Lib.Ui.Web.Route                                    as Route
 
+import           Lib.App.Env                                          ( Environment
+                                                                      , Has
+                                                                      , grab
+                                                                      )
 import           Lib.App.Port                                         ( MonadTime )
 import           Lib.Domain.Article                                   ( Article )
 import           Lib.Domain.Capability                                ( Capability
@@ -94,6 +99,7 @@ import           Lib.Ui.Web.Page.ViewModel.UnlockLink                 ( UnlockLi
 -- Query
 ------------------------------------------------------------------------
 
+type WithAppEnv env m = (MonadReader env m, Has Environment env)
 type WithQuery env m = (WithFile env m, MonadTime m, WithError m, WithLog env m)
 
 type QueryMap a = Map (Id a) a
@@ -111,14 +117,17 @@ lookupReferences acc = do
 getArticleListPm :: (WithFile env m) => Id Collection -> m ArticleListPm
 getArticleListPm colId = File.load colId ColPm.articleList
 
-getArticleMap :: (WithQuery env m) => Id Collection -> m (QueryMap Article)
-getArticleMap = throwOnError . traverse ArtPm.toDomain <=< getArticleListPm
+getArticleMap :: (WithAppEnv env m, WithQuery env m) => Id Collection -> m (QueryMap Article)
+getArticleMap colId = do
+  appEnv <- grab @Environment
+  throwOnError . traverse (ArtPm.toDomain appEnv) =<< getArticleListPm colId
 
-getArticle :: WithQuery env m => Id Collection -> Id Article -> m ArticleVm
+getArticle :: (WithAppEnv env m, WithQuery env m) => Id Collection -> Id Article -> m ArticleVm
 getArticle colId artId = do
+  appEnv   <- grab @Environment
   artPmMap <- getArticleListPm colId
   artPm    <- notFoundError $ Map.lookup artId artPmMap
-  art      <- throwOnError $ ArtPm.toDomain artPm
+  art      <- throwOnError $ ArtPm.toDomain appEnv artPm
   pure $ ArticleVm.fromDomain art
 
 getCapabilityListPm :: (WithFile env m) => Id Collection -> m CapabilityListPm

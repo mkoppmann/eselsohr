@@ -23,6 +23,9 @@ import           Validation                                           ( Validati
                                                                       , validationToEither
                                                                       )
 
+import qualified Lib.App.Env                                         as Env
+
+import           Lib.App.Env                                          ( Environment )
 import           Lib.Domain.Error                                     ( AppErrorType
                                                                       , invalid
                                                                       )
@@ -52,10 +55,12 @@ instance Show UriValidationError where
   show ForbiddenIPv4Range = "Only public IPv4 ranges are allowed."
   show ForbiddenIPv6Range = "Only public IPv6 ranges are allowed."
 
-mkUri :: Text -> Either AppErrorType Uri
-mkUri url = case U.mkURI url of
+mkUri :: Environment -> Text -> Either AppErrorType Uri
+mkUri env url = case U.mkURI url of
   Left  err -> Left . invalid . toText $ displayException err
-  Right uri -> validationToEither . bimap (invalid . show) Uri $ validateUri uri
+  Right uri -> case env of
+    Env.Prod   -> validationToEither . bimap (invalid . show) Uri $ validateUri uri
+    _testOrDev -> pure $ Uri uri
  where
   validateUri :: URI -> Validation (NonEmpty UriValidationError) URI
   validateUri = validateAll [validatePort, validateProtocol, validateHostname, validateIPv4, validateIPv6]
