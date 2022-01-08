@@ -49,9 +49,6 @@ The following values can be set:
     Not set by default.
 * `KEY_FILE`: File path to the TLS key file.
     Not set by default.
-* `APP_ENVIRONMENT`: The environment the application is running in.
-    Can be `Prod`, `Test`, or `Dev`.
-    Defaults to `Prod`.
 
 Currently, all configuration parameters are optional so starting Eselsohr can be as simple as executing the Eselsohr binary.
 The `dist` directory in this repository provides deployment relevant files, like an example `rc` file for FreeBSD or a service file for systemd-based Linux distributions.

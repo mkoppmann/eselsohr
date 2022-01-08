@@ -12,9 +12,6 @@ import qualified Lib.Ui.Web.Page.ShareArticle                        as ShareArt
 import qualified Lib.Ui.Web.Page.ShareArticleList                    as ShareArticleListPage
 import qualified Lib.Ui.Web.Route                                    as Route
 
-import           Lib.App.Env                                          ( Environment
-                                                                      , grab
-                                                                      )
 import           Lib.App.Port                                         ( MonadScraper )
 import           Lib.Domain.Article                                   ( Article )
 import           Lib.Domain.Capability                                ( Capability
@@ -37,8 +34,7 @@ import           Lib.Ui.Web.Dto.Form                                  ( ChangeAr
                                                                       , CreateSharedArticleRefForm(..)
                                                                       , DeleteItemForm(..)
                                                                       )
-import           Lib.Ui.Web.Page.Shared                               ( WithAppEnv
-                                                                      , WithQuery
+import           Lib.Ui.Web.Page.Shared                               ( WithQuery
                                                                       , lookupReferences
                                                                       )
 import           Lib.Ui.Web.Route                                     ( AppServer
@@ -64,17 +60,15 @@ articleList = Route.ArticleListSite { Route.articleListPage            = Article
                                     , Route.deleteSharedArticleRef     = deleteSharedArticleRef
                                     }
 
-createArticle
-  :: (ArticleListRepo m, MonadScraper m, WithAppEnv env m, WithQuery env m) => CreateArticleForm -> m Redirection
+createArticle :: (ArticleListRepo m, MonadScraper m, WithQuery env m) => CreateArticleForm -> m Redirection
 createArticle CreateArticleForm {..} = do
   (ref, objRef) <- lookupReferences acc
-  appEnv        <- grab @Environment
-  command       <- throwOnError . mkCommand objRef appEnv $ collectionId ref
+  command       <- throwOnError . mkCommand objRef $ collectionId ref
   throwOnErrorM $ Command.createArticle command
   redirectTo goto
  where
-  mkCommand objRef env colId = do
-    uri <- Uri.mkUri env articleUri
+  mkCommand objRef colId = do
+    uri <- Uri.mkUri articleUri
     Right Command.CreateArticle { .. }
 
 changeArticleTitle :: (ArticleListRepo m, WithQuery env m) => Id Article -> ChangeArticleTitleForm -> m Redirection

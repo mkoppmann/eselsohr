@@ -21,11 +21,7 @@ import           UnliftIO.Environment                                 ( getEnvir
                                                                       , unsetEnv
                                                                       )
 
-import qualified Lib.App.Env                                         as Env
-
-import           Lib.App.Env                                          ( DataPath
-                                                                      , Environment
-                                                                      )
+import           Lib.App.Env                                          ( DataPath )
 
 {- | Configuration options for Eselsohr.
  Can be configured via environment variables or config file.
@@ -57,9 +53,6 @@ data Config = Config
   , -- | File path to the TLS key file.
     -- Defaults to: 'key.pem'
     confKeyFile     :: !FilePath
-  , -- | The environment the application is running in.
-    -- Defaults to: @Prod@
-    confEnvironment :: !Environment
   }
 
 loadConfig :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m Config
@@ -73,7 +66,6 @@ loadConfig mConfPath = do
   confDisableHsts <- getDisableHsts
   confCertFile    <- getCertFile
   confKeyFile     <- getKeyFile
-  confEnvironment <- getAppEnvironment
   clearEnv
   pure $ Config { .. }
  where
@@ -116,11 +108,6 @@ loadConfig mConfPath = do
 
   getKeyFile :: (MonadIO m) => m FilePath
   getKeyFile = maybe (pure "key.pem") sanitizePath =<< lookupEnv "KEY_FILE"
-
-  getAppEnvironment :: (MonadIO m) => m Environment
-  getAppEnvironment = lookupEnv "APP_ENVIRONMENT" >>= \case
-    Nothing -> pure Env.Prod
-    Just e  -> pure . fromMaybe Env.Prod . readMaybe $ toTitleCase e
 
 clearEnv :: (MonadIO m) => m ()
 clearEnv = traverse_ (unsetEnv . fst) =<< getEnvironment
