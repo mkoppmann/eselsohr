@@ -5,6 +5,7 @@ module Lib.App.Env
   , WriteQueue
   , Https(..)
   , Hsts(..)
+  , DeploymentMode(..)
   , Env(..)
   , Has(..)
   , grab
@@ -28,12 +29,16 @@ data Https = HttpsOn | HttpsOff
 
 data Hsts = HstsOn | HstsOff
 
+data DeploymentMode = Prod | Test | Dev
+  deriving stock (Read)
+
 data Env (m :: Type -> Type) = Env
-  { dataFolder          :: !DataPath
-  , writeQueue          :: !(WriteQueue m)
-  , logAction           :: !(LogAction m Message)
-  , https               :: !Https
-  , hsts                :: !Hsts
+  { dataFolder     :: !DataPath
+  , writeQueue     :: !(WriteQueue m)
+  , logAction      :: !(LogAction m Message)
+  , https          :: !Https
+  , hsts           :: !Hsts
+  , deploymentMode :: !DeploymentMode
   }
 
 instance HasLog (Env m) Message m where
@@ -62,6 +67,9 @@ instance Has Https (Env m) where
 
 instance Has Hsts (Env m) where
   obtain = hsts
+
+instance Has DeploymentMode (Env m) where
+  obtain = deploymentMode
 
 grab :: forall field env m . (MonadReader env m, Has field env) => m field
 grab = asks $ obtain @field
