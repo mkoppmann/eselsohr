@@ -3,6 +3,7 @@ module Lib.Ui.Web.Controller.ArticleList
   ) where
 
 import qualified Lib.App.Command                                     as Command
+import qualified Lib.App.Env                                         as Env
 import qualified Lib.Domain.Uri                                      as Uri
 import qualified Lib.Ui.Web.Page.Article                             as ArticlePage
 import qualified Lib.Ui.Web.Page.ArticleList                         as ArticleListPage
@@ -12,6 +13,10 @@ import qualified Lib.Ui.Web.Page.ShareArticle                        as ShareArt
 import qualified Lib.Ui.Web.Page.ShareArticleList                    as ShareArticleListPage
 import qualified Lib.Ui.Web.Route                                    as Route
 
+import           Lib.App.Env                                          ( DeploymentMode
+                                                                      , Has
+                                                                      , grab
+                                                                      )
 import           Lib.App.Port                                         ( MonadScraper )
 import           Lib.Domain.Article                                   ( Article )
 import           Lib.Domain.Capability                                ( Capability
@@ -60,15 +65,23 @@ articleList = Route.ArticleListSite { Route.articleListPage            = Article
                                     , Route.deleteSharedArticleRef     = deleteSharedArticleRef
                                     }
 
-createArticle :: (ArticleListRepo m, MonadScraper m, WithQuery env m) => CreateArticleForm -> m Redirection
+type WithEnv env m = (MonadReader env m, Has DeploymentMode env)
+
+createArticle
+  :: (ArticleListRepo m, MonadScraper m, WithEnv env m, WithQuery env m) => CreateArticleForm -> m Redirection
 createArticle CreateArticleForm {..} = do
-  (ref, objRef) <- lookupReferences acc
-  command       <- throwOnError . mkCommand objRef $ collectionId ref
+  (ref, objRef)  <- lookupReferences acc
+  deploymentMode <- grab @DeploymentMode
+  command        <- throwOnError . mkCommand deploymentMode objRef $ collectionId ref
   throwOnErrorM $ Command.createArticle command
   redirectTo goto
  where
-  mkCommand objRef colId = do
-    uri <- Uri.mkUri articleUri
+  mkCommand deploymentMode objRef colId = do
+    let mkUri = case deploymentMode of
+          Env.Prod -> Uri.mkUri
+          Env.Test -> Uri.unfilteredUri
+          Env.Dev  -> Uri.unfilteredUri
+    uri <- mkUri articleUri
     Right Command.CreateArticle { .. }
 
 changeArticleTitle :: (ArticleListRepo m, WithQuery env m) => Id Article -> ChangeArticleTitleForm -> m Redirection

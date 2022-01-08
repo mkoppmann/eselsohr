@@ -1,6 +1,7 @@
 module Lib.Domain.Uri
   ( Uri(..)
   , mkUri
+  , unfilteredUri
   , getHostname
   ) where
 
@@ -88,6 +89,18 @@ mkUri url = case U.mkURI url of
   validateIPv6 uri = case IPv6.public <$> (IPv6.decode =<< getHostname' uri) of
     Nothing    -> Validation.Success uri
     Just isPub -> if isPub then Validation.Success uri else failure ForbiddenIPv6Range
+
+{- | Returns an 'Uri' like 'mkUri' does but with no applied validation. Use
+with caution.
+-}
+unfilteredUri :: Text -> Either AppErrorType Uri
+unfilteredUri = either failureCase uri . U.mkURI
+ where
+  failureCase :: SomeException -> Either AppErrorType a
+  failureCase = Left . invalid . toText . displayException
+
+  uri :: URI -> Either AppErrorType Uri
+  uri = pure . Uri
 
 getHostname :: Uri -> Maybe Text
 getHostname (Uri uri) = getHostname' uri
