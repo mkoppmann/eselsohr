@@ -8,8 +8,6 @@ module Lib.Ui.Web.Dto.Accesstoken
 import qualified Codec.Serialise                                     as Ser
 import qualified Text.Show
 
-import qualified Lib.Domain.Id                                       as Id
-
 import           Codec.Serialise.Class                                ( Serialise )
 import           Codec.Serialise.UUID                                 ( )
 import           Data.ByteString.Lazy.Base32                          ( decodeBase32
@@ -19,6 +17,8 @@ import           Data.UUID                                            ( UUID )
 import           Web.HttpApiData                                      ( FromHttpApiData(..)
                                                                       , ToHttpApiData(..)
                                                                       )
+
+import qualified Lib.Domain.Id                                       as Id
 
 import           Lib.Domain.Capability                                ( Capability )
 import           Lib.Domain.Collection                                ( Collection )

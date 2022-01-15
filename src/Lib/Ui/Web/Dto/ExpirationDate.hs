@@ -6,9 +6,12 @@ import           Data.Time                                            ( UTCTime
                                                                       , defaultTimeLocale
                                                                       , parseTimeM
                                                                       )
-import           Web.HttpApiData                                      ( FromHttpApiData(..) )
+import           Web.HttpApiData                                      ( FromHttpApiData(..)
+                                                                      , ToHttpApiData
+                                                                      )
 
 newtype ExpirationDate = ExpirationDate {unExpirationDate :: UTCTime}
+  deriving ToHttpApiData via UTCTime
 
 instance FromHttpApiData ExpirationDate where
   parseUrlPiece = parseExpirationDate

@@ -1,6 +1,7 @@
 module Lib.Infra.Repo.ArticleList
   ( nextId
   , saveAll
+  , apply
   ) where
 
 import qualified Lib.App.Port                                        as Port

@@ -10,7 +10,7 @@ import           Lib.Domain.Error                                     ( AppError
                                                                       )
 
 newtype NonEmptyText = NonEmptyText Text
-  deriving (Show) via Text
+  deriving (Eq, Show) via Text
 
 instance ToText NonEmptyText where
   toText = coerce

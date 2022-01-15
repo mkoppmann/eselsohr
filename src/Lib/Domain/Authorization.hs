@@ -64,9 +64,16 @@ type Authorized a = Either AppErrorType a
 ------------------------------------------------------------------------
 
 data ViewUnlockLinksPerm = ViewUnlockLinksPerm
+  deriving stock (Eq, Show)
+
 data CreateUnlockLinksPerm = CreateUnlockLinksPerm
+  deriving stock (Eq, Show)
+
 data DeleteUnlockLinksPerm = DeleteUnlockLinksPerm
+  deriving stock (Eq, Show)
+
 data ShareUnlockLinksPerm = ShareUnlockLinksPerm
+  deriving stock (Eq, Show)
 
 canViewUnlockLinks :: ObjectReference -> Authorized ViewUnlockLinksPerm
 canViewUnlockLinks (OverviewRef OverviewPerms {..}) =
@@ -97,11 +104,22 @@ canShareUnlockLinks _otherRef                        = unauthorized
 ------------------------------------------------------------------------
 
 data ViewArticlesPerm = ViewArticlesPerm
+  deriving stock (Eq, Show)
+
 data CreateArticlesPerm = CreateArticlesPerm
+  deriving stock (Eq, Show)
+
 data ChangeTitlesPerm = ChangeTitlesPerm
+  deriving stock (Eq, Show)
+
 data ChangeStatesPerm = ChangeStatesPerm
+  deriving stock (Eq, Show)
+
 data DeleteArticlesPerm = DeleteArticlesPerm
+  deriving stock (Eq, Show)
+
 data ShareArticleListPerm = ShareArticleListPerm
+  deriving stock (Eq, Show)
 
 canViewArticles :: ObjectReference -> Authorized ViewArticlesPerm
 canViewArticles (ArticlesRef ArticlesPerms {..}) =
@@ -144,10 +162,19 @@ canShareArticleList _otherRef                        = unauthorized
 ------------------------------------------------------------------------
 
 newtype ViewArticlePerm = ViewArticlePerm (Id Article)
+  deriving stock (Eq, Show)
+
 newtype ChangeTitlePerm = ChangeTitlePerm (Id Article)
+  deriving stock (Eq, Show)
+
 newtype ChangeStatePerm = ChangeStatePerm (Id Article)
+  deriving stock (Eq, Show)
+
 newtype DeleteArticlePerm = DeleteArticlePerm (Id Article)
+  deriving stock (Eq, Show)
+
 newtype ShareArticlePerm = ShareArticlePerm (Id Article)
+  deriving stock (Eq, Show)
 
 viewArticleId :: ViewArticlePerm -> Id Article
 viewArticleId (ViewArticlePerm artId) = artId
