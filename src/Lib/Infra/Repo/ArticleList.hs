@@ -1,5 +1,6 @@
 module Lib.Infra.Repo.ArticleList
-  ( nextId
+  ( loadAll
+  , nextId
   , saveAll
   ) where
 
@@ -11,6 +12,7 @@ import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
 
 import           Lib.App.Port                                         ( MonadRandom )
 import           Lib.Domain.Article                                   ( Article )
+import           Lib.Domain.ArticleList                               ( ArticleList )
 import           Lib.Domain.Collection                                ( Collection )
 import           Lib.Domain.Id                                        ( Id )
 import           Lib.Domain.Repo.ArticleList                          ( ArticleListAction )
@@ -23,16 +25,21 @@ import           Lib.Infra.Persistence.Queue                          ( WithQueu
                                                                       , commit
                                                                       )
 
+loadAll :: (WithError m, WithFile env m) => Id Collection -> m ArticleList
+loadAll colId = articlesFromCollection =<< File.load colId id
+
 nextId :: (MonadRandom m) => m (Id Article)
 nextId = Port.getRandomId
 
 saveAll :: (WithError m, WithFile env m, WithQueue env m) => Id Collection -> Seq ArticleListAction -> m ()
-saveAll colId updates = do
-  let action = File.save updater colId
-  commit colId action
+saveAll colId updates = commit colId action
  where
-  updater :: WithError m => CollectionPm -> m CollectionPm
-  updater colPm = do
-    artList    <- throwOnError . ArtListPm.toDomain $ ColPm.articleList colPm
-    newArtList <- throwOnError $ foldlM Repo.apply artList updates
-    pure $ colPm { ColPm.articleList = ArtListPm.fromDomain newArtList }
+  action :: (WithError m, WithFile env m) => m ()
+  action = do
+    collection  <- File.load colId id
+    articles    <- articlesFromCollection collection
+    newArticles <- throwOnError $ foldlM Repo.apply articles updates
+    File.save colId $ collection { ColPm.articleList = ArtListPm.fromDomain newArticles }
+
+articlesFromCollection :: WithError m => CollectionPm -> m ArticleList
+articlesFromCollection = throwOnError . ArtListPm.toDomain . ColPm.articleList

@@ -60,10 +60,12 @@ instance MonadTime App where
   getCurrentTime = TimeImpl.getCurrentTime
 
 instance ArticleListRepo App where
+  loadAll = ArtRepo.loadAll
   nextId  = ArtRepo.nextId
   saveAll = ArtRepo.saveAll
 
 instance CapabilityListRepo App where
+  loadAll = CapRepo.loadAll
   nextId  = CapRepo.nextId
   saveAll = CapRepo.saveAll
 

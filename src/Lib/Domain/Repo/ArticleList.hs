@@ -27,6 +27,7 @@ data ArticleListAction
   | RemoveArticle !DeleteArticlePerm
 
 class (Monad m) => ArticleListRepo m where
+  loadAll :: Id Collection -> m ArticleList
   nextId :: m (Id Article)
   saveAll :: Id Collection -> Seq ArticleListAction -> m ()
 

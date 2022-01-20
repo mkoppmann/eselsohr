@@ -1,5 +1,6 @@
 module Lib.Infra.Repo.CapabilityList
-  ( nextId
+  ( loadAll
+  , nextId
   , saveAll
   ) where
 
@@ -11,6 +12,7 @@ import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
 
 import           Lib.App.Port                                         ( MonadRandom )
 import           Lib.Domain.Capability                                ( Capability )
+import           Lib.Domain.CapabilityList                            ( CapabilityList )
 import           Lib.Domain.Collection                                ( Collection )
 import           Lib.Domain.Id                                        ( Id )
 import           Lib.Domain.Repo.CapabilityList                       ( CapabilityListAction )
@@ -23,16 +25,21 @@ import           Lib.Infra.Persistence.Queue                          ( WithQueu
                                                                       , commit
                                                                       )
 
+loadAll :: (WithError m, WithFile env m) => Id Collection -> m CapabilityList
+loadAll colId = capabilitiesFromCollection =<< File.load colId id
+
 nextId :: (MonadRandom m) => m (Id Capability)
 nextId = Port.getRandomId
 
 saveAll :: (WithError m, WithFile env m, WithQueue env m) => Id Collection -> Seq CapabilityListAction -> m ()
-saveAll colId updates = do
-  let action = File.save update colId
-  commit colId action
+saveAll colId updates = commit colId action
  where
-  update :: WithError m => CollectionPm -> m CollectionPm
-  update colPm = do
-    capList    <- throwOnError . CapListPm.toDomain $ ColPm.capabilityList colPm
-    newCapList <- throwOnError $ foldlM Repo.apply capList updates
-    pure $ colPm { ColPm.capabilityList = CapListPm.fromDomain newCapList }
+  action :: (WithError m, WithFile env m) => m ()
+  action = do
+    collection      <- File.load colId id
+    capabilities    <- capabilitiesFromCollection collection
+    newCapabilities <- throwOnError $ foldlM Repo.apply capabilities updates
+    File.save colId $ collection { ColPm.capabilityList = CapListPm.fromDomain newCapabilities }
+
+capabilitiesFromCollection :: WithError m => CollectionPm -> m CapabilityList
+capabilitiesFromCollection = throwOnError . CapListPm.toDomain . ColPm.capabilityList
