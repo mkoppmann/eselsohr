@@ -30,6 +30,7 @@ data CapabilityListAction
   | RemoveShareArticle !ShareArticlePerm !(Id Capability)
 
 class (Monad m) => CapabilityListRepo m where
+  loadAll :: Id Collection -> m CapabilityList
   nextId :: m (Id Capability)
   saveAll :: Id Collection -> Seq CapabilityListAction -> m ()
 

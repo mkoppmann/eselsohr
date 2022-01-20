@@ -1,21 +1,28 @@
 module Test.Infra.Repo.CapabilityList
-  ( testSaveAll
+  ( testLoadAll
+  , testSaveAll
   ) where
 
+import qualified Lib.Domain.Repo.CapabilityList                      as Repo
 import qualified Lib.Infra.Persistence.Model.CapabilityList          as CapListPm
 import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
-import qualified Lib.Domain.Repo.CapabilityList                       as Repo
 
+import           Lib.Domain.CapabilityList                            ( CapabilityList )
 import           Lib.Domain.Collection                                ( Collection )
 import           Lib.Domain.Id                                        ( Id )
 import           Lib.Domain.Repo.CapabilityList                       ( CapabilityListAction )
 import           Lib.Infra.Error                                      ( WithError
                                                                       , throwOnError
                                                                       )
+import           Lib.Infra.Persistence.Model.Collection               ( CollectionPm )
 import           Test.App.Env                                         ( CollectionState
                                                                       , Has
                                                                       , grab
                                                                       )
+
+testLoadAll
+  :: (MonadReader env m, Has CollectionState env, MonadIO m, WithError m) => Id Collection -> m CapabilityList
+testLoadAll _colId = capabilitiesFromCollection =<< readIORef =<< grab @CollectionState
 
 testSaveAll
   :: (MonadReader env m, Has CollectionState env, MonadIO m, WithError m)
@@ -25,6 +32,9 @@ testSaveAll
 testSaveAll _colId updates = do
   collectionRef   <- grab @CollectionState
   collection      <- readIORef collectionRef
-  capabilities    <- throwOnError . CapListPm.toDomain $ ColPm.capabilityList collection
+  capabilities    <- capabilitiesFromCollection collection
   newCapabilities <- fmap CapListPm.fromDomain . throwOnError $ foldlM Repo.apply capabilities updates
   writeIORef collectionRef $ collection { ColPm.capabilityList = newCapabilities }
+
+capabilitiesFromCollection :: WithError m => CollectionPm -> m CapabilityList
+capabilitiesFromCollection = throwOnError . CapListPm.toDomain . ColPm.capabilityList

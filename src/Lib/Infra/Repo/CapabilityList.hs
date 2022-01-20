@@ -1,5 +1,6 @@
 module Lib.Infra.Repo.CapabilityList
-  ( nextId
+  ( loadAll
+  , nextId
   , saveAll
   ) where
 
@@ -11,6 +12,7 @@ import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
 
 import           Lib.App.Port                                         ( MonadRandom )
 import           Lib.Domain.Capability                                ( Capability )
+import           Lib.Domain.CapabilityList                            ( CapabilityList )
 import           Lib.Domain.Collection                                ( Collection )
 import           Lib.Domain.Id                                        ( Id )
 import           Lib.Domain.Repo.CapabilityList                       ( CapabilityListAction )
@@ -22,6 +24,9 @@ import           Lib.Infra.Persistence.Model.Collection               ( Collecti
 import           Lib.Infra.Persistence.Queue                          ( WithQueue
                                                                       , commit
                                                                       )
+
+loadAll :: (WithError m, WithFile env m) => Id Collection -> m CapabilityList
+loadAll colId = throwOnError . CapListPm.toDomain =<< File.load colId ColPm.capabilityList
 
 nextId :: (MonadRandom m) => m (Id Capability)
 nextId = Port.getRandomId

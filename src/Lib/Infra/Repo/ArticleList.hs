@@ -1,5 +1,6 @@
 module Lib.Infra.Repo.ArticleList
-  ( nextId
+  ( loadAll
+  , nextId
   , saveAll
   ) where
 
@@ -11,6 +12,7 @@ import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
 
 import           Lib.App.Port                                         ( MonadRandom )
 import           Lib.Domain.Article                                   ( Article )
+import           Lib.Domain.ArticleList                               ( ArticleList )
 import           Lib.Domain.Collection                                ( Collection )
 import           Lib.Domain.Id                                        ( Id )
 import           Lib.Domain.Repo.ArticleList                          ( ArticleListAction )
@@ -22,6 +24,9 @@ import           Lib.Infra.Persistence.Model.Collection               ( Collecti
 import           Lib.Infra.Persistence.Queue                          ( WithQueue
                                                                       , commit
                                                                       )
+
+loadAll :: (WithError m, WithFile env m) => Id Collection -> m ArticleList
+loadAll colId = throwOnError . ArtListPm.toDomain =<< File.load colId ColPm.articleList
 
 nextId :: (MonadRandom m) => m (Id Article)
 nextId = Port.getRandomId

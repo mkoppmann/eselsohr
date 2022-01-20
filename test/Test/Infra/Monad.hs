@@ -56,10 +56,12 @@ instance MonadTime TestApp where
   getCurrentTime = TimeImpl.getCurrentTime
 
 instance ArticleListRepo TestApp where
+  loadAll = ArtRepo.testLoadAll
   nextId  = RandomImpl.getRandomId
   saveAll = ArtRepo.testSaveAll
 
 instance CapabilityListRepo TestApp where
+  loadAll = CapRepo.testLoadAll
   nextId  = RandomImpl.getRandomId
   saveAll = CapRepo.testSaveAll
 
