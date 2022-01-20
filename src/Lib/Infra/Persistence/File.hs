@@ -36,12 +36,10 @@ load colId getter = do
 init :: (Serialise a, WithFile env m) => Id Collection -> a -> m ()
 init colId val = flip encodeFile val =<< idToPath colId
 
-save :: (WithFile env m) => (CollectionPm -> m CollectionPm) -> Id Collection -> m ()
-save updater colId = do
+save :: (WithFile env m) => Id Collection -> CollectionPm -> m ()
+save colId col = do
   filePath <- idToPath colId
-  colWm    <- decodeFile filePath
-  newColWm <- updater colWm
-  encodeFile filePath newColWm
+  encodeFile filePath col
 
 decodeFile :: (Serialise a, WithFile env m) => FilePath -> m a
 decodeFile fp = Ser.deserialise . fromStrict <$> liftIO (readFileBS fp)

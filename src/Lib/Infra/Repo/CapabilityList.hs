@@ -26,18 +26,20 @@ import           Lib.Infra.Persistence.Queue                          ( WithQueu
                                                                       )
 
 loadAll :: (WithError m, WithFile env m) => Id Collection -> m CapabilityList
-loadAll colId = throwOnError . CapListPm.toDomain =<< File.load colId ColPm.capabilityList
+loadAll colId = capabilitiesFromCollection =<< File.load colId id
 
 nextId :: (MonadRandom m) => m (Id Capability)
 nextId = Port.getRandomId
 
 saveAll :: (WithError m, WithFile env m, WithQueue env m) => Id Collection -> Seq CapabilityListAction -> m ()
-saveAll colId updates = do
-  let action = File.save update colId
-  commit colId action
+saveAll colId updates = commit colId action
  where
-  update :: WithError m => CollectionPm -> m CollectionPm
-  update colPm = do
-    capList    <- throwOnError . CapListPm.toDomain $ ColPm.capabilityList colPm
-    newCapList <- throwOnError $ foldlM Repo.apply capList updates
-    pure $ colPm { ColPm.capabilityList = CapListPm.fromDomain newCapList }
+  action :: (WithError m, WithFile env m) => m ()
+  action = do
+    collection      <- File.load colId id
+    capabilities    <- capabilitiesFromCollection collection
+    newCapabilities <- throwOnError $ foldlM Repo.apply capabilities updates
+    File.save colId $ collection { ColPm.capabilityList = CapListPm.fromDomain newCapabilities }
+
+capabilitiesFromCollection :: WithError m => CollectionPm -> m CapabilityList
+capabilitiesFromCollection = throwOnError . CapListPm.toDomain . ColPm.capabilityList
