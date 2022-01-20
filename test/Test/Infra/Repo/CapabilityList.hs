@@ -4,7 +4,7 @@ module Test.Infra.Repo.CapabilityList
 
 import qualified Lib.Infra.Persistence.Model.CapabilityList          as CapListPm
 import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
-import qualified Lib.Infra.Repo.CapabilityList                       as CapListRepo
+import qualified Lib.Domain.Repo.CapabilityList                       as Repo
 
 import           Lib.Domain.Collection                                ( Collection )
 import           Lib.Domain.Id                                        ( Id )
@@ -26,5 +26,5 @@ testSaveAll _colId updates = do
   collectionRef   <- grab @CollectionState
   collection      <- readIORef collectionRef
   capabilities    <- throwOnError . CapListPm.toDomain $ ColPm.capabilityList collection
-  newCapabilities <- fmap CapListPm.fromDomain . throwOnError $ foldlM CapListRepo.apply capabilities updates
+  newCapabilities <- fmap CapListPm.fromDomain . throwOnError $ foldlM Repo.apply capabilities updates
   writeIORef collectionRef $ collection { ColPm.capabilityList = newCapabilities }

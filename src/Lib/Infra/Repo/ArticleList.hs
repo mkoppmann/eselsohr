@@ -1,11 +1,9 @@
 module Lib.Infra.Repo.ArticleList
   ( nextId
   , saveAll
-  , apply
   ) where
 
 import qualified Lib.App.Port                                        as Port
-import qualified Lib.Domain.ArticleList                              as ArtList
 import qualified Lib.Domain.Repo.ArticleList                         as Repo
 import qualified Lib.Infra.Persistence.File                          as File
 import qualified Lib.Infra.Persistence.Model.ArticleList             as ArtListPm
@@ -13,9 +11,7 @@ import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
 
 import           Lib.App.Port                                         ( MonadRandom )
 import           Lib.Domain.Article                                   ( Article )
-import           Lib.Domain.ArticleList                               ( ArticleList )
 import           Lib.Domain.Collection                                ( Collection )
-import           Lib.Domain.Error                                     ( AppErrorType )
 import           Lib.Domain.Id                                        ( Id )
 import           Lib.Domain.Repo.ArticleList                          ( ArticleListAction )
 import           Lib.Infra.Error                                      ( WithError
@@ -38,13 +34,5 @@ saveAll colId updates = do
   updater :: WithError m => CollectionPm -> m CollectionPm
   updater colPm = do
     artList    <- throwOnError . ArtListPm.toDomain $ ColPm.articleList colPm
-    newArtList <- throwOnError $ foldlM apply artList updates
+    newArtList <- throwOnError $ foldlM Repo.apply artList updates
     pure $ colPm { ColPm.articleList = ArtListPm.fromDomain newArtList }
-
-apply :: ArticleList -> ArticleListAction -> Either AppErrorType ArticleList
-apply artList = \case
-  Repo.AddArticle perm artId art        -> ArtList.addArticle perm artId art artList
-  Repo.ChangeArticleTitle perm newTitle -> ArtList.changeArticleTitle perm newTitle artList
-  Repo.MarkArticleAsUnread perm         -> ArtList.markArticleAsUnread perm artList
-  Repo.MarkArticleAsRead   perm         -> ArtList.markArticleAsRead perm artList
-  Repo.RemoveArticle       perm         -> pure $ ArtList.removeArticle perm artList

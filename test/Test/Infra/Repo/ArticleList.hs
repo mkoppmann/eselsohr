@@ -2,9 +2,9 @@ module Test.Infra.Repo.ArticleList
   ( testSaveAll
   ) where
 
+import qualified Lib.Domain.Repo.ArticleList                         as Repo
 import qualified Lib.Infra.Persistence.Model.ArticleList             as ArtListPm
 import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
-import qualified Lib.Infra.Repo.ArticleList                          as ArtListRepo
 
 import           Lib.Domain.Collection                                ( Collection )
 import           Lib.Domain.Id                                        ( Id )
@@ -26,5 +26,5 @@ testSaveAll _colId updates = do
   collectionRef <- grab @CollectionState
   collection    <- readIORef collectionRef
   articles      <- throwOnError . ArtListPm.toDomain $ ColPm.articleList collection
-  newArticles   <- fmap ArtListPm.fromDomain . throwOnError $ foldlM ArtListRepo.apply articles updates
+  newArticles   <- fmap ArtListPm.fromDomain . throwOnError $ foldlM Repo.apply articles updates
   writeIORef collectionRef $ collection { ColPm.articleList = newArticles }
