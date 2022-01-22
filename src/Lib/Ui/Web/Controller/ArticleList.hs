@@ -30,7 +30,7 @@ import           Lib.Infra.Error                                      ( redirect
                                                                       , throwOnError
                                                                       , throwOnErrorM
                                                                       )
-import           Lib.Ui.Web.Dto.Accesstoken                           ( collectionId )
+import           Lib.Ui.Dto.Accesstoken                               ( collectionId )
 import           Lib.Ui.Web.Dto.ExpirationDate                        ( ExpirationDate(..) )
 import           Lib.Ui.Web.Dto.Form                                  ( ChangeArticleStateForm(..)
                                                                       , ChangeArticleTitleForm(..)

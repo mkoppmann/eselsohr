@@ -13,7 +13,7 @@ import           Web.FormUrlEncoded                                   ( FromForm
                                                                       , ToForm
                                                                       )
 
-import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken )
+import           Lib.Ui.Dto.Accesstoken                               ( Accesstoken )
 import           Lib.Ui.Web.Dto.ExpirationDate                        ( ExpirationDate )
 
 data CreateArticleForm = CreateArticleForm

@@ -36,7 +36,7 @@ import           Lib.Domain.Article                                   ( Article 
 import           Lib.Domain.Capability                                ( Capability )
 import           Lib.Domain.Id                                        ( Id )
 import           Lib.Infra.Monad                                      ( App )
-import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken )
+import           Lib.Ui.Dto.Accesstoken                               ( Accesstoken )
 import           Lib.Ui.Web.Dto.Form                                  ( ChangeArticleStateForm
                                                                       , ChangeArticleTitleForm
                                                                       , CreateArticleForm

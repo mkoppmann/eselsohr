@@ -14,7 +14,7 @@ import qualified Lib.Ui.Web.Route                                    as Route
 
 import           Lib.Domain.Authorization                             ( CreateArticlesPerm )
 import           Lib.Infra.Error                                      ( throwOnError )
-import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken )
+import           Lib.Ui.Dto.Accesstoken                               ( Accesstoken )
 import           Lib.Ui.Web.Page.Shared                               ( WithQuery
                                                                       , createArticleForm
                                                                       , lookupReferences
@@ -46,4 +46,3 @@ view View {..} = do
   h1_ "Add a new article"
   createArticleForm acc goto
   where goto = fieldLink Route.createArticlePage $ Just acc
-

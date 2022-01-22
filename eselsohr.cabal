@@ -53,14 +53,14 @@ library
         Lib.Infra.Repo.ArticleList
         Lib.Infra.Repo.CapabilityList
         Lib.Infra.Repo.Collection
+        Lib.Ui.Dto.Accesstoken
+        Lib.Ui.Dto.Id
         Lib.Ui.Server
         Lib.Ui.Web.Controller.ArticleList
         Lib.Ui.Web.Controller.Collection
         Lib.Ui.Web.Controller.Static
-        Lib.Ui.Web.Dto.Accesstoken
         Lib.Ui.Web.Dto.ExpirationDate
         Lib.Ui.Web.Dto.Form
-        Lib.Ui.Web.Dto.Id
         Lib.Ui.Web.Page.Article
         Lib.Ui.Web.Page.ArticleList
         Lib.Ui.Web.Page.CreateArticle

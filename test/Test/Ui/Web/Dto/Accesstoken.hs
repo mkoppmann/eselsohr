@@ -14,9 +14,9 @@ import           Web.HttpApiData                                      ( parseUrl
                                                                       )
 
 import qualified Lib.Infra.Adapter.Random                            as Adapter
-import qualified Lib.Ui.Web.Dto.Accesstoken                          as Accesstoken
+import qualified Lib.Ui.Dto.Accesstoken                          as Accesstoken
 
-import           Lib.Ui.Web.Dto.Accesstoken                           ( Reference )
+import           Lib.Ui.Dto.Accesstoken                           ( Reference )
 
 accesstokenProps :: Group
 accesstokenProps = Group

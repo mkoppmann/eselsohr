@@ -8,7 +8,7 @@ import qualified Lib.Ui.Web.Page.ViewModel.Capability                as Capabili
 import           Lib.Domain.Capability                                ( Capability )
 import           Lib.Domain.Collection                                ( Collection )
 import           Lib.Domain.Id                                        ( Id )
-import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken
+import           Lib.Ui.Dto.Accesstoken                               ( Accesstoken
                                                                       , Reference(..)
                                                                       , mkAccesstoken
                                                                       )

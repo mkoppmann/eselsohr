@@ -30,7 +30,7 @@ import           Lib.Domain.Capability                                ( Capabili
 import           Lib.Domain.Collection                                ( Collection )
 import           Lib.Domain.Id                                        ( Id )
 import           Lib.Infra.Error                                      ( throwOnError )
-import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken
+import           Lib.Ui.Dto.Accesstoken                               ( Accesstoken
                                                                       , Reference(..)
                                                                       )
 import           Lib.Ui.Web.Page.Shared                               ( WithQuery

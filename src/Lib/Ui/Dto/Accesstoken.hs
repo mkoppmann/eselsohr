@@ -1,4 +1,4 @@
-module Lib.Ui.Web.Dto.Accesstoken
+module Lib.Ui.Dto.Accesstoken
   ( Accesstoken
   , Reference(..)
   , mkAccesstoken

@@ -20,7 +20,7 @@ import           Lib.Infra.Error                                      ( WithErro
                                                                       , redirectTo
                                                                       , throwOnErrorM
                                                                       )
-import           Lib.Ui.Web.Dto.Accesstoken                           ( Reference(..)
+import           Lib.Ui.Dto.Accesstoken                               ( Reference(..)
                                                                       , mkAccesstoken
                                                                       )
 import           Lib.Ui.Web.Dto.ExpirationDate                        ( ExpirationDate(..) )

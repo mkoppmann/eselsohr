@@ -60,7 +60,7 @@ import           Lib                                                  ( mkAppEnv
                                                                       )
 import           Lib.Infra.Log                                        ( runAppLogIO_ )
 import           Lib.Infra.Monad                                      ( AppEnv )
-import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken )
+import           Lib.Ui.Dto.Accesstoken                           ( Accesstoken )
 import           Lib.Ui.Web.Dto.Form                                  ( CreateUnlockLinkForm(..) )
 import           Lib.Ui.Web.Route                                     ( linkAsText )
 
