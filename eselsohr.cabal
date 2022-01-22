@@ -13,6 +13,7 @@ extra-source-files: CHANGELOG.md
 
 library
     exposed-modules:
+        Cli
         Config
         Init
         Lib
@@ -53,6 +54,8 @@ library
         Lib.Infra.Repo.ArticleList
         Lib.Infra.Repo.CapabilityList
         Lib.Infra.Repo.Collection
+        Lib.Ui.Cli.Command
+        Lib.Ui.Cli.Handler
         Lib.Ui.Dto.Accesstoken
         Lib.Ui.Dto.Id
         Lib.Ui.Server
