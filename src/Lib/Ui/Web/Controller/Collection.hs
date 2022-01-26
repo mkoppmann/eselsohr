@@ -5,10 +5,15 @@ module Lib.Ui.Web.Controller.Collection
 import           Servant.Links                                        ( fieldLink )
 
 import qualified Lib.App.Command                                     as Command
+import qualified Lib.App.Env                                         as Env
 import qualified Lib.Ui.Web.Page.CollectionOverview                  as CollectionOverviewPage
 import qualified Lib.Ui.Web.Page.ShareCollectionOverview             as ShareCollectionOverviewPage
 import qualified Lib.Ui.Web.Route                                    as Route
 
+import           Lib.App.Env                                          ( CollectionCreation
+                                                                      , Has
+                                                                      , grab
+                                                                      )
 import           Lib.App.Port                                         ( MonadRandom )
 import           Lib.Domain.Capability                                ( Capability
                                                                       , mkOverviewPerms
@@ -46,12 +51,18 @@ collection = Route.CollectionSite { Route.createCollection        = createCollec
                                   , Route.deleteSharedOverviewRef = deleteSharedOverviewRef
                                   }
 
-createCollection :: (CollectionRepo m, MonadRandom m, WithError m) => m Redirection
+type WithEnv env m = (MonadReader env m, Has CollectionCreation env)
+
+createCollection :: (CollectionRepo m, MonadRandom m, WithEnv env m, WithError m) => m Redirection
 createCollection = do
-  (colId, capId) <- Command.createCollection
-  let acc = mkAccesstoken $ Reference colId capId
-      url = Route.linkAsText . fieldLink Route.overviewPage $ Just acc
-  redirectTo url
+  collectionCreation <- grab @CollectionCreation
+  case collectionCreation of
+    Env.Private -> redirectTo . Route.linkAsText $ fieldLink Route.startpage
+    Env.Public  -> do
+      (colId, capId) <- Command.createCollection
+      let acc = mkAccesstoken $ Reference colId capId
+          url = Route.linkAsText . fieldLink Route.overviewPage $ Just acc
+      redirectTo url
 
 createUnlockLink :: (CapabilityListRepo m, WithQuery env m) => CreateUnlockLinkForm -> m Redirection
 createUnlockLink CreateUnlockLinkForm {..} = do

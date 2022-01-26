@@ -60,7 +60,7 @@ import           Lib                                                  ( mkAppEnv
                                                                       )
 import           Lib.Infra.Log                                        ( runAppLogIO_ )
 import           Lib.Infra.Monad                                      ( AppEnv )
-import           Lib.Ui.Dto.Accesstoken                           ( Accesstoken )
+import           Lib.Ui.Dto.Accesstoken                               ( Accesstoken )
 import           Lib.Ui.Web.Dto.Form                                  ( CreateUnlockLinkForm(..) )
 import           Lib.Ui.Web.Route                                     ( linkAsText )
 
@@ -92,7 +92,10 @@ withTestEnv = bracket setup clean
   setConfig conf = do
     tmpDir   <- getTemporaryDirectory
     filePath <- addTrailingPathSeparator <$> createTempDirectory tmpDir "eselsohr_test"
-    pure $ conf { Config.confDataFolder = filePath, Config.confDepMode = Env.Test }
+    pure $ conf { Config.confDataFolder               = filePath
+                , Config.confDepMode                  = Env.Test
+                , Config.confPublicCollectionCreation = True
+                }
 
   testServer :: AppEnv -> IO ()
   testServer = runSettings (warpSettings "127.0.0.1" 6980) . Server.application 6980

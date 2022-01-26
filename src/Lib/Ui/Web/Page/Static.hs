@@ -8,14 +8,14 @@ import           Lucid
 
 import           Lib.Ui.Web.Page.Shared                               ( createCollectionForm )
 
-startPage :: Html ()
-startPage = do
+startPage :: Bool -> Html ()
+startPage publicCollectionCreation = do
   h1_ "Welcome to Eselsohr"
   p_
     "Eselsohr is a service focused on simplicity.\
     \ Save web articles and consume them later.\
     \ Start your collection by clicking on the button."
-  createCollectionForm
+  when publicCollectionCreation createCollectionForm
 
 invalidToken :: Html ()
 invalidToken = do
