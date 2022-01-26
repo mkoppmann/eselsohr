@@ -78,11 +78,11 @@ import           Lib.Infra.Persistence.File                           ( WithFile
 import           Lib.Infra.Persistence.Model.ArticleList              ( ArticleListPm )
 import           Lib.Infra.Persistence.Model.Capability               ( CapabilityPm )
 import           Lib.Infra.Persistence.Model.CapabilityList           ( CapabilityListPm )
-import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken
+import           Lib.Ui.Dto.Accesstoken                               ( Accesstoken
                                                                       , Reference(..)
                                                                       , toReference
                                                                       )
-import           Lib.Ui.Web.Dto.Id                                    ( )
+import           Lib.Ui.Dto.Id                                        ( )
 import           Lib.Ui.Web.Page.ViewModel.Article                    ( ArticleVm )
 import           Lib.Ui.Web.Page.ViewModel.Permission                 ( ArticlePermsVm(..)
                                                                       , ArticlesPermsVm(..)

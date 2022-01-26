@@ -28,6 +28,7 @@ import           UnliftIO.STM                                         ( newTQueu
 import qualified Config
 import qualified Init
 import qualified Lib.App.Env                                         as Env
+import qualified Lib.Ui.Cli.Handler                                  as Cli
 
 import           Config                                               ( Config
                                                                       , loadConfig
@@ -36,17 +37,19 @@ import           Lib.App.Env                                          ( Https )
 import           Lib.Infra.Log                                        ( mainLogAction )
 import           Lib.Infra.Monad                                      ( AppEnv )
 import           Lib.Infra.Persistence.Server                         ( persistenceApp )
+import           Lib.Ui.Cli.Handler                                   ( CliAction )
 import           Lib.Ui.Server                                        ( application )
 
 mkAppEnv :: Config -> IO AppEnv
 mkAppEnv Config.Config {..} = do
   newWriteQueue <- newTQueueIO
-  let dataFolder     = confDataFolder
-      writeQueue     = newWriteQueue
-      logAction      = mainLogAction confLogSeverity
-      https          = if confHttps then Env.HttpsOn else Env.HttpsOff
-      hsts           = if confDisableHsts then Env.HstsOff else Env.HstsOn
-      deploymentMode = confDepMode
+  let dataFolder         = confDataFolder
+      writeQueue         = newWriteQueue
+      logAction          = mainLogAction confLogSeverity
+      https              = if confHttps then Env.HttpsOn else Env.HttpsOff
+      hsts               = if confDisableHsts then Env.HstsOff else Env.HstsOn
+      deploymentMode     = confDepMode
+      collectionCreation = if confPublicCollectionCreation then Env.Public else Env.Private
   pure $ Env.Env { .. }
 
 runServer :: Config -> AppEnv -> IO ()
@@ -106,10 +109,12 @@ runServer Config.Config {..} env@Env.Env {..} = do
 warpSettings :: String -> Port -> Settings
 warpSettings listenAddr port = setHost (fromString listenAddr) . setPort port . setServerName "" $ defaultSettings
 
-main :: Maybe FilePath -> IO ()
-main mConfPath = do
+main :: Maybe FilePath -> CliAction -> IO ()
+main mConfPath command = do
   hSetBuffering stdout NoBuffering
   hSetBuffering stderr NoBuffering
   conf <- loadConfig mConfPath
   env  <- mkAppEnv conf
-  runServer conf env
+  case command of
+    Cli.RunServer    -> runServer conf env
+    _otherCliCommand -> Cli.runCli env command

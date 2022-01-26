@@ -33,47 +33,51 @@ import           Lib.App.Env                                          ( DataPath
 data Config = Config
   { -- | File path to the data folder, where all collection are getting stored.
     -- Defaults to: 'XdgData'
-    confDataFolder  :: !DataPath
+    confDataFolder               :: !DataPath
   , -- | Severity level for the logger component.
     -- Defaults to: 'Error'
-    confLogSeverity :: !Severity
+    confLogSeverity              :: !Severity
   , -- | Port number on which the web server will listen.
     -- Defaults to: @6979@
-    confServerPort  :: !Port
+    confServerPort               :: !Port
   , -- | Address where the web server will listen.
     -- Defaults to: @127.0.0.1@
-    confListenAddr  :: !String
+    confListenAddr               :: !String
   , -- | Send @HSTS@ HTTP header.
     -- Automatically enabled when @X-Forwarded-Proto@ HTTP header is set to
     -- @https@.
     -- Defaults to: 'False'
-    confHttps       :: !Bool
+    confHttps                    :: !Bool
   , -- | Do not send @HSTS@ HTTP header, when @HTTPS@ is set.
     -- Defaults to: 'False'
-    confDisableHsts :: !Bool
+    confDisableHsts              :: !Bool
   , -- | File path to the TLS certificate file.
     -- Defaults to: 'certificate.pem'
-    confCertFile    :: !FilePath
+    confCertFile                 :: !FilePath
   , -- | File path to the TLS key file.
     -- Defaults to: 'key.pem'
-    confKeyFile     :: !FilePath
+    confKeyFile                  :: !FilePath
   , -- | The mode the application is running in.
     -- Defaults to: 'Prod'
-    confDepMode     :: !DeploymentMode
+    confDepMode                  :: !DeploymentMode
+  , -- | Wether the creation of collections should be public.
+    -- Defaults to: 'False'
+    confPublicCollectionCreation :: !Bool
   }
 
 loadConfig :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m Config
 loadConfig mConfPath = do
   loadEnvFile mConfPath
-  confDataFolder  <- getDataFolder
-  confLogSeverity <- getLogLevel
-  confServerPort  <- getPort
-  confListenAddr  <- getListenAddr
-  confHttps       <- getHttps
-  confDisableHsts <- getDisableHsts
-  confCertFile    <- getCertFile
-  confKeyFile     <- getKeyFile
-  confDepMode     <- getDeploymentMode
+  confDataFolder               <- getDataFolder
+  confLogSeverity              <- getLogLevel
+  confServerPort               <- getPort
+  confListenAddr               <- getListenAddr
+  confHttps                    <- getHttps
+  confDisableHsts              <- getDisableHsts
+  confCertFile                 <- getCertFile
+  confKeyFile                  <- getKeyFile
+  confDepMode                  <- getDeploymentMode
+  confPublicCollectionCreation <- getCollectionCreation
   clearEnv
   pure $ Config { .. }
  where
@@ -121,6 +125,11 @@ loadConfig mConfPath = do
   getDeploymentMode = lookupEnv "DEPLOYMENT_MODE" >>= \case
     Nothing -> pure Env.Prod
     Just e  -> pure . fromMaybe Env.Prod . readMaybe $ toTitleCase e
+
+  getCollectionCreation :: (MonadIO m) => m Bool
+  getCollectionCreation = lookupEnv "PUBLIC_COLLECTION_CREATION" >>= \case
+    Nothing  -> pure False
+    Just pcc -> pure . fromMaybe False . readMaybe $ toTitleCase pcc
 
 clearEnv :: (MonadIO m) => m ()
 clearEnv = traverse_ (unsetEnv . fst) =<< getEnvironment

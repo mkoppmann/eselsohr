@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Lib.Ui.Web.Dto.Id where
+module Lib.Ui.Dto.Id where
 
 import           Data.UUID                                            ( UUID )
 import           Web.HttpApiData                                      ( FromHttpApiData

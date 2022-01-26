@@ -52,8 +52,12 @@ The following values can be set:
 * `DEPLOYMENT_MODE`: The mode the application is running in.
     Can be `Prod`, `Test`, or `Dev`.
     Defaults to `Prod`.
+* `PUBLIC_COLLECTION_CREATION`: Wether the creation of collection should be public.
+    Defaults to `False`.
 
 Currently, all configuration parameters are optional so starting Eselsohr can be as simple as executing the Eselsohr binary.
+If you don’t allow the public creation of collections, you can generate accesstokens for collections by running `eselsohr-exe collection new`.
+
 The `dist` directory in this repository provides deployment relevant files, like an example `rc` file for FreeBSD or a service file for systemd-based Linux distributions.
 
 ### Docker-based

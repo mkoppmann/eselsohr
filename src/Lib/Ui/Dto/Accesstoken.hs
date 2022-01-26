@@ -1,8 +1,10 @@
-module Lib.Ui.Web.Dto.Accesstoken
+module Lib.Ui.Dto.Accesstoken
   ( Accesstoken
   , Reference(..)
   , mkAccesstoken
   , toReference
+  , encodeToBase32
+  , decodeFromBase32
   ) where
 
 import qualified Codec.Serialise                                     as Ser
@@ -50,13 +52,19 @@ instance Show Accesstoken where
   show = toString . toUrlPiece
 
 instance ToHttpApiData Accesstoken where
-  toUrlPiece = decodeUtf8 . encodeBase32Unpadded' . unAccesstoken
+  toUrlPiece = encodeToBase32
 
 instance FromHttpApiData Accesstoken where
-  parseUrlPiece = either (const $ Left "invalid UrlToken") (Right . Accesstoken) . decodeBase32 . encodeUtf8
+  parseUrlPiece = decodeFromBase32
 
 mkAccesstoken :: Reference -> Accesstoken
 mkAccesstoken = Accesstoken . Ser.serialise . fromDomain
 
 toReference :: Accesstoken -> Reference
 toReference = toDomain . Ser.deserialise . unAccesstoken
+
+encodeToBase32 :: Accesstoken -> Text
+encodeToBase32 = decodeUtf8 . encodeBase32Unpadded' . unAccesstoken
+
+decodeFromBase32 :: Text -> Either Text Accesstoken
+decodeFromBase32 = either (const $ Left "invalid UrlToken") (Right . Accesstoken) . decodeBase32 . encodeUtf8

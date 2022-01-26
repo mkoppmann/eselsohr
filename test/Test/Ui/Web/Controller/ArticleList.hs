@@ -17,7 +17,7 @@ import           Web.FormUrlEncoded                                   ( urlEncod
 
 import           Lib.Ui.Web.Route                                    as Route
 
-import           Lib.Ui.Web.Dto.Accesstoken                           ( Accesstoken )
+import           Lib.Ui.Dto.Accesstoken                               ( Accesstoken )
 import           Lib.Ui.Web.Dto.Form                                  ( CreateArticleForm(..) )
 import           Test.Ui.Web.Controller.Shared                        ( accFromPath
                                                                       , accFromResponse
