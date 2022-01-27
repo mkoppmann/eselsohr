@@ -19,6 +19,7 @@ module Lib.Ui.Web.Page.Shared
 
     -- ** HTML form related
   , createCollectionForm
+  , unlockCollectionForm
   , createUnlockLinkForm
   , deleteUnlockLinkForm
   , createSharedOverviewRefForm
@@ -185,6 +186,9 @@ createCollectionForm :: Html ()
 createCollectionForm = form_ [linkAbsAction_ $ fieldLink Route.createCollection, method_ "POST"] $ do
   input_ [type_ "submit", value_ "Create new collection"]
 
+unlockCollectionForm :: Html ()
+unlockCollectionForm = genGet (fieldLink Route.overviewPage Nothing) [] "Unlock collection"
+
 createUnlockLinkForm :: UTCTime -> UTCTime -> Accesstoken -> Link -> Html ()
 createUnlockLinkForm currTime expTime =
   postMethodButton (fieldLink Route.createUnlockLink) [createLink currTime expTime] "Create access link"
@@ -270,6 +274,12 @@ deleteSharedArticleRefForm articleId sharedArticleIdRef =
   deleteMethodLink (fieldLink Route.deleteSharedArticleRef articleId sharedArticleIdRef) [] "Delete shared article link"
 
 -- Helper
+
+genGet :: Link -> [Html ()] -> Text -> Html ()
+genGet route inputFields buttonName = form_ [linkAbsAction_ route, method_ "GET"] $ do
+  input_ [name_ "acc"]
+  sequenceA_ inputFields
+  input_ [type_ "submit", value_ buttonName]
 
 genPost :: Bool -> Text -> Link -> [Html ()] -> Text -> Accesstoken -> Link -> Html ()
 genPost asLink commandMethod route inputFields buttonName acc gotoUrl =

@@ -67,6 +67,11 @@ data CollectionSite route = CollectionSite
         :- "collections"
         :> QueryParam "acc" Accesstoken
         :> Get '[HTML] HtmlPage
+  , unlockCollection ::
+      route
+        :- "collections"
+        :> "unlock"
+        :> Get '[HTML] HtmlPage
   , createUnlockLink ::
       route
         :- "collections"

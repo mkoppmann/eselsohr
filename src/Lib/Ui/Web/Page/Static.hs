@@ -1,21 +1,39 @@
 module Lib.Ui.Web.Page.Static
   ( startPage
+  , unlockCollection
   , invalidToken
   , notAuthorized
   ) where
 
 import           Lucid
+import           Lucid.Servant                                        ( linkAbsHref_ )
+import           Servant                                              ( fieldLink )
 
-import           Lib.Ui.Web.Page.Shared                               ( createCollectionForm )
+import qualified Lib.Ui.Web.Route                                    as Route
+
+import           Lib.Ui.Web.Page.Shared                               ( createCollectionForm
+                                                                      , unlockCollectionForm
+                                                                      )
 
 startPage :: Bool -> Html ()
 startPage publicCollectionCreation = do
   h1_ "Welcome to Eselsohr"
-  p_
-    "Eselsohr is a service focused on simplicity.\
-    \ Save web articles and consume them later.\
-    \ Start your collection by clicking on the button."
-  when publicCollectionCreation createCollectionForm
+  p_ "Eselsohr is a service focused on simplicity.\
+    \ Save web articles and consume them later."
+
+  p_ $ do
+    "Open an existing collection: "
+    a_ [linkAbsHref_ $ fieldLink Route.unlockCollection] "Unlock collection"
+
+  when publicCollectionCreation $ do
+    p_ "Create a new collection:"
+    createCollectionForm
+
+unlockCollection :: Html ()
+unlockCollection = do
+  h1_ "Unlock collection"
+  p_ "Please provide the accesstoken for your collection."
+  unlockCollectionForm
 
 invalidToken :: Html ()
 invalidToken = do
