@@ -67,6 +67,7 @@ library
         Lib.Ui.Web.Page.Article
         Lib.Ui.Web.Page.ArticleList
         Lib.Ui.Web.Page.CreateArticle
+        Lib.Ui.Web.Page.CollectionOverview
         Lib.Ui.Web.Page.EditArticle
         Lib.Ui.Web.Page.Layout
         Lib.Ui.Web.Page.ShareArticle
@@ -75,7 +76,7 @@ library
         Lib.Ui.Web.Page.Shared
         Lib.Ui.Web.Page.Static
         Lib.Ui.Web.Page.Style
-        Lib.Ui.Web.Page.CollectionOverview
+        Lib.Ui.Web.Page.UnlockCollection
         Lib.Ui.Web.Page.ViewModel.Article
         Lib.Ui.Web.Page.ViewModel.Capability
         Lib.Ui.Web.Page.ViewModel.Permission
