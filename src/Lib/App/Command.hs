@@ -123,7 +123,7 @@ createArticle CreateArticle {..} = do
     title <- Art.titleFromText artTitle
     let state = Art.Unread
         art   = Art.Article { .. }
-    pure $ ArtRepo.AddArticle perm id art
+    pure $ ArtRepo.addArticle perm id art
 
 ------------------------------------------------------------------------
 -- ChangeArticleTitle
@@ -145,7 +145,7 @@ changeArticleTitle ChangeArticleTitle {..} = case mkAction of
   mkAction = do
     perm     <- Authz.canChangeArticleTitle objRef artId
     artTitle <- Art.titleFromText title
-    pure $ ArtRepo.ChangeArticleTitle perm artTitle
+    pure $ ArtRepo.changeArticleTitle perm artTitle
 
 ------------------------------------------------------------------------
 -- ChangeArticleState
@@ -175,8 +175,8 @@ changeArticleState colId artId objRef artState = case Authz.canChangeArticleStat
   Left  err  -> pure $ Left err
   Right perm -> Right <$> ArtRepo.save colId (action perm artState)
  where
-  action perm Art.Unread = ArtRepo.MarkArticleAsUnread perm
-  action perm Art.Read   = ArtRepo.MarkArticleAsRead perm
+  action perm Art.Unread = ArtRepo.markArticleAsUnread perm
+  action perm Art.Read   = ArtRepo.markArticleAsRead perm
 
 ------------------------------------------------------------------------
 -- DeleteArticle
@@ -191,7 +191,7 @@ data DeleteArticle = DeleteArticle
 deleteArticle :: (ArticleListRepo m) => DeleteArticle -> m CommandResult
 deleteArticle DeleteArticle {..} = case Authz.canDeleteArticle objRef artId of
   Left  err  -> pure $ Left err
-  Right perm -> Right <$> ArtRepo.save colId (ArtRepo.RemoveArticle perm)
+  Right perm -> Right <$> ArtRepo.save colId (ArtRepo.removeArticle perm)
 
 ------------------------------------------------------------------------
 -- CreateUnlockLink
@@ -210,7 +210,7 @@ createUnlockLink CreateUnlockLink {..} = do
   let cap = Cap.mkCapability capId Cap.defaultArticlesRef mPetname mExpDate
   case Authz.canCreateUnlockLinks objRef of
     Left  err  -> pure $ Left err
-    Right perm -> Right <$> CapRepo.save colId (CapRepo.AddUnlockLink perm capId cap)
+    Right perm -> Right <$> CapRepo.save colId (CapRepo.addUnlockLink perm capId cap)
 
 ------------------------------------------------------------------------
 -- DeleteUnlockLink
@@ -225,7 +225,7 @@ data DeleteUnlockLink = DeleteUnlockLink
 deleteUnlockLink :: (CapabilityListRepo m) => DeleteUnlockLink -> m CommandResult
 deleteUnlockLink DeleteUnlockLink {..} = case Authz.canDeleteUnlockLinks objRef of
   Left  err  -> pure $ Left err
-  Right perm -> Right <$> CapRepo.save colId (CapRepo.RemoveUnlockLink perm capId)
+  Right perm -> Right <$> CapRepo.save colId (CapRepo.removeUnlockLink perm capId)
 
 ------------------------------------------------------------------------
 -- AddShareUnlockLink
@@ -251,7 +251,7 @@ addShareUnlockLinks AddShareUnlockLinks {..} = do
   mkAction capId perm = do
     sharedObjRef <- Cap.createSharedOverviewRef objRef sharedPerms
     let cap = Cap.mkCapability capId sharedObjRef mPetname mExpDate
-    pure $ CapRepo.AddShareUnlockLinks perm capId cap
+    pure $ CapRepo.addShareUnlockLinks perm capId cap
 
 ------------------------------------------------------------------------
 -- DeleteShareUnlockLink
@@ -266,7 +266,7 @@ data DeleteShareUnlockLinks = DeleteShareUnlockLinks
 deleteShareUnlockLinks :: (CapabilityListRepo m) => DeleteShareUnlockLinks -> m CommandResult
 deleteShareUnlockLinks DeleteShareUnlockLinks {..} = case Authz.canShareUnlockLinks objRef of
   Left  err  -> pure $ Left err
-  Right perm -> Right <$> CapRepo.save colId (CapRepo.RemoveShareUnlockLinks perm capId)
+  Right perm -> Right <$> CapRepo.save colId (CapRepo.removeShareUnlockLinks perm capId)
 
 ------------------------------------------------------------------------
 -- AddShareArticleList
@@ -292,7 +292,7 @@ addShareArticleList AddShareArticleList {..} = do
   mkAction capId perm = do
     sharedObjRef <- Cap.createSharedArticlesRef objRef sharedPerms
     let cap = Cap.mkCapability capId sharedObjRef mPetname mExpDate
-    pure $ CapRepo.AddShareArticleList perm capId cap
+    pure $ CapRepo.addShareArticleList perm capId cap
 
 ------------------------------------------------------------------------
 -- DeleteShareArticleList
@@ -307,7 +307,7 @@ data DeleteShareArticleList = DeleteShareArticleList
 deleteShareArticleList :: (CapabilityListRepo m) => DeleteShareArticleList -> m CommandResult
 deleteShareArticleList DeleteShareArticleList {..} = case Authz.canShareArticleList objRef of
   Left  err  -> pure $ Left err
-  Right perm -> Right <$> CapRepo.save colId (CapRepo.RemoveShareArticleList perm capId)
+  Right perm -> Right <$> CapRepo.save colId (CapRepo.removeShareArticleList perm capId)
 
 ------------------------------------------------------------------------
 -- AddShareArticle
@@ -334,7 +334,7 @@ addShareArticle AddShareArticle {..} = do
   mkAction capId perm = do
     sharedObjRef <- Cap.createSharedArticleRef objRef sharedPerms artId
     let cap = Cap.mkCapability capId sharedObjRef mPetname mExpDate
-    pure $ CapRepo.AddShareArticle perm capId cap
+    pure $ CapRepo.addShareArticle perm capId cap
 
 ------------------------------------------------------------------------
 -- DeleteShareArticle
@@ -350,7 +350,7 @@ data DeleteShareArticle = DeleteShareArticle
 deleteShareArticle :: (CapabilityListRepo m) => DeleteShareArticle -> m CommandResult
 deleteShareArticle DeleteShareArticle {..} = case Authz.canShareArticle objRef artId of
   Left  err  -> pure $ Left err
-  Right perm -> Right <$> CapRepo.save colId (CapRepo.RemoveShareArticle perm capId)
+  Right perm -> Right <$> CapRepo.save colId (CapRepo.removeShareArticle perm capId)
 
 ------------------------------------------------------------------------
 -- CreateCollection

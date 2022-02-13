@@ -3,7 +3,6 @@ module Test.Infra.Repo.CapabilityList
   , testSaveAll
   ) where
 
-import qualified Lib.Domain.Repo.CapabilityList                      as Repo
 import qualified Lib.Infra.Persistence.Model.CapabilityList          as CapListPm
 import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
 
@@ -33,7 +32,7 @@ testSaveAll _colId updates = do
   collectionRef   <- grab @CollectionState
   collection      <- readIORef collectionRef
   capabilities    <- capabilitiesFromCollection collection
-  newCapabilities <- fmap CapListPm.fromDomain . throwOnError $ foldlM Repo.apply capabilities updates
+  newCapabilities <- fmap CapListPm.fromDomain . throwOnError $ foldlM (\cs f -> f cs) capabilities updates
   writeIORef collectionRef $ collection { ColPm.capabilityList = newCapabilities }
 
 capabilitiesFromCollection :: WithError m => CollectionPm -> m CapabilityList

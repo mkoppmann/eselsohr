@@ -5,7 +5,6 @@ module Lib.Infra.Repo.CapabilityList
   ) where
 
 import qualified Lib.App.Port                                        as Port
-import qualified Lib.Domain.Repo.CapabilityList                      as Repo
 import qualified Lib.Infra.Persistence.File                          as File
 import qualified Lib.Infra.Persistence.Model.CapabilityList          as CapListPm
 import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
@@ -38,7 +37,7 @@ saveAll colId updates = commit colId action
   action = do
     collection      <- File.load colId id
     capabilities    <- capabilitiesFromCollection collection
-    newCapabilities <- throwOnError $ foldlM Repo.apply capabilities updates
+    newCapabilities <- throwOnError $ foldlM (\cs f -> f cs) capabilities updates
     File.save colId $ collection { ColPm.capabilityList = CapListPm.fromDomain newCapabilities }
 
 capabilitiesFromCollection :: WithError m => CollectionPm -> m CapabilityList
