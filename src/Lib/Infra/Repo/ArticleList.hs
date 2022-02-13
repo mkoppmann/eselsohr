@@ -37,7 +37,7 @@ saveAll colId updates = commit colId action
   action = do
     collection  <- File.load colId id
     articles    <- articlesFromCollection collection
-    newArticles <- throwOnError $ foldlM (\as f -> f as) articles updates
+    newArticles <- throwOnError $ foldlM (&) articles updates
     File.save colId $ collection { ColPm.articleList = ArtListPm.fromDomain newArticles }
 
 articlesFromCollection :: WithError m => CollectionPm -> m ArticleList
