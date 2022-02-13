@@ -5,7 +5,6 @@ module Lib.Infra.Repo.ArticleList
   ) where
 
 import qualified Lib.App.Port                                        as Port
-import qualified Lib.Domain.Repo.ArticleList                         as Repo
 import qualified Lib.Infra.Persistence.File                          as File
 import qualified Lib.Infra.Persistence.Model.ArticleList             as ArtListPm
 import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
@@ -38,7 +37,7 @@ saveAll colId updates = commit colId action
   action = do
     collection  <- File.load colId id
     articles    <- articlesFromCollection collection
-    newArticles <- throwOnError $ foldlM Repo.apply articles updates
+    newArticles <- throwOnError $ foldlM (\as f -> f as) articles updates
     File.save colId $ collection { ColPm.articleList = ArtListPm.fromDomain newArticles }
 
 articlesFromCollection :: WithError m => CollectionPm -> m ArticleList

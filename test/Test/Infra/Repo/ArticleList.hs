@@ -3,7 +3,6 @@ module Test.Infra.Repo.ArticleList
   , testSaveAll
   ) where
 
-import qualified Lib.Domain.Repo.ArticleList                         as Repo
 import qualified Lib.Infra.Persistence.Model.ArticleList             as ArtListPm
 import qualified Lib.Infra.Persistence.Model.Collection              as ColPm
 
@@ -32,7 +31,7 @@ testSaveAll _colId updates = do
   collectionRef <- grab @CollectionState
   collection    <- readIORef collectionRef
   articles      <- articlesFromCollection collection
-  newArticles   <- fmap ArtListPm.fromDomain . throwOnError $ foldlM Repo.apply articles updates
+  newArticles   <- fmap ArtListPm.fromDomain . throwOnError $ foldlM (\as f -> f as) articles updates
   writeIORef collectionRef $ collection { ColPm.articleList = newArticles }
 
 articlesFromCollection :: WithError m => CollectionPm -> m ArticleList

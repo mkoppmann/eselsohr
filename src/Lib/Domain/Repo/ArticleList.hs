@@ -1,8 +1,12 @@
 module Lib.Domain.Repo.ArticleList
-  ( ArticleListAction(..)
+  ( ArticleListAction
   , ArticleListRepo(..)
   , save
-  , apply
+  , addArticle
+  , changeArticleTitle
+  , markArticleAsUnread
+  , markArticleAsRead
+  , removeArticle
   ) where
 
 import qualified Lib.Domain.ArticleList                              as ArtList
@@ -19,12 +23,7 @@ import           Lib.Domain.Error                                     ( AppError
 import           Lib.Domain.Id                                        ( Id )
 import           Lib.Domain.NonEmptyText                              ( NonEmptyText )
 
-data ArticleListAction
-  = AddArticle !CreateArticlesPerm !(Id Article) !Article
-  | ChangeArticleTitle !ChangeTitlePerm !NonEmptyText
-  | MarkArticleAsUnread !ChangeStatePerm
-  | MarkArticleAsRead !ChangeStatePerm
-  | RemoveArticle !DeleteArticlePerm
+type ArticleListAction = ArticleList -> Either AppErrorType ArticleList
 
 class (Monad m) => ArticleListRepo m where
   loadAll :: Id Collection -> m ArticleList
@@ -34,10 +33,17 @@ class (Monad m) => ArticleListRepo m where
 save :: (ArticleListRepo m) => Id Collection -> ArticleListAction -> m ()
 save colId = saveAll colId . one
 
-apply :: ArticleList -> ArticleListAction -> Either AppErrorType ArticleList
-apply artList = \case
-  AddArticle perm artId art        -> ArtList.addArticle perm artId art artList
-  ChangeArticleTitle perm newTitle -> ArtList.changeArticleTitle perm newTitle artList
-  MarkArticleAsUnread perm         -> ArtList.markArticleAsUnread perm artList
-  MarkArticleAsRead   perm         -> ArtList.markArticleAsRead perm artList
-  RemoveArticle       perm         -> pure $ ArtList.removeArticle perm artList
+addArticle :: CreateArticlesPerm -> Id Article -> Article -> ArticleListAction
+addArticle = ArtList.addArticle
+
+changeArticleTitle :: ChangeTitlePerm -> NonEmptyText -> ArticleListAction
+changeArticleTitle = ArtList.changeArticleTitle
+
+markArticleAsUnread :: ChangeStatePerm -> ArticleListAction
+markArticleAsUnread = ArtList.markArticleAsUnread
+
+markArticleAsRead :: ChangeStatePerm -> ArticleListAction
+markArticleAsRead = ArtList.markArticleAsRead
+
+removeArticle :: DeleteArticlePerm -> ArticleListAction
+removeArticle perm = pure . ArtList.removeArticle perm

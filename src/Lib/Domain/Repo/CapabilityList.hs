@@ -1,8 +1,15 @@
 module Lib.Domain.Repo.CapabilityList
-  ( CapabilityListAction(..)
+  ( CapabilityListAction
   , CapabilityListRepo(..)
   , save
-  , apply
+  , addUnlockLink
+  , removeUnlockLink
+  , addShareUnlockLinks
+  , removeShareUnlockLinks
+  , addShareArticleList
+  , removeShareArticleList
+  , addShareArticle
+  , removeShareArticle
   ) where
 
 import qualified Lib.Domain.CapabilityList                           as CapList
@@ -19,15 +26,7 @@ import           Lib.Domain.Collection                                ( Collecti
 import           Lib.Domain.Error                                     ( AppErrorType )
 import           Lib.Domain.Id                                        ( Id )
 
-data CapabilityListAction
-  = AddUnlockLink !CreateUnlockLinksPerm !(Id Capability) !Capability
-  | RemoveUnlockLink !DeleteUnlockLinksPerm !(Id Capability)
-  | AddShareUnlockLinks !ShareUnlockLinksPerm !(Id Capability) !Capability
-  | RemoveShareUnlockLinks !ShareUnlockLinksPerm !(Id Capability)
-  | AddShareArticleList !ShareArticleListPerm !(Id Capability) !Capability
-  | RemoveShareArticleList !ShareArticleListPerm !(Id Capability)
-  | AddShareArticle !ShareArticlePerm !(Id Capability) !Capability
-  | RemoveShareArticle !ShareArticlePerm !(Id Capability)
+type CapabilityListAction = CapabilityList -> Either AppErrorType CapabilityList
 
 class (Monad m) => CapabilityListRepo m where
   loadAll :: Id Collection -> m CapabilityList
@@ -37,13 +36,26 @@ class (Monad m) => CapabilityListRepo m where
 save :: (CapabilityListRepo m) => Id Collection -> CapabilityListAction -> m ()
 save colId = saveAll colId . one
 
-apply :: CapabilityList -> CapabilityListAction -> Either AppErrorType CapabilityList
-apply capList = \case
-  AddUnlockLink perm capId cap       -> CapList.addUnlockLink perm capId cap capList
-  RemoveUnlockLink perm capId        -> pure $ CapList.removeUnlockLink perm capId capList
-  AddShareUnlockLinks perm capId cap -> CapList.addShareUnlockLinks perm capId cap capList
-  RemoveShareUnlockLinks perm capId  -> pure $ CapList.removeShareUnlockLinks perm capId capList
-  AddShareArticleList perm capId cap -> CapList.addShareArticleList perm capId cap capList
-  RemoveShareArticleList perm capId  -> pure $ CapList.removeShareArticleList perm capId capList
-  AddShareArticle perm capId cap     -> CapList.addShareArticle perm capId cap capList
-  RemoveShareArticle perm capId      -> pure $ CapList.removeShareArticle perm capId capList
+addUnlockLink :: CreateUnlockLinksPerm -> Id Capability -> Capability -> CapabilityListAction
+addUnlockLink = CapList.addUnlockLink
+
+removeUnlockLink :: DeleteUnlockLinksPerm -> Id Capability -> CapabilityListAction
+removeUnlockLink perm capId = pure . CapList.removeUnlockLink perm capId
+
+addShareUnlockLinks :: ShareUnlockLinksPerm -> Id Capability -> Capability -> CapabilityListAction
+addShareUnlockLinks = CapList.addShareUnlockLinks
+
+removeShareUnlockLinks :: ShareUnlockLinksPerm -> Id Capability -> CapabilityListAction
+removeShareUnlockLinks perm capId = pure . CapList.removeShareUnlockLinks perm capId
+
+addShareArticleList :: ShareArticleListPerm -> Id Capability -> Capability -> CapabilityListAction
+addShareArticleList = CapList.addShareArticleList
+
+removeShareArticleList :: ShareArticleListPerm -> Id Capability -> CapabilityListAction
+removeShareArticleList perm capId = pure . CapList.removeShareArticleList perm capId
+
+addShareArticle :: ShareArticlePerm -> Id Capability -> Capability -> CapabilityListAction
+addShareArticle = CapList.addShareArticle
+
+removeShareArticle :: ShareArticlePerm -> Id Capability -> CapabilityListAction
+removeShareArticle perm capId = pure . CapList.removeShareArticle perm capId
