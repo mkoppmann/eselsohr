@@ -32,6 +32,7 @@ module Test.TestAssert
   , equals
   , redirects
   , defaultTestEnv
+  , runTestApp
   ) where
 
 import           Test.Hspec                                           ( Expectation
@@ -92,8 +93,14 @@ redirects app env = runAppAsIO env app >>= \case
   Right a             -> expectationFailure $ "Expected redirect but got: " <> show a
 
 -- | Provides a default 'TestAppEnv'.
-defaultTestEnv :: IO TestAppEnv
+defaultTestEnv :: (MonadIO m) => m TestAppEnv
 defaultTestEnv = do
   let logAction = mainLogAction Debug
   collectionState <- newIORef mkCollection
   pure $ TestEnv { .. }
+
+-- | Runs application for its effects on the environment. Must succeed.
+runTestApp :: TestAppEnv -> TestApp a -> IO a
+runTestApp env app = runAppAsIO env app >>= \case
+  Left  err -> error $ "Could not run test app: " <> show err
+  Right res -> pure res
