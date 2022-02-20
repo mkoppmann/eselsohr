@@ -1,5 +1,6 @@
 module Lib.Domain.CapabilityList
   ( CapabilityList
+  , lookup
   , addUnlockLink
   , removeUnlockLink
   , addShareUnlockLinks
@@ -35,6 +36,9 @@ newtype CapabilityList = CapabilityList (Map (Id Capability) Capability)
 type AddCapability a = a -> Id Capability -> Capability -> CapabilityList -> Either AppErrorType CapabilityList
 
 type RemoveCapability a = a -> Id Capability -> CapabilityList -> CapabilityList
+
+lookup :: Id Capability -> CapabilityList -> Either AppErrorType Capability
+lookup capId = maybeToRight notFound . Map.lookup capId . coerce
 
 addUnlockLink :: AddCapability CreateUnlockLinksPerm
 addUnlockLink _perm = addCapability
@@ -99,9 +103,6 @@ toMap = coerce
 
 capabilityAlreadyExists :: AppErrorType
 capabilityAlreadyExists = serverError "A capability with this id was already added. Please try again."
-
-lookup :: Id Capability -> CapabilityList -> Either AppErrorType Capability
-lookup capId = maybeToRight notFound . Map.lookup capId . coerce
 
 type Update a = (a -> a)
 
