@@ -18,7 +18,7 @@ jobs:
       - name: FreeBSD-VM
         id: build-freebsd
         # This action currently uses FreeBSD 13
-        uses: vmactions/freebsd-vm@v0.1.5
+        uses: vmactions/freebsd-vm@v0.1.6
         with:
           envs: "CONFIG"
           usesh: true

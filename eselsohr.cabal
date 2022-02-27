@@ -126,9 +126,9 @@ library
         scalpel >=0.6.2 && <0.7,
         serialise >=0.2.3 && <0.3,
         serialise-uuid >=0.1 && <0.2,
-        servant >=0.18.2 && <0.19,
+        servant >=0.18.2 && <0.20,
         servant-lucid >=0.9.0 && <0.10,
-        servant-server >=0.18.2 && <0.19,
+        servant-server >=0.18.2 && <0.20,
         time >=1.9.3 && <1.14,
         tls >=1.5.4 && <1.6,
         unliftio >=0.2.13 && <0.3,
@@ -153,7 +153,7 @@ executable eselsohr-exe
     build-depends:
         base >=4.14.1 && <4.17,
         eselsohr,
-        optparse-applicative >=0.16.0 && <0.17
+        optparse-applicative >=0.16.0 && <0.18
 
 test-suite eselsohr-test
     type:               exitcode-stdio-1.0
@@ -204,11 +204,11 @@ test-suite eselsohr-test
 
     build-depends:
         base >=4.14.1 && <4.17,
-        bytestring >=0.10.12 && <0.11,
+        bytestring >=0.10.12 && <0.12,
         co-log >=0.4.0 && <0.5,
         eselsohr,
         filepath >=1.4.2 && <1.5,
-        hedgehog >=1.0.4 && <1.1,
+        hedgehog >=1.0.4 && <1.2,
         hspec >=2.7.8 && <2.10,
         hspec-core >=2.7.8 && <2.10,
         hspec-wai >=0.11.1 && <0.12,
@@ -216,7 +216,7 @@ test-suite eselsohr-test
         http-types >=0.12.3 && <0.13,
         mtl >=2.2.2 && <2.3,
         relude >=1.0.0 && <1.1,
-        servant >=0.18.2 && <0.19,
+        servant >=0.18.2 && <0.20,
         tasty >=1.4.2 && <1.5,
         tasty-hedgehog >=1.1.0 && <1.2,
         tasty-hspec >=1.2 && <1.3,
