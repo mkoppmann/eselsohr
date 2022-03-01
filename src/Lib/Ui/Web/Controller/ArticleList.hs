@@ -73,7 +73,7 @@ createArticle CreateArticleForm {..} = do
   (ref, objRef)  <- lookupReferences acc
   deploymentMode <- grab @DeploymentMode
   command        <- throwOnError . mkCommand deploymentMode objRef $ collectionId ref
-  throwOnErrorM $ Command.createArticle command
+  void . throwOnErrorM $ Command.createArticle command
   redirectTo goto
  where
   mkCommand deploymentMode objRef colId = do
@@ -124,7 +124,7 @@ createSharedArticleListRef
 createSharedArticleListRef CreateSharedArticleListRefForm {..} = do
   (ref, objRef) <- lookupReferences acc
   let command = mkCommand objRef $ collectionId ref
-  throwOnErrorM $ Command.addShareArticleList command
+  void . throwOnErrorM $ Command.addShareArticleList command
   redirectTo goto
  where
   mkCommand objRef colId = do
@@ -153,7 +153,7 @@ createSharedArticleRef
 createSharedArticleRef artId CreateSharedArticleRefForm {..} = do
   (ref, objRef) <- lookupReferences acc
   let command = mkCommand objRef $ collectionId ref
-  throwOnErrorM $ Command.addShareArticle command
+  void . throwOnErrorM $ Command.addShareArticle command
   redirectTo goto
  where
   mkCommand objRef colId = do

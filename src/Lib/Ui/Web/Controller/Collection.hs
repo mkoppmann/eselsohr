@@ -70,7 +70,7 @@ createUnlockLink :: (CapabilityListRepo m, WithQuery env m) => CreateUnlockLinkF
 createUnlockLink CreateUnlockLinkForm {..} = do
   (ref, objRef) <- lookupReferences acc
   let command = mkCommand objRef $ collectionId ref
-  throwOnErrorM $ Command.createUnlockLink command
+  void . throwOnErrorM $ Command.createUnlockLink command
   redirectTo goto
  where
   mkCommand objRef colId = do
@@ -90,7 +90,7 @@ createSharedOverviewRef :: (CapabilityListRepo m, WithQuery env m) => CreateShar
 createSharedOverviewRef CreateSharedOverviewRefForm {..} = do
   (ref, objRef) <- lookupReferences acc
   let command = mkCommand objRef $ collectionId ref
-  throwOnErrorM $ Command.addShareUnlockLinks command
+  void . throwOnErrorM $ Command.addShareUnlockLinks command
   redirectTo goto
  where
   mkCommand objRef colId = do
