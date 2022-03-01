@@ -1,11 +1,13 @@
 module Test.Domain.Shared
   ( authorized
   , defaultArticle
+  , defaultArticleWithId
   , defaultArticleWithState
   , getNonEmptyText
   , getUri
   , getCurrentTime
   , getRandomId
+  , objRefWithAllOverviewPerms
   , objRefWithNoOverviewPerms
   , objRefWithAllArticlesPerms
   , objRefWithNoArticlesPerms
@@ -38,9 +40,16 @@ authorized (Right perm) = perm
 defaultArticle :: MonadIO m => m Article
 defaultArticle = defaultArticleWithState Article.Unread
 
+defaultArticleWithId :: MonadIO m => Id Article -> m Article
+defaultArticleWithId artId = defaultArticleWithIdAndState artId Article.Unread
+
 defaultArticleWithState :: MonadIO m => ArticleState -> m Article
 defaultArticleWithState artState = do
-  artId       <- getRandomId
+  artId <- getRandomId
+  defaultArticleWithIdAndState artId artState
+
+defaultArticleWithIdAndState :: MonadIO m => Id Article -> ArticleState -> m Article
+defaultArticleWithIdAndState artId artState = do
   artCreation <- getCurrentTime
   let artTitle = getNonEmptyText "Default title"
       artUri   = getUri "http://www.example.org"
@@ -61,6 +70,14 @@ getCurrentTime = Adapter.getCurrentTime
 
 getRandomId :: MonadIO m => m (Id a)
 getRandomId = Adapter.getRandomId
+
+objRefWithAllOverviewPerms :: ObjectReference
+objRefWithAllOverviewPerms = Capability.OverviewRef $ Capability.mkOverviewPerms canView canCreate canDelete canShare
+ where
+  canView   = True
+  canCreate = True
+  canDelete = True
+  canShare  = True
 
 objRefWithNoOverviewPerms :: ObjectReference
 objRefWithNoOverviewPerms = Capability.OverviewRef $ Capability.mkOverviewPerms canView canCreate canDelete canShare

@@ -96,7 +96,7 @@ import           Lib.Domain.Repo.CapabilityList                       ( Capabili
 import           Lib.Domain.Repo.Collection                           ( CollectionRepo )
 import           Lib.Domain.Uri                                       ( Uri )
 
-type CommandResult = Either AppErrorType ()
+type CommandResult a = Either AppErrorType a
 
 ------------------------------------------------------------------------
 -- CreateArticle
@@ -108,14 +108,16 @@ data CreateArticle = CreateArticle
   , objRef :: !ObjectReference
   }
 
-createArticle :: (ArticleListRepo m, MonadScraper m, MonadTime m) => CreateArticle -> m CommandResult
+createArticle :: (ArticleListRepo m, MonadScraper m, MonadTime m) => CreateArticle -> m (CommandResult (Id Article))
 createArticle CreateArticle {..} = do
   artId    <- ArtRepo.nextId
   title    <- Port.scrapWebsite uri
   creation <- Port.getCurrentTime
   case mkAction artId title creation of
     Left  err    -> pure $ Left err
-    Right action -> Right <$> ArtRepo.save colId action
+    Right action -> do
+      ArtRepo.save colId action
+      pure $ Right artId
  where
   mkAction :: Id Article -> Text -> UTCTime -> Either AppErrorType ArticleListAction
   mkAction id artTitle creation = do
@@ -136,7 +138,7 @@ data ChangeArticleTitle = ChangeArticleTitle
   , objRef :: !ObjectReference
   }
 
-changeArticleTitle :: (ArticleListRepo m) => ChangeArticleTitle -> m CommandResult
+changeArticleTitle :: (ArticleListRepo m) => ChangeArticleTitle -> m (CommandResult ())
 changeArticleTitle ChangeArticleTitle {..} = case mkAction of
   Left  err    -> pure $ Left err
   Right action -> Right <$> ArtRepo.save colId action
@@ -157,7 +159,7 @@ data MarkArticleAsRead = MarkArticleAsRead
   , objRef :: !ObjectReference
   }
 
-markArticleAsRead :: (ArticleListRepo m) => MarkArticleAsRead -> m CommandResult
+markArticleAsRead :: (ArticleListRepo m) => MarkArticleAsRead -> m (CommandResult ())
 markArticleAsRead MarkArticleAsRead {..} = changeArticleState colId artId objRef Art.Read
 
 data MarkArticleAsUnread = MarkArticleAsUnread
@@ -166,11 +168,11 @@ data MarkArticleAsUnread = MarkArticleAsUnread
   , objRef :: !ObjectReference
   }
 
-markArticleAsUnread :: (ArticleListRepo m) => MarkArticleAsUnread -> m CommandResult
+markArticleAsUnread :: (ArticleListRepo m) => MarkArticleAsUnread -> m (CommandResult ())
 markArticleAsUnread MarkArticleAsUnread {..} = changeArticleState colId artId objRef Art.Unread
 
 changeArticleState
-  :: (ArticleListRepo m) => Id Collection -> Id Article -> ObjectReference -> ArticleState -> m CommandResult
+  :: (ArticleListRepo m) => Id Collection -> Id Article -> ObjectReference -> ArticleState -> m (CommandResult ())
 changeArticleState colId artId objRef artState = case Authz.canChangeArticleState objRef artId of
   Left  err  -> pure $ Left err
   Right perm -> Right <$> ArtRepo.save colId (action perm artState)
@@ -188,7 +190,7 @@ data DeleteArticle = DeleteArticle
   , objRef :: !ObjectReference
   }
 
-deleteArticle :: (ArticleListRepo m) => DeleteArticle -> m CommandResult
+deleteArticle :: (ArticleListRepo m) => DeleteArticle -> m (CommandResult ())
 deleteArticle DeleteArticle {..} = case Authz.canDeleteArticle objRef artId of
   Left  err  -> pure $ Left err
   Right perm -> Right <$> ArtRepo.save colId (ArtRepo.removeArticle perm)
@@ -204,13 +206,15 @@ data CreateUnlockLink = CreateUnlockLink
   , objRef   :: !ObjectReference
   }
 
-createUnlockLink :: (CapabilityListRepo m) => CreateUnlockLink -> m CommandResult
+createUnlockLink :: (CapabilityListRepo m) => CreateUnlockLink -> m (CommandResult (Id Capability))
 createUnlockLink CreateUnlockLink {..} = do
   capId <- CapRepo.nextId
   let cap = Cap.mkCapability capId Cap.defaultArticlesRef mPetname mExpDate
   case Authz.canCreateUnlockLinks objRef of
     Left  err  -> pure $ Left err
-    Right perm -> Right <$> CapRepo.save colId (CapRepo.addUnlockLink perm capId cap)
+    Right perm -> do
+      CapRepo.save colId (CapRepo.addUnlockLink perm capId cap)
+      pure $ Right capId
 
 ------------------------------------------------------------------------
 -- DeleteUnlockLink
@@ -222,7 +226,7 @@ data DeleteUnlockLink = DeleteUnlockLink
   , objRef :: !ObjectReference
   }
 
-deleteUnlockLink :: (CapabilityListRepo m) => DeleteUnlockLink -> m CommandResult
+deleteUnlockLink :: (CapabilityListRepo m) => DeleteUnlockLink -> m (CommandResult ())
 deleteUnlockLink DeleteUnlockLink {..} = case Authz.canDeleteUnlockLinks objRef of
   Left  err  -> pure $ Left err
   Right perm -> Right <$> CapRepo.save colId (CapRepo.removeUnlockLink perm capId)
@@ -239,14 +243,16 @@ data AddShareUnlockLinks = AddShareUnlockLinks
   , objRef      :: !ObjectReference
   }
 
-addShareUnlockLinks :: (CapabilityListRepo m) => AddShareUnlockLinks -> m CommandResult
+addShareUnlockLinks :: (CapabilityListRepo m) => AddShareUnlockLinks -> m (CommandResult (Id Capability))
 addShareUnlockLinks AddShareUnlockLinks {..} = do
   capId <- CapRepo.nextId
   case Authz.canShareUnlockLinks objRef of
     Left  err  -> pure $ Left err
     Right perm -> case mkAction capId perm of
       Nothing     -> pure Authz.unauthorized
-      Just action -> Right <$> CapRepo.save colId action
+      Just action -> do
+        CapRepo.save colId action
+        pure $ Right capId
  where
   mkAction capId perm = do
     sharedObjRef <- Cap.createSharedOverviewRef objRef sharedPerms
@@ -263,7 +269,7 @@ data DeleteShareUnlockLinks = DeleteShareUnlockLinks
   , objRef :: !ObjectReference
   }
 
-deleteShareUnlockLinks :: (CapabilityListRepo m) => DeleteShareUnlockLinks -> m CommandResult
+deleteShareUnlockLinks :: (CapabilityListRepo m) => DeleteShareUnlockLinks -> m (CommandResult ())
 deleteShareUnlockLinks DeleteShareUnlockLinks {..} = case Authz.canShareUnlockLinks objRef of
   Left  err  -> pure $ Left err
   Right perm -> Right <$> CapRepo.save colId (CapRepo.removeShareUnlockLinks perm capId)
@@ -280,14 +286,16 @@ data AddShareArticleList = AddShareArticleList
   , objRef      :: !ObjectReference
   }
 
-addShareArticleList :: (CapabilityListRepo m) => AddShareArticleList -> m CommandResult
+addShareArticleList :: (CapabilityListRepo m) => AddShareArticleList -> m (CommandResult (Id Capability))
 addShareArticleList AddShareArticleList {..} = do
   capId <- CapRepo.nextId
   case Authz.canShareArticleList objRef of
     Left  err  -> pure $ Left err
     Right perm -> case mkAction capId perm of
       Nothing     -> pure Authz.unauthorized
-      Just action -> Right <$> CapRepo.save colId action
+      Just action -> do
+        CapRepo.save colId action
+        pure $ Right capId
  where
   mkAction capId perm = do
     sharedObjRef <- Cap.createSharedArticlesRef objRef sharedPerms
@@ -304,7 +312,7 @@ data DeleteShareArticleList = DeleteShareArticleList
   , objRef :: !ObjectReference
   }
 
-deleteShareArticleList :: (CapabilityListRepo m) => DeleteShareArticleList -> m CommandResult
+deleteShareArticleList :: (CapabilityListRepo m) => DeleteShareArticleList -> m (CommandResult ())
 deleteShareArticleList DeleteShareArticleList {..} = case Authz.canShareArticleList objRef of
   Left  err  -> pure $ Left err
   Right perm -> Right <$> CapRepo.save colId (CapRepo.removeShareArticleList perm capId)
@@ -322,14 +330,16 @@ data AddShareArticle = AddShareArticle
   , objRef      :: !ObjectReference
   }
 
-addShareArticle :: (CapabilityListRepo m) => AddShareArticle -> m CommandResult
+addShareArticle :: (CapabilityListRepo m) => AddShareArticle -> m (CommandResult (Id Capability))
 addShareArticle AddShareArticle {..} = do
   capId <- CapRepo.nextId
   case Authz.canShareArticle objRef artId of
     Left  err  -> pure $ Left err
     Right perm -> case mkAction capId perm of
       Nothing     -> pure Authz.unauthorized
-      Just action -> Right <$> CapRepo.save colId action
+      Just action -> do
+        CapRepo.save colId action
+        pure $ Right capId
  where
   mkAction capId perm = do
     sharedObjRef <- Cap.createSharedArticleRef objRef sharedPerms artId
@@ -347,7 +357,7 @@ data DeleteShareArticle = DeleteShareArticle
   , objRef :: !ObjectReference
   }
 
-deleteShareArticle :: (CapabilityListRepo m) => DeleteShareArticle -> m CommandResult
+deleteShareArticle :: (CapabilityListRepo m) => DeleteShareArticle -> m (CommandResult ())
 deleteShareArticle DeleteShareArticle {..} = case Authz.canShareArticle objRef artId of
   Left  err  -> pure $ Left err
   Right perm -> Right <$> CapRepo.save colId (CapRepo.removeShareArticle perm capId)

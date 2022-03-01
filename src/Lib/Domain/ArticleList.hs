@@ -1,5 +1,6 @@
 module Lib.Domain.ArticleList
   ( ArticleList
+  , lookup
   , addArticle
   , changeArticleTitle
   , markArticleAsUnread
@@ -31,6 +32,9 @@ import           Lib.Domain.NonEmptyText                              ( NonEmpty
 
 newtype ArticleList = ArticleList (Map (Id Article) Article)
   deriving (Eq, Show) via (Map (Id Article) Article)
+
+lookup :: Id Article -> ArticleList -> Either AppErrorType Article
+lookup artId = maybeToRight notFound . Map.lookup artId . coerce
 
 addArticle :: CreateArticlesPerm -> Id Article -> Article -> ArticleList -> Either AppErrorType ArticleList
 addArticle _perm artId art artList = case lookup artId artList of
@@ -80,9 +84,6 @@ toMap = coerce
 
 articleAlreadyExists :: AppErrorType
 articleAlreadyExists = serverError "An article with this id was already added. Please try again."
-
-lookup :: Id Article -> ArticleList -> Either AppErrorType Article
-lookup artId = maybeToRight notFound . Map.lookup artId . coerce
 
 type Update a = (a -> a)
 
