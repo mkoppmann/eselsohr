@@ -2,6 +2,7 @@ module Lib.Infra.Persistence.Model.ArticleList
   ( ArticleListPm
   , fromDomain
   , toDomain
+  , migrate
   ) where
 
 import qualified Data.Map.Strict                                     as Map
@@ -20,8 +21,19 @@ import           Lib.Infra.Persistence.Model.Shared                   ( modelLis
 
 type ArticleListPm = Map (Id Article) ArticlePm
 
+------------------------------------------------------------------------
+-- Mapper
+------------------------------------------------------------------------
+
 fromDomain :: ArticleList -> ArticleListPm
 fromDomain = Map.fromList . modelListFromDomain Article.fromDomain . Domain.toMap
 
 toDomain :: ArticleListPm -> Either AppErrorType ArticleList
 toDomain = Right . Domain.fromMap . Map.fromList <=< modelListToDomain Article.toDomain
+
+------------------------------------------------------------------------
+-- Migration
+------------------------------------------------------------------------
+
+migrate :: ArticleListPm -> ArticleListPm
+migrate = fmap Article.migrate

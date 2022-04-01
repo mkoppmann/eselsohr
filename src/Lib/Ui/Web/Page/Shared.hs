@@ -77,7 +77,6 @@ import           Lib.Infra.Error                                      ( WithErro
 import           Lib.Infra.Log                                        ( WithLog )
 import           Lib.Infra.Persistence.File                           ( WithFile )
 import           Lib.Infra.Persistence.Model.ArticleList              ( ArticleListPm )
-import           Lib.Infra.Persistence.Model.Capability               ( CapabilityPm )
 import           Lib.Infra.Persistence.Model.CapabilityList           ( CapabilityListPm )
 import           Lib.Ui.Dto.Accesstoken                               ( Accesstoken
                                                                       , Reference(..)
@@ -102,15 +101,15 @@ type QueryMap a = Map (Id a) a
 lookupReferences :: WithQuery env m => Accesstoken -> m (Reference, ObjectReference)
 lookupReferences acc = do
   let ref@(Reference colId capId) = toReference acc
-  authList   <- getCapabilityListPm colId
-  capPm      <- capOrNotAuthError $ Map.lookup capId authList
-  curTime    <- Port.getCurrentTime
-  validCapPm <- capOrNotAuthError $ capStillValid curTime capPm
-  cap        <- throwOnError $ CapPm.toDomain validCapPm
-  pure (ref, Capability.objectReference cap)
+  authList <- getCapabilityListPm colId
+  capPm    <- capOrNotAuthError $ Map.lookup capId authList
+  curTime  <- Port.getCurrentTime
+  cap      <- throwOnError $ CapPm.toDomain capPm
+  validCap <- capOrNotAuthError $ capStillValid curTime cap
+  pure (ref, Capability.objectReference validCap)
 
 getArticleListPm :: (WithFile env m) => Id Collection -> m ArticleListPm
-getArticleListPm colId = File.load colId ColPm.articleList
+getArticleListPm colId = File.load colId ColPm.getArticleList
 
 getArticleMap :: (WithQuery env m) => Id Collection -> m (QueryMap Article)
 getArticleMap = throwOnError . traverse ArtPm.toDomain <=< getArticleListPm
@@ -123,7 +122,7 @@ getArticle colId artId = do
   pure $ ArticleVm.fromDomain art
 
 getCapabilityListPm :: (WithFile env m) => Id Collection -> m CapabilityListPm
-getCapabilityListPm colId = File.load colId ColPm.capabilityList
+getCapabilityListPm colId = File.load colId ColPm.getCapabilityList
 
 getCapabilityMap :: (WithQuery env m) => Id Collection -> m (QueryMap Capability)
 getCapabilityMap = throwOnError . traverse CapPm.toDomain <=< getCapabilityListPm
@@ -131,8 +130,8 @@ getCapabilityMap = throwOnError . traverse CapPm.toDomain <=< getCapabilityListP
 capOrNotAuthError :: (WithError m) => Maybe a -> m a
 capOrNotAuthError = throwOnNothing $ notAuthorized "No valid capability found"
 
-capStillValid :: UTCTime -> CapabilityPm -> Maybe CapabilityPm
-capStillValid curTime cap = case CapPm.expirationDate cap of
+capStillValid :: UTCTime -> Capability -> Maybe Capability
+capStillValid curTime cap = case Capability.expirationDate cap of
   Nothing      -> Just cap
   Just expDate -> if expDate < curTime then Nothing else Just cap
 

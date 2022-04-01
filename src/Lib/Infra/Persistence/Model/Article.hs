@@ -1,11 +1,15 @@
 module Lib.Infra.Persistence.Model.Article
-  ( ArticlePm(..)
+  ( ArticlePm
   , fromDomain
   , toDomain
+  , migrate
   ) where
 
-import           Codec.Serialise.Class                                ( Serialise )
-import           Codec.Serialise.UUID                                 ( )
+import           Data.Aeson.Types                                     ( FromJSON
+                                                                      , ToJSON(..)
+                                                                      , defaultOptions
+                                                                      , genericToEncoding
+                                                                      )
 import           Data.Time.Clock                                      ( UTCTime )
 import           Prelude                                       hiding ( id
                                                                       , state
@@ -20,29 +24,56 @@ import           Lib.Domain.Id                                        ( Id )
 import           Lib.Infra.Persistence.Model.Id                       ( )
 import           Lib.Infra.Persistence.Model.Shared                   ( readOrMappingError )
 
-data ArticlePm = ArticlePm
-  { id       :: !(Id Article)
-  , title    :: !Text
-  , uri      :: !Text
-  , state    :: !Text
-  , creation :: !UTCTime
+data ArticlePm
+    = ArticlePmInit !ArticlePmV1Data
+    | ArticlePmV1 !ArticlePmV1Data
+  deriving stock Generic
+  deriving anyclass FromJSON
+
+instance ToJSON ArticlePm where
+  toEncoding = genericToEncoding defaultOptions
+
+data ArticlePmV1Data = ArticlePmV1Data
+  { v1Id       :: !(Id Article)
+  , v1Title    :: !Text
+  , v1Uri      :: !Text
+  , v1State    :: !Text
+  , v1Creation :: !UTCTime
   }
   deriving stock Generic
-  deriving anyclass Serialise
+  deriving anyclass FromJSON
+
+instance ToJSON ArticlePmV1Data where
+  toEncoding = genericToEncoding defaultOptions
+
+------------------------------------------------------------------------
+-- Mapper
+------------------------------------------------------------------------
 
 fromDomain :: Article -> ArticlePm
 fromDomain domArt = do
-  let id       = Domain.id domArt
-      title    = toText $ Domain.title domArt
-      uri      = Uri.fromDomain $ Domain.uri domArt
-      state    = show $ Domain.state domArt
-      creation = Domain.creation domArt
-  ArticlePm { .. }
+  let v1Id       = Domain.id domArt
+      v1Title    = toText $ Domain.title domArt
+      v1Uri      = Uri.fromDomain $ Domain.uri domArt
+      v1State    = show $ Domain.state domArt
+      v1Creation = Domain.creation domArt
+  ArticlePmV1 $ ArticlePmV1Data { .. }
 
 toDomain :: ArticlePm -> Either AppErrorType Article
-toDomain ArticlePm {..} = do
-  let domId = id
-  domTitle <- Domain.titleFromText title
-  domUri   <- Uri.toDomain uri
-  domState <- readOrMappingError state
-  pure $ Domain.Article domId domTitle domUri domState creation
+toDomain art = case art of
+  ArticlePmV1 ArticlePmV1Data {..} -> do
+    let domId = v1Id
+    domTitle <- Domain.titleFromText v1Title
+    domUri   <- Uri.toDomain v1Uri
+    domState <- readOrMappingError v1State
+    pure $ Domain.Article domId domTitle domUri domState v1Creation
+  _otherVersion -> toDomain $ migrate art
+
+------------------------------------------------------------------------
+-- Migration
+------------------------------------------------------------------------
+
+migrate :: ArticlePm -> ArticlePm
+migrate = \case
+  ArticlePmInit initData -> migrate $ ArticlePmV1 initData
+  ArticlePmV1   v1Data   -> ArticlePmV1 v1Data

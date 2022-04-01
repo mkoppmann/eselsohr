@@ -2,6 +2,7 @@ module Lib.Infra.Persistence.Model.CapabilityList
   ( CapabilityListPm
   , fromDomain
   , toDomain
+  , migrate
   ) where
 
 import qualified Data.Map.Strict                                     as Map
@@ -20,8 +21,19 @@ import           Lib.Infra.Persistence.Model.Shared                   ( modelLis
 
 type CapabilityListPm = Map (Id Capability) CapabilityPm
 
+------------------------------------------------------------------------
+-- Mapper
+------------------------------------------------------------------------
+
 fromDomain :: CapabilityList -> CapabilityListPm
 fromDomain = Map.fromList . modelListFromDomain Capability.fromDomain . Domain.toMap
 
 toDomain :: CapabilityListPm -> Either AppErrorType CapabilityList
 toDomain = Right . Domain.fromMap . Map.fromList <=< modelListToDomain Capability.toDomain
+
+------------------------------------------------------------------------
+-- Migration
+------------------------------------------------------------------------
+
+migrate :: CapabilityListPm -> CapabilityListPm
+migrate = fmap Capability.migrate

@@ -121,7 +121,7 @@ commandMockedSpecs = describe "Lib.App.Command" $ do
       let objRef  = objRefWithAllArticlesPerms
           command = Command.DeleteArticle { .. }
       void . runTestApp env $ Command.deleteArticle command
-      let predicate = either (const True) (const False) . ArtList.lookup artId
+      let predicate = isLeft . ArtList.lookup artId
       env & ArtRepo.loadAll colId `satisfies` predicate
 
     it "fails when deleting an article with insufficent permissions" $ do
@@ -156,7 +156,7 @@ commandMockedSpecs = describe "Lib.App.Command" $ do
       let objRef  = objRefWithAllOverviewPerms
           command = Command.DeleteUnlockLink { .. }
       void . runTestApp env $ Command.deleteUnlockLink command
-      let predicate = either (const True) (const False) . CapList.lookup capId
+      let predicate = isLeft . CapList.lookup capId
       env & CapRepo.loadAll colId `satisfies` predicate
 
     it "fails when deleting an unlock link with insufficent permissions" $ do
@@ -190,7 +190,7 @@ commandMockedSpecs = describe "Lib.App.Command" $ do
       let objRef  = objRefWithAllOverviewPerms
           command = Command.DeleteShareUnlockLinks { .. }
       void . runTestApp env $ Command.deleteShareUnlockLinks command
-      let predicate = either (const True) (const False) . CapList.lookup capId
+      let predicate = isLeft . CapList.lookup capId
       env & CapRepo.loadAll colId `satisfies` predicate
 
     it "fails when deleting an shared unlock link with insufficent permissions" $ do
@@ -224,7 +224,7 @@ commandMockedSpecs = describe "Lib.App.Command" $ do
       let objRef  = objRefWithAllArticlesPerms
           command = Command.DeleteShareArticleList { .. }
       void . runTestApp env $ Command.deleteShareArticleList command
-      let predicate = either (const True) (const False) . CapList.lookup capId
+      let predicate = isLeft . CapList.lookup capId
       env & CapRepo.loadAll colId `satisfies` predicate
 
     it "fails when deleting a shared article list link with insufficent permissions" $ do
@@ -261,7 +261,7 @@ commandMockedSpecs = describe "Lib.App.Command" $ do
       let objRef  = objRefWithAllArticlePerms artId
           command = Command.DeleteShareArticle { .. }
       void . runTestApp env $ Command.deleteShareArticle command
-      let predicate = either (const True) (const False) . CapList.lookup capId
+      let predicate = isLeft . CapList.lookup capId
       env & CapRepo.loadAll colId `satisfies` predicate
 
     it "fails when deleting a shared article link with insufficent permissions" $ do

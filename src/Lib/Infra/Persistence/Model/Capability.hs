@@ -1,11 +1,15 @@
 module Lib.Infra.Persistence.Model.Capability
-  ( CapabilityPm(..)
+  ( CapabilityPm
   , fromDomain
   , toDomain
+  , migrate
   ) where
 
-import           Codec.Serialise.Class                                ( Serialise )
-import           Codec.Serialise.UUID                                 ( )
+import           Data.Aeson.Types                                     ( FromJSON
+                                                                      , ToJSON(..)
+                                                                      , defaultOptions
+                                                                      , genericToEncoding
+                                                                      )
 import           Data.Time.Clock                                      ( UTCTime )
 import           Prelude                                       hiding ( id )
 
@@ -17,31 +21,52 @@ import           Lib.Domain.Id                                        ( Id )
 import           Lib.Infra.Persistence.Model.Id                       ( )
 import           Lib.Infra.Persistence.Model.Shared                   ( readOrMappingError )
 
-data CapabilityPm = CapabilityPm
-  { id              :: !(Id Capability)
-  , objectReference :: !Text
-  , petname         :: !(Maybe Text)
-  , expirationDate  :: !(Maybe UTCTime)
+data CapabilityPm
+  = CapabilityPmInit !CapabilityPmV1Data
+  | CapabilityPmV1 !CapabilityPmV1Data
+  deriving stock Generic
+  deriving anyclass FromJSON
+
+instance ToJSON CapabilityPm where
+  toEncoding = genericToEncoding defaultOptions
+
+data CapabilityPmV1Data = CapabilityPmV1Data
+  { v1Id              :: !(Id Capability)
+  , v1ObjectReference :: !Text
+  , v1Petname         :: !(Maybe Text)
+  , v1ExpirationDate  :: !(Maybe UTCTime)
   }
   deriving stock (Generic, Show)
-  deriving anyclass Serialise
+  deriving anyclass FromJSON
 
-instance Eq CapabilityPm where
-  (==) a b = id a == id b
+instance ToJSON CapabilityPmV1Data where
+  toEncoding = genericToEncoding defaultOptions
 
-instance Ord CapabilityPm where
-  compare a b = compare (expirationDate a) (expirationDate b)
+------------------------------------------------------------------------
+-- Mapper
+------------------------------------------------------------------------
 
 fromDomain :: Capability -> CapabilityPm
 fromDomain domCap = do
-  let id              = Domain.id domCap
-      objectReference = show $ Domain.objectReference domCap
-      petname         = Domain.petname domCap
-      expirationDate  = Domain.expirationDate domCap
-  CapabilityPm { .. }
+  let v1Id              = Domain.id domCap
+      v1ObjectReference = show $ Domain.objectReference domCap
+      v1Petname         = Domain.petname domCap
+      v1ExpirationDate  = Domain.expirationDate domCap
+  CapabilityPmV1 $ CapabilityPmV1Data { .. }
 
 toDomain :: CapabilityPm -> Either AppErrorType Capability
-toDomain CapabilityPm {..} = do
-  let domId = id
-  domObjectReference <- readOrMappingError objectReference
-  pure $ Domain.Capability domId domObjectReference petname expirationDate
+toDomain cap = case cap of
+  CapabilityPmV1 CapabilityPmV1Data {..} -> do
+    let domId = v1Id
+    domObjectReference <- readOrMappingError v1ObjectReference
+    pure $ Domain.Capability domId domObjectReference v1Petname v1ExpirationDate
+  _otherVersion -> toDomain $ migrate cap
+
+------------------------------------------------------------------------
+-- Migration
+------------------------------------------------------------------------
+
+migrate :: CapabilityPm -> CapabilityPm
+migrate = \case
+  CapabilityPmInit initData -> migrate $ CapabilityPmV1 initData
+  CapabilityPmV1   v1Data   -> CapabilityPmV1 v1Data

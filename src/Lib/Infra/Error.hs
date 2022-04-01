@@ -16,6 +16,8 @@ module Lib.Infra.Error
   ) where
 
 import qualified Control.Monad.Except                                as E
+import qualified Servant.Server                                      as Servant
+                                                                      ( ServerError )
 
 import           Control.Monad.Except                                 ( MonadError )
 import           GHC.Stack                                            ( SrcLoc(..) )
@@ -30,8 +32,6 @@ import           Servant                                              ( err303
                                                                       , errBody
                                                                       , errHeaders
                                                                       )
-import qualified Servant.Server                                      as Servant
-                                                                      ( ServerError )
 
 import           Lib.Domain.Error                                     ( AppErrorType(..)
                                                                       , IError(..)
@@ -137,4 +137,3 @@ throwOnErrorM action = withFrozenCallStack . either throwError pure =<< action
 -}
 redirectTo :: WithError m => Text -> m a
 redirectTo = throwError . redirect303
-

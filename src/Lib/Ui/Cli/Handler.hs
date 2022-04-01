@@ -14,16 +14,18 @@ import           Lib.Infra.Monad                                      ( AppEnv )
 
 data CliAction
   = RunServer
-  | Collection CollectionCommand
+  | Migrate
+  | Collection !CollectionCommand
 
 data CollectionCommand = NewCollection
 
 commandHandler :: (CollectionRepo m, MonadRandom m, MonadIO m) => CliAction -> m ()
-commandHandler RunServer                = pure ()
+commandHandler RunServer                = pass
+commandHandler Migrate                  = pass
 commandHandler (Collection colCommands) = case colCommands of
   NewCollection -> do
     acc <- Command.createCollection
-    putStrLn $ "Accesstoken: " <> toString acc
+    print $ "Accesstoken: " <> acc
 
 runCli :: AppEnv -> CliAction -> IO ()
 runCli env = runAppLogIO_ env . commandHandler

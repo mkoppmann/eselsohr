@@ -21,5 +21,5 @@ createCollection :: (WithFile env m) => Id Collection -> Id Capability -> Capabi
 createCollection colId capId cap = File.init colId collectionPm
  where
   collectionPm = do
-    let newCapList = Map.insert capId (CapPm.fromDomain cap) . ColPm.capabilityList $ ColPm.mkCollection
-    ColPm.mkCollection { ColPm.capabilityList = newCapList }
+    let newCapList = Map.insert capId (CapPm.fromDomain cap) . ColPm.getCapabilityList $ ColPm.mkCollection
+    ColPm.updateCapabilityList newCapList ColPm.mkCollection
