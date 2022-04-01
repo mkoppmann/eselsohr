@@ -104,6 +104,7 @@ library
         -fwrite-ide-info -hiedir=.hie -Wunused-packages -j -freverse-errors
 
     build-depends:
+        aeson >=2.0.2 && <2.1,
         base >=4.14.1 && <4.17,
         base32 >=0.2.0 && <0.3,
         clay >=0.13.3 && <0.14,
@@ -138,7 +139,8 @@ library
         wai-enforce-https >=0.0.2 && <1.1,
         wai-extra >=3.1.4.0 && <3.2,
         warp >=3.3.13 && <3.4,
-        warp-tls >=3.3.0 && <3.4
+        warp-tls >=3.3.0 && <3.4,
+        zlib >=0.6.2 && <0.7
 
     mixins:
         base hiding (Prelude),

@@ -4,8 +4,9 @@ module Lib.Infra.Persistence.Model.Article
   , toDomain
   ) where
 
-import           Codec.Serialise.Class                                ( Serialise )
-import           Codec.Serialise.UUID                                 ( )
+import           Data.Aeson.Types                                     ( FromJSON
+                                                                      , ToJSON
+                                                                      )
 import           Data.Time.Clock                                      ( UTCTime )
 import           Prelude                                       hiding ( id
                                                                       , state
@@ -28,7 +29,7 @@ data ArticlePm = ArticlePm
   , creation :: !UTCTime
   }
   deriving stock Generic
-  deriving anyclass Serialise
+  deriving anyclass (FromJSON, ToJSON)
 
 fromDomain :: Article -> ArticlePm
 fromDomain domArt = do

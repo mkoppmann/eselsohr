@@ -4,8 +4,9 @@ module Lib.Infra.Persistence.Model.Capability
   , toDomain
   ) where
 
-import           Codec.Serialise.Class                                ( Serialise )
-import           Codec.Serialise.UUID                                 ( )
+import           Data.Aeson.Types                                     ( FromJSON
+                                                                      , ToJSON
+                                                                      )
 import           Data.Time.Clock                                      ( UTCTime )
 import           Prelude                                       hiding ( id )
 
@@ -24,7 +25,7 @@ data CapabilityPm = CapabilityPm
   , expirationDate  :: !(Maybe UTCTime)
   }
   deriving stock (Generic, Show)
-  deriving anyclass Serialise
+  deriving anyclass (FromJSON, ToJSON)
 
 instance Eq CapabilityPm where
   (==) a b = id a == id b

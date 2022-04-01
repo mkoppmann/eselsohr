@@ -6,14 +6,20 @@ module Lib.Infra.Persistence.File
   , save
   ) where
 
-import qualified Codec.Serialise                                     as Ser
 
-import           Codec.Serialise.Class                                ( Serialise )
+import qualified Codec.Compression.GZip                              as GZip
+
+import           Data.Aeson                                           ( decode
+                                                                      , encode
+                                                                      )
 import           Prelude                                       hiding ( init )
 import           UnliftIO                                             ( MonadUnliftIO )
 import           UnliftIO.Directory                                   ( doesFileExist )
 import           UnliftIO.IO.File                                     ( writeBinaryFileDurableAtomic )
 
+import           Data.Aeson.Types                                     ( FromJSON
+                                                                      , ToJSON
+                                                                      )
 import           Lib.App.Env                                          ( DataPath
                                                                       , Has
                                                                       , grab
@@ -27,13 +33,13 @@ type WithFile env m = (MonadReader env m, Has DataPath env, MonadUnliftIO m)
 exists :: (WithFile env m) => Id Collection -> m Bool
 exists colId = doesFileExist =<< idToPath colId
 
-load :: (Serialise a, WithFile env m) => Id Collection -> (a -> b) -> m b
+load :: (FromJSON a, WithFile env m) => Id Collection -> (a -> b) -> m b
 load colId getter = do
   filePath <- idToPath colId
   colWm    <- decodeFile filePath
   pure $ getter colWm
 
-init :: (Serialise a, WithFile env m) => Id Collection -> a -> m ()
+init :: (ToJSON a, WithFile env m) => Id Collection -> a -> m ()
 init colId val = flip encodeFile val =<< idToPath colId
 
 save :: (WithFile env m) => Id Collection -> CollectionPm -> m ()
@@ -41,15 +47,17 @@ save colId col = do
   filePath <- idToPath colId
   encodeFile filePath col
 
-decodeFile :: (Serialise a, WithFile env m) => FilePath -> m a
-decodeFile fp = Ser.deserialise . fromStrict <$> liftIO (readFileBS fp)
+decodeFile :: (FromJSON a, WithFile env m) => FilePath -> m a
+decodeFile fp = do
+  mContent <- decode . GZip.decompress <$> readFileLBS fp
+  maybe (error "Could not decode file") pure mContent
 {-# INLINE decodeFile #-}
 
-encodeFile :: (Serialise a, WithFile env m) => FilePath -> a -> m ()
-encodeFile fp = writeBinaryFileDurableAtomic fp . toStrict . Ser.serialise
+encodeFile :: (ToJSON a, WithFile env m) => FilePath -> a -> m ()
+encodeFile fp = writeBinaryFileDurableAtomic fp . toStrict . GZip.compress . encode
 {-# INLINE encodeFile #-}
 
 idToPath :: (WithFile env m) => Id Collection -> m FilePath
 idToPath colId = do
   dataPath <- grab @DataPath
-  pure $ dataPath <> show colId <> ".bin"
+  pure $ dataPath <> show colId <> ".json.gz"
