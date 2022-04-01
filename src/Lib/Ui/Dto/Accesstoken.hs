@@ -32,18 +32,40 @@ data Reference = Reference
   }
   deriving stock (Show, Eq)
 
-data ReferenceDto = ReferenceDto
-  { collectionIdUuid :: !UUID
-  , capbilityIdUuid  :: !UUID
+------------------------------------------------------------------------
+-- DTO
+------------------------------------------------------------------------
+
+data ReferenceDto
+  = ReferenceDtoInit !ReferenceDtoV1Data
+  | ReferenceDtoV1 !ReferenceDtoV1Data
+  deriving stock Generic
+  deriving anyclass Serialise
+
+data ReferenceDtoV1Data = ReferenceDtoV1Data
+  { v1CollectionIdUuid :: !UUID
+  , v1CapabilityIdUuid :: !UUID
   }
   deriving stock Generic
   deriving anyclass Serialise
 
 fromDomain :: Reference -> ReferenceDto
-fromDomain Reference {..} = ReferenceDto (Id.toUuid collectionId) (Id.toUuid capabilityId)
+fromDomain Reference {..} = ReferenceDtoV1 $ ReferenceDtoV1Data (Id.toUuid collectionId) (Id.toUuid capabilityId)
 
 toDomain :: ReferenceDto -> Reference
-toDomain ReferenceDto {..} = Reference (Id.fromUuid collectionIdUuid) (Id.fromUuid capbilityIdUuid)
+toDomain ref = case ref of
+  ReferenceDtoV1 v1Data ->
+    Reference (Id.fromUuid $ v1CollectionIdUuid v1Data) (Id.fromUuid $ v1CapabilityIdUuid v1Data)
+  _otherVersion -> toDomain $ migrate ref
+
+migrate :: ReferenceDto -> ReferenceDto
+migrate = \case
+  ReferenceDtoInit initData -> migrate $ ReferenceDtoV1 initData
+  ReferenceDtoV1   v1Data   -> ReferenceDtoV1 v1Data
+
+------------------------------------------------------------------------
+-- Accesstoken
+------------------------------------------------------------------------
 
 newtype Accesstoken = Accesstoken {unAccesstoken :: LByteString}
   deriving (Eq) via LByteString

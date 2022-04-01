@@ -82,6 +82,7 @@ library
         Lib.Ui.Web.Page.ViewModel.Permission
         Lib.Ui.Web.Page.ViewModel.UnlockLink
         Lib.Ui.Web.Route
+        Migration
         Net.IPv6.Helper
         Network.Wai.Middleware.AddHsts
         Network.Wai.Middleware.NoOp

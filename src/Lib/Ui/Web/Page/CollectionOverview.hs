@@ -16,7 +16,6 @@ import           Servant                                              ( Link
 
 import qualified Lib.Domain.Authorization                            as Authz
 import qualified Lib.Domain.Capability                               as Cap
-import qualified Lib.Infra.Persistence.Model.Capability              as CapPm
 import qualified Lib.Ui.Web.Page.Layout                              as Layout
 import qualified Lib.Ui.Web.Page.Static                              as Static
 import qualified Lib.Ui.Web.Page.ViewModel.Capability                as CapVm
@@ -96,7 +95,7 @@ getUnlockLinks colId curTime = do
   filterF cap = isStillValid cap && isViewArticles cap
 
   isStillValid :: Capability -> Bool
-  isStillValid = isJust . capStillValid curTime . CapPm.fromDomain
+  isStillValid = isJust . capStillValid curTime
 
   isViewArticles :: Capability -> Bool
   isViewArticles = isRight . Authz.canViewArticles . Cap.objectReference

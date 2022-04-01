@@ -29,6 +29,7 @@ import qualified Config
 import qualified Init
 import qualified Lib.App.Env                                         as Env
 import qualified Lib.Ui.Cli.Handler                                  as Cli
+import qualified Migration
 
 import           Config                                               ( Config
                                                                       , loadConfig
@@ -117,4 +118,5 @@ main mConfPath command = do
   env  <- mkAppEnv conf
   case command of
     Cli.RunServer    -> runServer conf env
+    Cli.Migrate      -> Migration.migrate $ Config.confDataFolder conf
     _otherCliCommand -> Cli.runCli env command

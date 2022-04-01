@@ -71,10 +71,20 @@ commandsP :: Parser CliAction
 commandsP = longSubParser <|> shortSubParser
  where
   longSubParser :: Parser CliAction
-  longSubParser = subparser collectionCommand
+  longSubParser = subparser (collectionCommand <> migrateCommand)
 
   shortSubParser :: Parser CliAction
-  shortSubParser = subparser (commandGroup "Short commands:" <> hidden <> collectionShortCommand)
+  shortSubParser =
+    subparser (commandGroup "Short commands:" <> hidden <> collectionShortCommand <> migrateShortCommand)
+
+  migrateCommand :: Mod CommandFields CliAction
+  migrateCommand = command "migrate" migrateParserInfo
+
+  migrateShortCommand :: Mod CommandFields CliAction
+  migrateShortCommand = command "m" migrateParserInfo
+
+  migrateParserInfo :: ParserInfo CliAction
+  migrateParserInfo = info (pure Cli.Migrate) (progDesc "Migrate collections")
 
   collectionCommand :: Mod CommandFields CliAction
   collectionCommand = command "collection" collectionParserInfo

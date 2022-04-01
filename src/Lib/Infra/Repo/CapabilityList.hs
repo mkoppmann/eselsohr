@@ -38,7 +38,7 @@ saveAll colId updates = commit colId action
     collection      <- File.load colId id
     capabilities    <- capabilitiesFromCollection collection
     newCapabilities <- throwOnError $ foldlM (&) capabilities updates
-    File.save colId $ collection { ColPm.capabilityList = CapListPm.fromDomain newCapabilities }
+    File.save colId $ ColPm.updateCapabilityList (CapListPm.fromDomain newCapabilities) collection
 
 capabilitiesFromCollection :: WithError m => CollectionPm -> m CapabilityList
-capabilitiesFromCollection = throwOnError . CapListPm.toDomain . ColPm.capabilityList
+capabilitiesFromCollection = throwOnError . CapListPm.toDomain . ColPm.getCapabilityList

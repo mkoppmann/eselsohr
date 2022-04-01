@@ -4,6 +4,8 @@ module Lib.Infra.Persistence.File
   , load
   , init
   , save
+  , decodeFile
+  , encodeFile
   ) where
 
 
@@ -47,13 +49,13 @@ save colId col = do
   filePath <- idToPath colId
   encodeFile filePath col
 
-decodeFile :: (FromJSON a, WithFile env m) => FilePath -> m a
+decodeFile :: (FromJSON a, MonadIO m) => FilePath -> m a
 decodeFile fp = do
   mContent <- decode . GZip.decompress <$> readFileLBS fp
   maybe (error "Could not decode file") pure mContent
 {-# INLINE decodeFile #-}
 
-encodeFile :: (ToJSON a, WithFile env m) => FilePath -> a -> m ()
+encodeFile :: (ToJSON a, MonadIO m) => FilePath -> a -> m ()
 encodeFile fp = writeBinaryFileDurableAtomic fp . toStrict . GZip.compress . encode
 {-# INLINE encodeFile #-}
 

@@ -24,5 +24,5 @@ testCreateCollection
 testCreateCollection _colId capId cap = flip writeIORef collectionPm =<< grab @CollectionState
  where
   collectionPm = do
-    let capabilities = Map.insert capId (CapPm.fromDomain cap) . ColPm.capabilityList $ ColPm.mkCollection
-    ColPm.mkCollection { ColPm.capabilityList = capabilities }
+    let capabilities = Map.insert capId (CapPm.fromDomain cap) . ColPm.getCapabilityList $ ColPm.mkCollection
+    ColPm.updateCapabilityList capabilities ColPm.mkCollection

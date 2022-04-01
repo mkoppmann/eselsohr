@@ -32,7 +32,7 @@ testSaveAll _colId updates = do
   collection    <- readIORef collectionRef
   articles      <- articlesFromCollection collection
   newArticles   <- fmap ArtListPm.fromDomain . throwOnError $ foldlM (&) articles updates
-  writeIORef collectionRef $ collection { ColPm.articleList = newArticles }
+  writeIORef collectionRef $ ColPm.updateArticleList newArticles collection
 
 articlesFromCollection :: WithError m => CollectionPm -> m ArticleList
-articlesFromCollection = throwOnError . ArtListPm.toDomain . ColPm.articleList
+articlesFromCollection = throwOnError . ArtListPm.toDomain . ColPm.getArticleList
