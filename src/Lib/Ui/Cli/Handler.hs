@@ -15,13 +15,13 @@ import           Lib.Infra.Monad                                      ( AppEnv )
 data CliAction
   = RunServer
   | Migrate
-  | Collection CollectionCommand
+  | Collection !CollectionCommand
 
 data CollectionCommand = NewCollection
 
 commandHandler :: (CollectionRepo m, MonadRandom m, MonadIO m) => CliAction -> m ()
-commandHandler RunServer                = pure ()
-commandHandler Migrate                  = pure ()
+commandHandler RunServer                = pass
+commandHandler Migrate                  = pass
 commandHandler (Collection colCommands) = case colCommands of
   NewCollection -> do
     acc <- Command.createCollection

@@ -13,7 +13,6 @@ module Test.Ui.Web.Controller.Shared
   ) where
 
 import qualified Data.ByteString.Char8                               as B
-import qualified Data.ByteString.Lazy                                as BL
 import qualified Test.Hspec.Wai                                      as Test
 
 import           Network.HTTP.Types                                   ( methodPost )
@@ -140,5 +139,5 @@ postCreateUnlockLink = postForm unlockLinkRoute . unlockLinkForm
   unlockLinkRoute = linkAsByteString $ fieldLink Route.createUnlockLink
 
 getOverviewPage :: Accesstoken -> WaiSession st ByteString
-getOverviewPage acc = BL.toStrict . simpleBody <$> Test.get (overviewRoute acc)
+getOverviewPage acc = toStrict . simpleBody <$> Test.get (overviewRoute acc)
   where overviewRoute = linkAsByteString . fieldLink Route.overviewPage . Just
