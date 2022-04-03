@@ -7,20 +7,19 @@ LABEL maintainer="mkoppmann <dev@mkoppmann.at>"
 ###############
 # Build image #
 ###############
-FROM utdemir/ghc-musl:v23-ghc8107 AS build
+FROM utdemir/ghc-musl:v24-ghc8107 AS build
 
 # Install upx for shrinking the binary
 RUN apk --no-cache add upx=~3.96
 
 # Create the data folder for the deployment stage here, because there is no
 # shell in distroless images available.
-RUN mkdir -p /data
-
-# Create a new user so we don’t run the build process as root. Also create the
-# folder for the files.
-RUN adduser -D builder && \
-        mkdir -p /build && \
-        chown -R builder:builder /build
+# Also create a new user so we don’t run the build process as root and create
+# the folder for the files.
+RUN mkdir -p /data \
+ && adduser -D builder \
+ && mkdir -p /build \
+ && chown -R builder:builder /build
 USER builder
 WORKDIR /build
 
@@ -36,7 +35,8 @@ RUN cabal build \
         -O2 \
         all
 
-# Copy the rest of the source files and build the executable
+# Copy the rest of the source files and build the executable.
+# After the build, run upx to shrink the binary.
 COPY . .
 RUN cabal install \
         --avoid-reinstalls \
@@ -44,10 +44,8 @@ RUN cabal install \
         --disable-tests \
         --install-method=copy \
         --overwrite-policy=always \
-        -O2
-
-# Shrink binary
-RUN upx --best "${HOME}"/.cabal/bin/eselsohr-exe
+        -O2 \
+ && upx --best "${HOME}"/.cabal/bin/eselsohr-exe
 
 ####################
 # Deployment image #

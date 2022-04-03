@@ -84,7 +84,7 @@ formButtonAsLink = do
 itemStyle :: Css
 itemStyle = do
   ".item" ? do
-    border dotted (px 1) grey
+    border (px 1) dotted grey
     marginBottom $ px 20
     padding (px 5) (px 5) (px 5) (px 5)
   ".item-title" ? a ? do
