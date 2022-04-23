@@ -13,8 +13,9 @@
         overlays = [ ];
         pkgs =
           import nixpkgs { inherit system overlays; config.allowBroken = true; };
+        hp = pkgs.haskell.packages.ghc8107;
         project = returnShellEnv:
-          pkgs.haskellPackages.developPackage {
+          hp.developPackage {
             inherit returnShellEnv;
             name = "eselsohr";
             root = ./.;
@@ -25,7 +26,7 @@
               relude = self.callHackage "relude" "1.0.0.1" { };
             };
             modifier = drv:
-              pkgs.haskell.lib.addBuildTools drv (with pkgs.haskellPackages;
+              pkgs.haskell.lib.addBuildTools drv (with hp;
               [
                 # Specify your build/dev dependencies here.
                 brittany
