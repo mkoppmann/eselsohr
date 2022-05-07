@@ -1,3 +1,7 @@
+{- | Entrypoint for starting the migration process to newer data storage
+version.
+-}
+
 module Migration
   ( migrate
   ) where
@@ -11,6 +15,7 @@ import           Lib.Infra.Persistence.File                           ( decodeFi
                                                                       , encodeFile
                                                                       )
 
+-- | Start migration process.
 migrate :: (MonadIO m) => FilePath -> m ()
 migrate fp = do
   print @Text "Starting migration."

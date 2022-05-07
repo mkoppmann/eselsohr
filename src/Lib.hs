@@ -1,3 +1,6 @@
+{- | Entry module for Eselsohr. This module calls the rest of the application.
+-}
+
 module Lib
   ( main
   , mkAppEnv
@@ -41,6 +44,7 @@ import           Lib.Infra.Persistence.Server                         ( persiste
 import           Lib.Ui.Cli.Handler                                   ( CliAction )
 import           Lib.Ui.Server                                        ( application )
 
+-- | Turns a 'Config' into an 'AppEnv'.
 mkAppEnv :: Config -> IO AppEnv
 mkAppEnv Config.Config {..} = do
   newWriteQueue <- newTQueueIO
@@ -53,6 +57,7 @@ mkAppEnv Config.Config {..} = do
       collectionCreation = if confPublicCollectionCreation then Env.Public else Env.Private
   pure $ Env.Env { .. }
 
+-- | Starts the Eselsohr web and persistence server.
 runServer :: Config -> AppEnv -> IO ()
 runServer Config.Config {..} env@Env.Env {..} = do
   Init.datafolder dataFolder
@@ -107,9 +112,11 @@ runServer Config.Config {..} env@Env.Env {..} = do
     , TLS.cipher_DHE_RSA_AES256GCM_SHA384
     ]
 
+-- | Settings for the Warp server.
 warpSettings :: String -> Port -> Settings
 warpSettings listenAddr port = setHost (fromString listenAddr) . setPort port . setServerName "" $ defaultSettings
 
+-- | Starts the Eselsohr application.
 main :: Maybe FilePath -> CliAction -> IO ()
 main mConfPath command = do
   hSetBuffering stdout NoBuffering

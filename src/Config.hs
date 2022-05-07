@@ -1,3 +1,7 @@
+{- | Configuration options for Eselsohr.
+Can be configured via environment variables or config file.
+-}
+
 module Config
   ( Config(..)
   , loadConfig
@@ -27,8 +31,7 @@ import           Lib.App.Env                                          ( DataPath
                                                                       , DeploymentMode
                                                                       )
 
-{- | Configuration options for Eselsohr.
- Can be configured via environment variables or config file.
+{- | All configuration options.
 -}
 data Config = Config
   { -- | File path to the data folder, where all collection are getting stored.
@@ -65,6 +68,11 @@ data Config = Config
     confPublicCollectionCreation :: !Bool
   }
 
+{- | Load Eselsohr configuration via environmental variables.
+Accepts an optional 'FilePath' argument for a configuration file. By default
+this function will look for a @.env@ file in the current working directory.
+Variables that are set via real env vars have the highest priority.
+-}
 loadConfig :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m Config
 loadConfig mConfPath = do
   loadEnvFile mConfPath

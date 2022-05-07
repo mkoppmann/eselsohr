@@ -1,3 +1,6 @@
+{- | Functions that are used during the initialization of the Eselsohr process.
+-}
+
 module Init
   ( datafolder
   , useRestrictedHttpManager
@@ -19,9 +22,11 @@ import           Network.Socket                                       ( AddrInfo
                                                                       )
 import           UnliftIO.Directory                                   ( createDirectoryIfMissing )
 
+-- | Creates a new directory for the given 'FilePath' if it is missing.
 datafolder :: (MonadIO m) => FilePath -> m ()
 datafolder = liftIO . createDirectoryIfMissing True
 
+-- | Use a restricted version of the 'Manager' that prevents SSRF attacks.
 useRestrictedHttpManager :: (MonadIO m) => m ()
 useRestrictedHttpManager = liftIO $ setGlobalManager =<< restrictedManager
  where
