@@ -28,7 +28,7 @@ If you have [Nix installed](https://nixos.org/download.html) with [Flakes suppor
 
 Eselsohr is distributed as a single binary and does not have any other dependencies.
 It can be configured by using [env vars](https://en.wikipedia.org/wiki/Environment_variable) or by using a configuration file (`eselsohr --config-file /path/to/file`).
-By default it looks for an `.env` file in the current working directory.
+By default, it looks for a `.env` file in the current working directory.
 
 The following values can be set:
 
@@ -52,11 +52,11 @@ The following values can be set:
 * `DEPLOYMENT_MODE`: The mode the application is running in.
     Can be `Prod`, `Test`, or `Dev`.
     Defaults to `Prod`.
-* `PUBLIC_COLLECTION_CREATION`: Wether the creation of collection should be public.
+* `PUBLIC_COLLECTION_CREATION`: Whether the creation of collection should be public.
     Defaults to `False`.
 
 Currently, all configuration parameters are optional so starting Eselsohr can be as simple as executing the Eselsohr binary.
-If you don’t allow the public creation of collections, you can generate accesstokens for collections by running `eselsohr-exe collection new`.
+If you don’t allow the public creation of collections, you can generate access tokens for collections by running `eselsohr-exe collection new`.
 
 The `dist` directory in this repository provides deployment relevant files, like an example `rc` file for FreeBSD or a service file for systemd-based Linux distributions.
 
@@ -90,8 +90,8 @@ An object reference gives access to a collection or a single resource and has th
 
 Object references are required for accessing the global state, like fetching an article with a specific ID.
 This is enforced by authorized actions: a data type which corresponds to user actions like creating a new article, or changing an article’s title.
-To obtain such an authorized action token one has to pass a object reference and in some cases the ID, on which the action will be performed, to functions which evaluate if the required permissions are set in the object reference.
-This forces us to do authorization checks and we can’t forget to do them.
+To obtain such an authorized action token one has to pass an object reference and in some cases the ID, on which the action will be performed, to functions which evaluate if the required permissions are set in the object reference.
+This forces us to do authorization checks, and we can’t forget to do them.
 
 The application tries to incorporate the [Principle of Least Privilege](https://en.wikipedia.org/wiki/Principle_of_least_privilege) wherever it can.
 Instead of using one single data storage for everything, each article collection is stored as a separate resource in the system.
@@ -100,8 +100,8 @@ Because access tokens are encoded binary data that point to an ID of a resource 
 
 Eselsohr is written in the programming language [Haskell](https://en.wikipedia.org/wiki/Haskell_(programming_language)).
 Although it’s never explicitly called one, Haskell is a great language to implement capability-based techniques, as functions are pure and data has to be explicitly passed as arguments to other functions and global state is rarely used.
-Side-effects in Haskell are explicit and are normally done within the IO data type.
-But IO alone means that any side-effect can happen.
+Side effects in Haskell are explicit and are normally done within the IO data type.
+But IO alone means that any side effect can happen.
 Eselsohr uses [type classes](https://www.haskell.org/tutorial/classes.html) in a way that [represent access to certain IO actions](https://chrispenner.ca/posts/monadio-considered-harmful).
 A function that wants to e.g. scrap a website, needs to have the `MonadScraper` constraint in its signature.
-All side-effects are therefore explicit and only effects that are wrapped this way can be used.
+All side effects are therefore explicit and only effects that are wrapped this way can be used.
