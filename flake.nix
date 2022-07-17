@@ -35,7 +35,6 @@
                 ghcid
                 haskell-language-server
                 pkgs.nixpkgs-fmt
-                stan
               ]);
           };
       in
