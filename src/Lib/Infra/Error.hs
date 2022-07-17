@@ -103,35 +103,35 @@ toHttpError (AppError _callStack errorType) = case errorType of
  the value does not exist
 -}
 throwOnNothing :: WithError m => AppErrorType -> Maybe a -> m a
-throwOnNothing err = withFrozenCallStack . maybe (throwError err) pure
+throwOnNothing err value = withFrozenCallStack $ maybe (throwError err) pure value
 
 {- | Extract the value from a 'Maybe' in @m@, throwing the given 'AppError' if
  the value does not exist
 -}
 throwOnNothingM :: WithError m => AppErrorType -> m (Maybe a) -> m a
-throwOnNothingM err action = withFrozenCallStack . throwOnNothing err =<< action
+throwOnNothingM err action = withFrozenCallStack $ throwOnNothing err =<< action
 
 {- | Similar to 'throwOnNothing' but throws a 'NotFound' if the value does not
  exist
 -}
 notFoundOnNothing :: WithError m => Maybe a -> m a
-notFoundOnNothing = withFrozenCallStack . throwOnNothing notFound
+notFoundOnNothing value = withFrozenCallStack $ throwOnNothing notFound value
 
 {- | Similar to 'throwOnNothingM' but throws a 'NotFound' if the value does not
  exist
 -}
 notFoundOnNothingM :: WithError m => m (Maybe a) -> m a
-notFoundOnNothingM = withFrozenCallStack . throwOnNothingM notFound
+notFoundOnNothingM value = withFrozenCallStack $ throwOnNothingM notFound value
 
 {- | Extract the value from an 'Either', throwing the embedded 'AppErrorType' if the value is Left
 -}
 throwOnError :: WithError m => Either AppErrorType a -> m a
-throwOnError = withFrozenCallStack . either throwError pure
+throwOnError value = withFrozenCallStack $ either throwError pure value
 
 {- | Extract the value from an 'Either' in @m@, throwing the embedded 'AppErrorType' if the value is Left
 -}
 throwOnErrorM :: WithError m => m (Either AppErrorType a) -> m a
-throwOnErrorM action = withFrozenCallStack . either throwError pure =<< action
+throwOnErrorM action = withFrozenCallStack $ either throwError pure =<< action
 
 {- | Redirects to the given URL
 -}
