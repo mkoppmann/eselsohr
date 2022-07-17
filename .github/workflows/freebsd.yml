@@ -23,7 +23,7 @@ jobs:
           envs: "CONFIG"
           usesh: true
           mem: 4096
-          prepare: pkg install -y ghc hs-cabal-install
+          prepare: pkg install -y ghc810 hs-cabal-install
           run: |
             cabal update
             cabal build $CONFIG all
