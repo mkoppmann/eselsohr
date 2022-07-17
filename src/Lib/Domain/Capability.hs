@@ -66,7 +66,7 @@ data Capability = Capability
   deriving stock Show
 
 instance Eq Capability where
-  (==) a b = id a == id b
+  (==) (Capability aId _ _ _) (Capability bId _ _ _) = aId == bId
 
 instance Ord Capability where
   compare a b = compare (expirationDate a) (expirationDate b)
