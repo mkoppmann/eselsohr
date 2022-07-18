@@ -29,7 +29,7 @@ data Article = Article
   deriving stock Show
 
 instance Eq Article where
-  (==) a b = id a == id b
+  (==) (Article aId _ _ _ _) (Article bId _ _ _ _) = aId == bId
 
 data ArticleState
   = Unread

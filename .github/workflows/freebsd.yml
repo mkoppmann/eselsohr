@@ -13,17 +13,17 @@ jobs:
       CONFIG: "--enable-tests --enable-benchmarks"
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: FreeBSD-VM
         id: build-freebsd
-        # This action currently uses FreeBSD 13
-        uses: vmactions/freebsd-vm@v0.1.6
+        uses: vmactions/freebsd-vm@v0.1.8
         with:
+          release: 12.3
           envs: "CONFIG"
           usesh: true
           mem: 4096
-          prepare: pkg install -y ghc hs-cabal-install
+          prepare: pkg install -y ghc810 hs-cabal-install
           run: |
             cabal update
             cabal build $CONFIG all
