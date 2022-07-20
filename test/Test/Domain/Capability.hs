@@ -2,10 +2,6 @@ module Test.Domain.Capability
   ( capabilitySpec
   ) where
 
-import           Data.Time.Clock                                      ( UTCTime
-                                                                      , addUTCTime
-                                                                      , secondsToNominalDiffTime
-                                                                      )
 import           Prelude                                       hiding ( id )
 import           Test.Hspec                                           ( Spec
                                                                       , describe
@@ -19,8 +15,7 @@ import qualified Lib.Domain.Capability                               as Capabili
 import           Lib.Domain.Capability                                ( Capability
                                                                       , ObjectReference
                                                                       )
-import           Test.Domain.Shared                                   ( getCurrentTime
-                                                                      , getRandomId
+import           Test.Domain.Shared                                   ( getRandomId
                                                                       , objRefWithAllArticlePerms
                                                                       )
 
@@ -36,13 +31,6 @@ capabilitySpec = describe "Lib.Domain.Capability" $ do
     cap1 <- capabilityWithObjRef Capability.defaultOverviewRef
     cap2 <- capabilityWithObjRef Capability.defaultOverviewRef
     cap1 `shouldSatisfy` (/= cap2)
-
-  it "capabilities with later expiration dates are greater than capabilities with earlier ones" $ do
-    date1 <- getCurrentTime
-    cap1  <- capabilityWithNewExpDate date1
-    let plusOneHour = secondsToNominalDiffTime 3600
-    cap2 <- capabilityWithNewExpDate $ addUTCTime plusOneHour date1
-    cap2 `shouldSatisfy` (> cap1)
 
   it "'mkCapability' does not accept empty petnames" $ do
     capId <- getRandomId
@@ -114,12 +102,4 @@ capabilityWithObjRef objectReference = do
   id <- getRandomId
   let petname        = Nothing
       expirationDate = Nothing
-  pure $ Capability.Capability { .. }
-
-capabilityWithNewExpDate :: (MonadIO m) => UTCTime -> m Capability
-capabilityWithNewExpDate expDate = do
-  id <- getRandomId
-  let objectReference = Capability.defaultOverviewRef
-      petname         = Nothing
-      expirationDate  = Just expDate
   pure $ Capability.Capability { .. }
