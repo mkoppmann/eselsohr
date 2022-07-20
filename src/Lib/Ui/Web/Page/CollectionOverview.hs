@@ -86,7 +86,7 @@ getUnlockLinks colId curTime = do
   mapToSeq = Seq.fromList . Map.toList
 
   filterAndSortCaps :: Seq (a, Capability) -> Seq (a, Capability)
-  filterAndSortCaps = Seq.sortOn snd . Seq.filter (filterF . snd)
+  filterAndSortCaps = Seq.sortOn (Cap.expirationDate . snd) . Seq.filter (filterF . snd)
 
   toUnlockLink :: (Id Capability, Capability) -> UnlockLinkVm
   toUnlockLink = uncurry (UnlockLink.fromDomain colId)

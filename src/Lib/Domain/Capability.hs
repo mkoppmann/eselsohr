@@ -68,9 +68,6 @@ data Capability = Capability
 instance Eq Capability where
   (==) (Capability aId _ _ _) (Capability bId _ _ _) = aId == bId
 
-instance Ord Capability where
-  compare a b = compare (expirationDate a) (expirationDate b)
-
 mkCapability :: Id Capability -> ObjectReference -> Maybe Text -> Maybe UTCTime -> Capability
 mkCapability id objectReference mPetname expirationDate = Capability { .. }
  where
