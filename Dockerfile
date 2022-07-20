@@ -7,7 +7,7 @@ LABEL maintainer="mkoppmann <dev@mkoppmann.at>"
 ###############
 # Build image #
 ###############
-FROM utdemir/ghc-musl:v24-ghc8107 AS build
+FROM utdemir/ghc-musl:v24-ghc8107@sha256:fec0e81c1a3fbecc19772fb7b392dec1fd2b8b25a9f3852983987af15b920f40 AS build
 
 # Install upx for shrinking the binary
 RUN apk --no-cache add upx=~3.96
@@ -50,7 +50,7 @@ RUN cabal install \
 ####################
 # Deployment image #
 ####################
-FROM gcr.io/distroless/static:nonroot
+FROM gcr.io/distroless/static:nonroot@sha256:59d91a17dbdd8b785e61da81c9095b78099cad8d7757cc108f49e4fb564ef8b3
 
 # Copy executable from build stage
 COPY --from=build /home/builder/.cabal/bin/eselsohr-exe /app/eselsohr
