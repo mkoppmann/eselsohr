@@ -7,7 +7,7 @@ LABEL maintainer="mkoppmann <dev@mkoppmann.at>"
 ###############
 # Build image #
 ###############
-FROM utdemir/ghc-musl:v24-ghc8107 AS build
+FROM utdemir/ghc-musl:v24-ghc902 AS build
 
 # Install upx for shrinking the binary
 RUN apk --no-cache add upx=~3.96
