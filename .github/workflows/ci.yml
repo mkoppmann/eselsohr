@@ -2,20 +2,23 @@ name: CI
 
 on: push
 
+permissions:
+  contents: read
+
 jobs:
   hlint:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: "Set up HLint"
-        uses: rwe/actions-hlint-setup@v1
+        uses: rwe/actions-hlint-setup@9f5da5e7cd43663fb7b2e2154a087c17f0471ed1
         with:
           version: "3.4.1"
 
       - name: "Run HLint"
-        uses: rwe/actions-hlint-run@v2
+        uses: rwe/actions-hlint-run@c178fa6263930e604e377a21ef54403306bdc1c7
         with:
           path: '["app/", "src/", "test/"]'
           fail-on: warning
@@ -29,8 +32,8 @@ jobs:
       CONFIG: "--enable-tests --enable-benchmarks"
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: haskell/actions/setup@v2
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+      - uses: haskell/actions/setup@745062a754c3c4b70b87cb93937ad443096cc94d
         id: setup-haskell-cabal
         with:
           ghc-version: "8.10"
@@ -42,7 +45,7 @@ jobs:
           cabal freeze $CONFIG
 
       - name: Cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@0865c47f36e68161719c5b124609996bb5c40129
         with:
           path: |
             ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
@@ -70,7 +73,7 @@ jobs:
         run: mv dist/eselsohr-exe dist/eselsohr
 
       - name: Store application binary as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: eselsohr
           path: dist/eselsohr

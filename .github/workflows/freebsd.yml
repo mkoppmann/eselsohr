@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 jobs:
   build-binary-for-freebsd:
     runs-on: macos-12
@@ -13,11 +16,11 @@ jobs:
       CONFIG: "--disable-benchmarks --disable-documentation"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
 
       - name: FreeBSD-VM
         id: build-freebsd
-        uses: vmactions/freebsd-vm@v0.2.0
+        uses: vmactions/freebsd-vm@ce3d781df0af02da96f9830b3558129d1057610b
         with:
           release: 12.3
           envs: "CONFIG"
@@ -47,8 +50,7 @@ jobs:
             mv dist/eselsohr-exe dist/eselsohr
 
       - name: Store application binary as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@3cea5372237819ed00197afe530f5a7ea3e805c8
         with:
           name: eselsohr
           path: dist/eselsohr
-
