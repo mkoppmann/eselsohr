@@ -2,7 +2,10 @@ module Test.Domain.Capability
   ( capabilitySpec
   ) where
 
-import           Data.Time.Clock                                      ( UTCTime )
+import           Data.Time.Clock                                      ( UTCTime
+                                                                      , addUTCTime
+                                                                      , secondsToNominalDiffTime
+                                                                      )
 import           Prelude                                       hiding ( id )
 import           Test.Hspec                                           ( Spec
                                                                       , describe
@@ -37,8 +40,8 @@ capabilitySpec = describe "Lib.Domain.Capability" $ do
   it "capabilities with later expiration dates are greater than capabilities with earlier ones" $ do
     date1 <- getCurrentTime
     cap1  <- capabilityWithNewExpDate date1
-    date2 <- getCurrentTime
-    cap2  <- capabilityWithNewExpDate date2
+    let plusOneHour = secondsToNominalDiffTime 3600
+    cap2 <- capabilityWithNewExpDate $ addUTCTime plusOneHour date1
     cap2 `shouldSatisfy` (> cap1)
 
   it "'mkCapability' does not accept empty petnames" $ do
