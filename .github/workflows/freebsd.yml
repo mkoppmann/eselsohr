@@ -7,24 +7,39 @@ on:
 
 jobs:
   build-binary-for-freebsd:
-    runs-on: macos-10.15
+    runs-on: macos-12
 
     env:
-      CONFIG: "--enable-tests --enable-benchmarks"
+      CONFIG: "--disable-benchmarks --disable-documentation"
 
     steps:
       - uses: actions/checkout@v3
 
       - name: FreeBSD-VM
         id: build-freebsd
-        uses: vmactions/freebsd-vm@v0.1.8
+        uses: vmactions/freebsd-vm@v0.2.0
         with:
           release: 12.3
           envs: "CONFIG"
           usesh: true
           mem: 4096
-          prepare: pkg install -y ghc810 hs-cabal-install
           run: |
+            # Switch to latest branch.
+            mkdir -p /usr/local/etc/pkg/repos
+            echo 'FreeBSD: { url: "pkg+https://pkg.FreeBSD.org/${ABI}/latest" }' > /usr/local/etc/pkg/repos/FreeBSD.conf
+            pkg update
+
+            # Install dependencies.
+            # The GHC 8.10 port only contains the versioned ghc binary,
+            # so we provide a symlink here because Cabal requires it.
+            pkg install -y ghc810 hs-cabal-install
+            ln -s /usr/local/bin/ghc-8.10.7 /usr/local/bin/ghc
+
+            # Disable generation of documentation. Overriding this via cli
+            # flags is broken.
+            sed -i '.bak' 's/documentation: True/documentation: False/' cabal.project
+
+            # Build and test project.
             cabal update
             cabal build $CONFIG all
             cabal test $CONFIG all
@@ -36,3 +51,4 @@ jobs:
         with:
           name: eselsohr
           path: dist/eselsohr
+
