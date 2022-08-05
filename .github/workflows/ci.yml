@@ -45,7 +45,7 @@ jobs:
           cabal freeze $CONFIG
 
       - name: Cache dependencies
-        uses: actions/cache@0865c47f36e68161719c5b124609996bb5c40129
+        uses: actions/cache@f4278025ab0f432ce369118909e46deec636f50c
         with:
           path: |
             ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
