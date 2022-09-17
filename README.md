@@ -1,6 +1,7 @@
 # Eselsohr
 
 ![Badge for CI workflow status](https://github.com/mkoppmann/eselsohr/actions/workflows/ci.yml/badge.svg)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/mkoppmann/eselsohr/badge)](https://api.securityscorecards.dev/projects/github.com/mkoppmann/eselsohr)
 
 Eselsohr is a self-hostable bookmark manager for storing web articles.
 Read them later or share access to your collection.
