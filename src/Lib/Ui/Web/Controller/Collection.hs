@@ -8,7 +8,6 @@ import qualified Lib.App.Command                                     as Command
 import qualified Lib.App.Env                                         as Env
 import qualified Lib.Ui.Web.Page.CollectionOverview                  as CollectionOverviewPage
 import qualified Lib.Ui.Web.Page.ShareCollectionOverview             as ShareCollectionOverviewPage
-import qualified Lib.Ui.Web.Page.UnlockCollection                    as UnlockCollectionPage
 import qualified Lib.Ui.Web.Route                                    as Route
 
 import           Lib.App.Env                                          ( CollectionCreation
@@ -45,7 +44,6 @@ import           Lib.Ui.Web.Route                                     ( AppServe
 collection :: CollectionSite AppServer
 collection = Route.CollectionSite { Route.createCollection        = createCollection
                                   , Route.overviewPage            = CollectionOverviewPage.handler
-                                  , Route.unlockCollection        = UnlockCollectionPage.handler
                                   , Route.createUnlockLink        = createUnlockLink
                                   , Route.deleteUnlockLink        = deleteUnlockLink
                                   , Route.shareOverviewPage       = ShareCollectionOverviewPage.handler
