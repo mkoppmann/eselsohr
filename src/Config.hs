@@ -26,6 +26,9 @@ import qualified Lib.App.Env                                         as Env
 import           Lib.App.Env                                          ( DataPath
                                                                       , DeploymentMode
                                                                       )
+import           Lib.Domain.Uri                                       ( Uri
+                                                                      , baseUri
+                                                                      )
 
 {- | Configuration options for Eselsohr.
  Can be configured via environment variables or config file.
@@ -40,6 +43,9 @@ data Config = Config
   , -- | Port number on which the web server will listen.
     -- Defaults to: @6979@
     confServerPort               :: !Port
+  , -- | Base URL to generate HTML links.
+    -- Defaults to @http://localhost@
+    confBaseUrl                  :: !Uri
   , -- | Address where the web server will listen.
     -- Defaults to: @127.0.0.1@
     confListenAddr               :: !String
@@ -71,6 +77,7 @@ loadConfig mConfPath = do
   confDataFolder               <- getDataFolder
   confLogSeverity              <- getLogLevel
   confServerPort               <- getPort
+  confBaseUrl                  <- getBaseUrl confServerPort
   confListenAddr               <- getListenAddr
   confHttps                    <- getHttps
   confDisableHsts              <- getDisableHsts
@@ -99,6 +106,11 @@ loadConfig mConfPath = do
   getPort = lookupEnv "PORT" >>= \case
     Nothing -> pure 6979
     Just sp -> pure . fromMaybe 6979 $ isInPortRange =<< readMaybe sp
+
+  getBaseUrl :: (MonadIO m) => Port -> m Uri
+  getBaseUrl port = lookupEnv "BASE_URL" >>= \case
+    Nothing -> pure . baseUri $ "http://localhost:" <> show port <> "/"
+    Just bu -> pure . baseUri $ toText bu
 
   getListenAddr :: (MonadIO m) => m String
   getListenAddr = lookupEnv "LISTEN_ADDR" >>= \case

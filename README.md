@@ -35,6 +35,8 @@ The following values can be set:
 
 * `DATA_FOLDER`: File path where data is getting persisted.
     Defaults to [XdgData](https://hackage.haskell.org/package/directory-1.3.6.1/docs/System-Directory.html#v:XdgData).
+* `BASE_URL`: Base URL to generate HTML links.
+    Defaults to `http://localhost`.
 * `LOG_LEVEL`: Level for the built-in logger.
     Defaults to [Error](https://hackage.haskell.org/package/co-log-core-0.2.1.1/docs/Colog-Core-Severity.html#t:Severity).
 * `PORT`: Port number on which the web server will listen.
