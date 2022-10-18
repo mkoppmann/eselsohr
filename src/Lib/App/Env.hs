@@ -21,6 +21,7 @@ import           Colog                                                ( HasLog(.
 import           UnliftIO.STM                                         ( TQueue )
 
 import           Lib.Domain.Repo                                      ( RepositoryCommandSync )
+import           Lib.Domain.Uri                                       ( Uri )
 
 type DataPath = FilePath
 
@@ -37,6 +38,7 @@ data CollectionCreation = Public | Private
 
 data Env (m :: Type -> Type) = Env
   { dataFolder         :: !DataPath
+  , envBaseUrl         :: !Uri
   , writeQueue         :: !(WriteQueue m)
   , logAction          :: !(LogAction m Message)
   , https              :: !Https
@@ -59,6 +61,9 @@ class Has field env where
 
 instance Has DataPath (Env m) where
   obtain = dataFolder
+
+instance Has Uri (Env m) where
+  obtain = envBaseUrl
 
 instance Has (WriteQueue m) (Env m) where
   obtain = writeQueue
