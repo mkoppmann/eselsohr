@@ -45,7 +45,7 @@ mkAppEnv :: Config -> IO AppEnv
 mkAppEnv Config.Config {..} = do
   newWriteQueue <- newTQueueIO
   let dataFolder         = confDataFolder
-      envBaseUrl         = confBaseUrl
+      baseUrl            = confBaseUrl
       writeQueue         = newWriteQueue
       logAction          = mainLogAction confLogSeverity
       https              = if confHttps then Env.HttpsOn else Env.HttpsOff
