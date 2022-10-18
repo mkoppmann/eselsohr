@@ -2,6 +2,7 @@
 
 module Lib.App.Env
   ( DataPath
+  , BaseUrl
   , WriteQueue
   , Https(..)
   , Hsts(..)
@@ -25,6 +26,8 @@ import           Lib.Domain.Uri                                       ( Uri )
 
 type DataPath = FilePath
 
+type BaseUrl = Uri
+
 type WriteQueue m = TQueue (RepositoryCommandSync m)
 
 data Https = HttpsOn | HttpsOff
@@ -38,7 +41,7 @@ data CollectionCreation = Public | Private
 
 data Env (m :: Type -> Type) = Env
   { dataFolder         :: !DataPath
-  , envBaseUrl         :: !Uri
+  , baseUrl            :: !BaseUrl
   , writeQueue         :: !(WriteQueue m)
   , logAction          :: !(LogAction m Message)
   , https              :: !Https
@@ -62,8 +65,8 @@ class Has field env where
 instance Has DataPath (Env m) where
   obtain = dataFolder
 
-instance Has Uri (Env m) where
-  obtain = envBaseUrl
+instance Has BaseUrl (Env m) where
+  obtain = baseUrl
 
 instance Has (WriteQueue m) (Env m) where
   obtain = writeQueue

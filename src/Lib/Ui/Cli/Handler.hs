@@ -11,6 +11,7 @@ import           Lib.App.Port                                         ( MonadRan
 import           Lib.Domain.Repo.Collection                           ( CollectionRepo )
 import           Lib.Infra.Log                                        ( runAppLogIO_ )
 import           Lib.Infra.Monad                                      ( AppEnv )
+import           Lib.Ui.Cli.Command                                   ( WithEnv )
 
 data CliAction
   = RunServer
@@ -19,7 +20,7 @@ data CliAction
 
 data CollectionCommand = NewCollection
 
-commandHandler :: (CollectionRepo m, MonadRandom m, MonadIO m) => CliAction -> m ()
+commandHandler :: (CollectionRepo m, MonadRandom m, MonadIO m, WithEnv env m) => CliAction -> m ()
 commandHandler RunServer                = pass
 commandHandler Migrate                  = pass
 commandHandler (Collection colCommands) = case colCommands of
