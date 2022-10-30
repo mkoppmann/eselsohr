@@ -9,6 +9,7 @@ module Lib.Domain.CapabilityList
   , removeShareArticleList
   , addShareArticle
   , removeShareArticle
+  , removeExpiredCapabilities
   , mkCapabilityList
   , fromMap
   , toMap
@@ -16,6 +17,10 @@ module Lib.Domain.CapabilityList
   ) where
 
 import qualified Data.Map.Strict                                     as Map
+
+import           Data.Time.Clock                                      ( UTCTime )
+
+import qualified Lib.Domain.Capability                               as Cap
 
 import           Lib.Domain.Authorization                             ( CreateUnlockLinksPerm
                                                                       , DeleteUnlockLinksPerm
@@ -49,6 +54,14 @@ deleted, because delete is idempotent.
  -}
 removeUnlockLink :: RemoveCapability DeleteUnlockLinksPerm
 removeUnlockLink _perm = removeCapability
+
+removeExpiredCapabilities :: DeleteUnlockLinksPerm -> UTCTime -> CapabilityList -> CapabilityList
+removeExpiredCapabilities _perm curTime = wrapMap $ Map.filter unexpiredCap
+ where
+  unexpiredCap :: Capability -> Bool
+  unexpiredCap cap = case Cap.expirationDate cap of
+    Nothing      -> True
+    Just expDate -> expDate > curTime
 
 addShareUnlockLinks :: AddCapability ShareUnlockLinksPerm
 addShareUnlockLinks _perm = addCapability

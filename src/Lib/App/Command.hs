@@ -54,12 +54,17 @@ module Lib.App.Command
   , DeleteShareArticle(..)
   , deleteShareArticle
 
+    -- ** RemoveExpiredCapabilities
+  , RemoveExpiredCapabilities(..)
+  , removeExpiredCapabilities
+
     -- * Collection related
 
     -- ** CreateCollection
   , createCollection
   ) where
 
+import           Data.Time.Clock                                      ( UTCTime )
 import           Prelude                                       hiding ( id
                                                                       , state
                                                                       )
@@ -72,7 +77,6 @@ import qualified Lib.Domain.Repo.ArticleList                         as ArtRepo
 import qualified Lib.Domain.Repo.CapabilityList                      as CapRepo
 import qualified Lib.Domain.Repo.Collection                          as ColRepo
 
-import           Data.Time.Clock                                      ( UTCTime )
 import           Lib.App.Port                                         ( MonadRandom
                                                                       , MonadScraper
                                                                       , MonadTime
@@ -361,6 +365,22 @@ deleteShareArticle :: (CapabilityListRepo m) => DeleteShareArticle -> m (Command
 deleteShareArticle DeleteShareArticle {..} = case Authz.canShareArticle objRef artId of
   Left  err  -> pure $ Left err
   Right perm -> Right <$> CapRepo.save colId (CapRepo.removeShareArticle perm capId)
+
+------------------------------------------------------------------------
+-- RemoveExpiredCapabilities
+------------------------------------------------------------------------
+
+data RemoveExpiredCapabilities = RemoveExpiredCapabilities
+  { colId  :: !(Id Collection)
+  , objRef :: !ObjectReference
+  }
+
+removeExpiredCapabilities :: (CapabilityListRepo m, MonadTime m) => RemoveExpiredCapabilities -> m (CommandResult ())
+removeExpiredCapabilities RemoveExpiredCapabilities {..} = do
+  curTime <- Port.getCurrentTime
+  case Authz.canDeleteUnlockLinks objRef of
+    Left  err  -> pure $ Left err
+    Right perm -> Right <$> CapRepo.save colId (CapRepo.removeExpiredCapabilities perm curTime)
 
 ------------------------------------------------------------------------
 -- CreateCollection
