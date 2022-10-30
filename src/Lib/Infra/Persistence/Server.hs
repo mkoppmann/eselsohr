@@ -13,6 +13,7 @@ import           Lib.Infra.Log                                        ( pattern 
                                                                       , runAppLogIO_
                                                                       )
 import           Lib.Infra.Monad                                      ( AppEnv )
+import           Lib.Infra.Persistence.Cleanup                        ( removeExpiredCapabilitiesFromCollections )
 import           Lib.Infra.Persistence.Queue                          ( WithQueue
                                                                       , fetchUpdates
                                                                       , processUpdates
