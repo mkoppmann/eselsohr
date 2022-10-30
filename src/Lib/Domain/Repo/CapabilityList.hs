@@ -4,6 +4,7 @@ module Lib.Domain.Repo.CapabilityList
   , save
   , addUnlockLink
   , removeUnlockLink
+  , removeExpiredCapabilities
   , addShareUnlockLinks
   , removeShareUnlockLinks
   , addShareArticleList
@@ -11,6 +12,8 @@ module Lib.Domain.Repo.CapabilityList
   , addShareArticle
   , removeShareArticle
   ) where
+
+import           Data.Time.Clock                                      ( UTCTime )
 
 import qualified Lib.Domain.CapabilityList                           as CapList
 
@@ -41,6 +44,9 @@ addUnlockLink = CapList.addUnlockLink
 
 removeUnlockLink :: DeleteUnlockLinksPerm -> Id Capability -> CapabilityListAction
 removeUnlockLink perm capId = pure . CapList.removeUnlockLink perm capId
+
+removeExpiredCapabilities :: DeleteUnlockLinksPerm -> UTCTime -> CapabilityListAction
+removeExpiredCapabilities perm curTime = pure . CapList.removeExpiredCapabilities perm curTime
 
 addShareUnlockLinks :: ShareUnlockLinksPerm -> Id Capability -> Capability -> CapabilityListAction
 addShareUnlockLinks = CapList.addShareUnlockLinks

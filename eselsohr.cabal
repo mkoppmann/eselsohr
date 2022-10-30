@@ -40,6 +40,7 @@ library
         Lib.Infra.Error
         Lib.Infra.Log
         Lib.Infra.Monad
+        Lib.Infra.Persistence.Cleanup
         Lib.Infra.Persistence.File
         Lib.Infra.Persistence.Model.Article
         Lib.Infra.Persistence.Model.ArticleList
