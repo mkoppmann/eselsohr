@@ -20,7 +20,7 @@ jobs:
 
       - name: FreeBSD-VM
         id: build-freebsd
-        uses: vmactions/freebsd-vm@08e4bc422b24209fb6d631c5755cdb4ec2e0b9f3
+        uses: vmactions/freebsd-vm@dcbf6bacfcec5f990d6a6b3aab51beb0171b7354
         with:
           release: 12.3
           envs: "CONFIG"
