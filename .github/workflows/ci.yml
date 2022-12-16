@@ -15,7 +15,7 @@ jobs:
       - name: "Set up HLint"
         uses: rwe/actions-hlint-setup@9f5da5e7cd43663fb7b2e2154a087c17f0471ed1
         with:
-          version: "3.4.1"
+          version: "3.5"
 
       - name: "Run HLint"
         uses: rwe/actions-hlint-run@c178fa6263930e604e377a21ef54403306bdc1c7
