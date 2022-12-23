@@ -33,7 +33,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
-      - uses: haskell/actions/setup@3c89646d961d828e78fdd123db1dd64cca53a7a3
+      - uses: haskell/actions/setup@cfcdd36100b8995bc093e4cc3f94304440683a5b
         id: setup-haskell-cabal
         with:
           ghc-version: "9.0"
