@@ -23,6 +23,15 @@ jobs:
           path: '["app/", "src/", "test/"]'
           fail-on: warning
 
+  fourmolu:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@755da8c3cf115ac066823e79a1e1788f8940201b
+
+      - name: "Check formatting with Fourmolu"
+        uses: fourmolu/fourmolu-action@0a81af89329d1b13c54770fc3887c6bb62ccbf5a
+
   build-binary:
     needs: hlint
 
