@@ -1,40 +1,41 @@
 module Lib.Domain.Repo.CapabilityList
-  ( CapabilityListAction
-  , CapabilityListRepo(..)
-  , save
-  , addUnlockLink
-  , removeUnlockLink
-  , removeExpiredCapabilities
-  , addShareUnlockLinks
-  , removeShareUnlockLinks
-  , addShareArticleList
-  , removeShareArticleList
-  , addShareArticle
-  , removeShareArticle
-  ) where
+    ( CapabilityListAction
+    , CapabilityListRepo (..)
+    , save
+    , addUnlockLink
+    , removeUnlockLink
+    , removeExpiredCapabilities
+    , addShareUnlockLinks
+    , removeShareUnlockLinks
+    , addShareArticleList
+    , removeShareArticleList
+    , addShareArticle
+    , removeShareArticle
+    ) where
 
-import           Data.Time.Clock                                      ( UTCTime )
+import Data.Time.Clock (UTCTime)
 
-import qualified Lib.Domain.CapabilityList                           as CapList
+import qualified Lib.Domain.CapabilityList as CapList
 
-import           Lib.Domain.Authorization                             ( CreateUnlockLinksPerm
-                                                                      , DeleteUnlockLinksPerm
-                                                                      , ShareArticleListPerm
-                                                                      , ShareArticlePerm
-                                                                      , ShareUnlockLinksPerm
-                                                                      )
-import           Lib.Domain.Capability                                ( Capability )
-import           Lib.Domain.CapabilityList                            ( CapabilityList )
-import           Lib.Domain.Collection                                ( Collection )
-import           Lib.Domain.Error                                     ( AppErrorType )
-import           Lib.Domain.Id                                        ( Id )
+import Lib.Domain.Authorization
+    ( CreateUnlockLinksPerm
+    , DeleteUnlockLinksPerm
+    , ShareArticleListPerm
+    , ShareArticlePerm
+    , ShareUnlockLinksPerm
+    )
+import Lib.Domain.Capability (Capability)
+import Lib.Domain.CapabilityList (CapabilityList)
+import Lib.Domain.Collection (Collection)
+import Lib.Domain.Error (AppErrorType)
+import Lib.Domain.Id (Id)
 
 type CapabilityListAction = CapabilityList -> Either AppErrorType CapabilityList
 
 class (Monad m) => CapabilityListRepo m where
-  loadAll :: Id Collection -> m CapabilityList
-  nextId :: m (Id Capability)
-  saveAll :: Id Collection -> Seq CapabilityListAction -> m ()
+    loadAll :: Id Collection -> m CapabilityList
+    nextId :: m (Id Capability)
+    saveAll :: Id Collection -> Seq CapabilityListAction -> m ()
 
 save :: (CapabilityListRepo m) => Id Collection -> CapabilityListAction -> m ()
 save colId = saveAll colId . one

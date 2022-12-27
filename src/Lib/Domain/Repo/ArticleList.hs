@@ -1,34 +1,35 @@
 module Lib.Domain.Repo.ArticleList
-  ( ArticleListAction
-  , ArticleListRepo(..)
-  , save
-  , addArticle
-  , changeArticleTitle
-  , markArticleAsUnread
-  , markArticleAsRead
-  , removeArticle
-  ) where
+    ( ArticleListAction
+    , ArticleListRepo (..)
+    , save
+    , addArticle
+    , changeArticleTitle
+    , markArticleAsUnread
+    , markArticleAsRead
+    , removeArticle
+    ) where
 
-import qualified Lib.Domain.ArticleList                              as ArtList
+import qualified Lib.Domain.ArticleList as ArtList
 
-import           Lib.Domain.Article                                   ( Article )
-import           Lib.Domain.ArticleList                               ( ArticleList )
-import           Lib.Domain.Authorization                             ( ChangeStatePerm
-                                                                      , ChangeTitlePerm
-                                                                      , CreateArticlesPerm
-                                                                      , DeleteArticlePerm
-                                                                      )
-import           Lib.Domain.Collection                                ( Collection )
-import           Lib.Domain.Error                                     ( AppErrorType )
-import           Lib.Domain.Id                                        ( Id )
-import           Lib.Domain.NonEmptyText                              ( NonEmptyText )
+import Lib.Domain.Article (Article)
+import Lib.Domain.ArticleList (ArticleList)
+import Lib.Domain.Authorization
+    ( ChangeStatePerm
+    , ChangeTitlePerm
+    , CreateArticlesPerm
+    , DeleteArticlePerm
+    )
+import Lib.Domain.Collection (Collection)
+import Lib.Domain.Error (AppErrorType)
+import Lib.Domain.Id (Id)
+import Lib.Domain.NonEmptyText (NonEmptyText)
 
 type ArticleListAction = ArticleList -> Either AppErrorType ArticleList
 
 class (Monad m) => ArticleListRepo m where
-  loadAll :: Id Collection -> m ArticleList
-  nextId :: m (Id Article)
-  saveAll :: Id Collection -> Seq ArticleListAction -> m ()
+    loadAll :: Id Collection -> m ArticleList
+    nextId :: m (Id Article)
+    saveAll :: Id Collection -> Seq ArticleListAction -> m ()
 
 save :: (ArticleListRepo m) => Id Collection -> ArticleListAction -> m ()
 save colId = saveAll colId . one

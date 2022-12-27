@@ -1,26 +1,27 @@
 module Lib.Ui.Web.Page.ViewModel.UnlockLink
-  ( UnlockLinkVm(..)
-  , fromDomain
-  ) where
+    ( UnlockLinkVm (..)
+    , fromDomain
+    ) where
 
-import qualified Lib.Ui.Web.Page.ViewModel.Capability                as CapabilityVm
+import qualified Lib.Ui.Web.Page.ViewModel.Capability as CapabilityVm
 
-import           Lib.Domain.Capability                                ( Capability )
-import           Lib.Domain.Collection                                ( Collection )
-import           Lib.Domain.Id                                        ( Id )
-import           Lib.Ui.Dto.Accesstoken                               ( Accesstoken
-                                                                      , Reference(..)
-                                                                      , mkAccesstoken
-                                                                      )
-import           Lib.Ui.Web.Page.ViewModel.Capability                 ( CapabilityVm )
+import Lib.Domain.Capability (Capability)
+import Lib.Domain.Collection (Collection)
+import Lib.Domain.Id (Id)
+import Lib.Ui.Dto.Accesstoken
+    ( Accesstoken
+    , Reference (..)
+    , mkAccesstoken
+    )
+import Lib.Ui.Web.Page.ViewModel.Capability (CapabilityVm)
 
 data UnlockLinkVm = UnlockLinkVm
-  { capVm :: !CapabilityVm
-  , acc   :: !Accesstoken
-  }
+    { capVm :: !CapabilityVm
+    , acc :: !Accesstoken
+    }
 
 fromDomain :: Id Collection -> Id Capability -> Capability -> UnlockLinkVm
 fromDomain resId capId cap = do
-  let capVm = CapabilityVm.fromDomain cap
-      acc   = mkAccesstoken $ Reference resId capId
-  UnlockLinkVm { .. }
+    let capVm = CapabilityVm.fromDomain cap
+        acc = mkAccesstoken $ Reference resId capId
+    UnlockLinkVm{..}

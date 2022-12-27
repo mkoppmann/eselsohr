@@ -1,10 +1,10 @@
 module Lib.Infra.Adapter.Scraper
-  ( scrapWebsite
-  ) where
+    ( scrapWebsite
+    ) where
 
-import qualified Text.HTML.Scalpel                                   as SC
+import qualified Text.HTML.Scalpel as SC
 
-import           Lib.Domain.Uri                                       ( Uri )
+import Lib.Domain.Uri (Uri)
 
 type WithScraper m = MonadIO m
 
