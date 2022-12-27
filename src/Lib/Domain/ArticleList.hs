@@ -1,71 +1,73 @@
 module Lib.Domain.ArticleList
-  ( ArticleList
-  , lookup
-  , addArticle
-  , changeArticleTitle
-  , markArticleAsUnread
-  , markArticleAsRead
-  , removeArticle
-  , mkArticleList
-  , fromMap
-  , toMap
-  , articleAlreadyExists
-  ) where
+    ( ArticleList
+    , lookup
+    , addArticle
+    , changeArticleTitle
+    , markArticleAsUnread
+    , markArticleAsRead
+    , removeArticle
+    , mkArticleList
+    , fromMap
+    , toMap
+    , articleAlreadyExists
+    ) where
 
-import qualified Data.Map.Strict                                     as Map
+import qualified Data.Map.Strict as Map
 
-import qualified Lib.Domain.Article                                  as Article
-import qualified Lib.Domain.Authorization                            as Authz
+import qualified Lib.Domain.Article as Article
+import qualified Lib.Domain.Authorization as Authz
 
-import           Lib.Domain.Article                                   ( Article )
-import           Lib.Domain.Authorization                             ( ChangeStatePerm
-                                                                      , ChangeTitlePerm
-                                                                      , CreateArticlesPerm
-                                                                      , DeleteArticlePerm
-                                                                      )
-import           Lib.Domain.Error                                     ( AppErrorType
-                                                                      , notFound
-                                                                      , serverError
-                                                                      )
-import           Lib.Domain.Id                                        ( Id )
-import           Lib.Domain.NonEmptyText                              ( NonEmptyText )
+import Lib.Domain.Article (Article)
+import Lib.Domain.Authorization
+    ( ChangeStatePerm
+    , ChangeTitlePerm
+    , CreateArticlesPerm
+    , DeleteArticlePerm
+    )
+import Lib.Domain.Error
+    ( AppErrorType
+    , notFound
+    , serverError
+    )
+import Lib.Domain.Id (Id)
+import Lib.Domain.NonEmptyText (NonEmptyText)
 
 newtype ArticleList = ArticleList (Map (Id Article) Article)
-  deriving (Eq, Show) via (Map (Id Article) Article)
+    deriving (Eq, Show) via (Map (Id Article) Article)
 
 lookup :: Id Article -> ArticleList -> Either AppErrorType Article
 lookup artId = maybeToRight notFound . Map.lookup artId . coerce
 
 addArticle :: CreateArticlesPerm -> Id Article -> Article -> ArticleList -> Either AppErrorType ArticleList
 addArticle _perm artId art artList = case lookup artId artList of
-  Left  _notFound -> pure $ wrapMap (Map.insert artId art) artList
-  Right _art      -> Left articleAlreadyExists
+    Left _notFound -> pure $ wrapMap (Map.insert artId art) artList
+    Right _art -> Left articleAlreadyExists
 
 changeArticleTitle :: ChangeTitlePerm -> NonEmptyText -> ArticleList -> Either AppErrorType ArticleList
 changeArticleTitle perm newTitle artList = do
-  let artId = Authz.changeTitleId perm
-  art <- lookup artId artList
-  let newArt = Article.changeTitle newTitle art
-  pure $ wrapMap (Map.insert artId newArt) artList
+    let artId = Authz.changeTitleId perm
+    art <- lookup artId artList
+    let newArt = Article.changeTitle newTitle art
+    pure $ wrapMap (Map.insert artId newArt) artList
 
 markArticleAsUnread :: ChangeStatePerm -> ArticleList -> Either AppErrorType ArticleList
 markArticleAsUnread perm artList = do
-  let artId = Authz.changeStateId perm
-  art <- lookup artId artList
-  let newArt = Article.markAsUnread art
-  pure $ wrapMap (Map.insert artId newArt) artList
+    let artId = Authz.changeStateId perm
+    art <- lookup artId artList
+    let newArt = Article.markAsUnread art
+    pure $ wrapMap (Map.insert artId newArt) artList
 
 markArticleAsRead :: ChangeStatePerm -> ArticleList -> Either AppErrorType ArticleList
 markArticleAsRead perm artList = do
-  let artId = Authz.changeStateId perm
-  art <- lookup artId artList
-  let newArt = Article.markAsRead art
-  pure $ wrapMap (Map.insert artId newArt) artList
+    let artId = Authz.changeStateId perm
+    art <- lookup artId artList
+    let newArt = Article.markAsRead art
+    pure $ wrapMap (Map.insert artId newArt) artList
 
 {- | Removes the 'Article' with the 'Id' contained in the 'DeleteArticlePerm'
 from the 'ArticleList'. This function does not fail, if the article was already
 deleted, because delete is idempotent.
- -}
+-}
 removeArticle :: DeleteArticlePerm -> ArticleList -> ArticleList
 removeArticle perm = wrapMap . Map.delete $ Authz.deleteArticleId perm
 

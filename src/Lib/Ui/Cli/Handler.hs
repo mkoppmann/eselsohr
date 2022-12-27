@@ -1,32 +1,32 @@
 module Lib.Ui.Cli.Handler
-  ( CliAction(..)
-  , CollectionCommand(..)
-  , commandHandler
-  , runCli
-  ) where
+    ( CliAction (..)
+    , CollectionCommand (..)
+    , commandHandler
+    , runCli
+    ) where
 
-import qualified Lib.Ui.Cli.Command                                  as Command
+import qualified Lib.Ui.Cli.Command as Command
 
-import           Lib.App.Port                                         ( MonadRandom )
-import           Lib.Domain.Repo.Collection                           ( CollectionRepo )
-import           Lib.Infra.Log                                        ( runAppLogIO_ )
-import           Lib.Infra.Monad                                      ( AppEnv )
-import           Lib.Ui.Cli.Command                                   ( WithEnv )
+import Lib.App.Port (MonadRandom)
+import Lib.Domain.Repo.Collection (CollectionRepo)
+import Lib.Infra.Log (runAppLogIO_)
+import Lib.Infra.Monad (AppEnv)
+import Lib.Ui.Cli.Command (WithEnv)
 
 data CliAction
-  = RunServer
-  | Migrate
-  | Collection !CollectionCommand
+    = RunServer
+    | Migrate
+    | Collection !CollectionCommand
 
 data CollectionCommand = NewCollection
 
 commandHandler :: (CollectionRepo m, MonadRandom m, MonadIO m, WithEnv env m) => CliAction -> m ()
-commandHandler RunServer                = pass
-commandHandler Migrate                  = pass
+commandHandler RunServer = pass
+commandHandler Migrate = pass
 commandHandler (Collection colCommands) = case colCommands of
-  NewCollection -> do
-    acc <- Command.createCollection
-    print $ "Accesstoken: " <> acc
+    NewCollection -> do
+        acc <- Command.createCollection
+        print $ "Accesstoken: " <> acc
 
 runCli :: AppEnv -> CliAction -> IO ()
 runCli env = runAppLogIO_ env . commandHandler

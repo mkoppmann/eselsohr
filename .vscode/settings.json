@@ -1,5 +1,7 @@
 {
-    "haskell.formattingProvider": "brittany",
+    "haskell.formattingProvider": "fourmolu",
     "nixEnvSelector.nixFile": "${workspaceRoot}/shell.nix",
-    "editor.tabSize": 2
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    "editor.trimAutoWhitespace": true,
 }

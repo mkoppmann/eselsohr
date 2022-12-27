@@ -1,26 +1,26 @@
 module Lib.Ui.Web.Page.Layout
-  ( render
-  , renderM
-  ) where
+    ( render
+    , renderM
+    ) where
 
-import           Lucid
-import           Lucid.Servant                                        ( linkAbsHref_ )
-import           Servant                                              ( fieldLink )
+import Lucid
+import Lucid.Servant (linkAbsHref_)
+import Servant (fieldLink)
 
-import qualified Lib.Ui.Web.Route                                    as Route
+import qualified Lib.Ui.Web.Route as Route
 
-import           Lib.Ui.Web.Route                                     ( HtmlPage )
+import Lib.Ui.Web.Route (HtmlPage)
 
 render :: Html () -> Html ()
 render page = doctypehtml_ $ do
-  head_ $ do
-    title_ "Eselsohr"
-    meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
-    link_ [rel_ "stylesheet", linkAbsHref_ $ fieldLink Route.stylesheet]
-  body_ $ do
-    header
-    main_ page
-    footer
+    head_ $ do
+        title_ "Eselsohr"
+        meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
+        link_ [rel_ "stylesheet", linkAbsHref_ $ fieldLink Route.stylesheet]
+    body_ $ do
+        header
+        main_ page
+        footer
 
 renderM :: (Monad m) => Html () -> m HtmlPage
 renderM = pure . render

@@ -1,12 +1,12 @@
 module Lib.Infra.Adapter.Random
-  ( getRandomId
-  ) where
+    ( getRandomId
+    ) where
 
-import qualified Data.UUID.V4                                        as UUID
+import qualified Data.UUID.V4 as UUID
 
-import qualified Lib.Domain.Id                                       as Id
+import qualified Lib.Domain.Id as Id
 
-import           Lib.Domain.Id                                        ( Id )
+import Lib.Domain.Id (Id)
 
 type WithRandom m = MonadIO m
 

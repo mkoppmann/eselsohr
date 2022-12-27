@@ -2,15 +2,16 @@
 
 module Lib.Infra.Persistence.Model.Id where
 
-import           Data.Aeson.Types                                     ( FromJSON
-                                                                      , FromJSONKey
-                                                                      , ToJSON
-                                                                      , ToJSONKey
-                                                                      )
-import           Data.UUID                                            ( UUID )
+import Data.Aeson.Types
+    ( FromJSON
+    , FromJSONKey
+    , ToJSON
+    , ToJSONKey
+    )
+import Data.UUID (UUID)
 
-import qualified Lib.Domain.Id                                       as Domain
-import           Lib.Domain.Id                                        ( Id )
+import Lib.Domain.Id (Id)
+import qualified Lib.Domain.Id as Domain
 
 deriving via UUID instance FromJSON (Id a)
 deriving via UUID instance FromJSONKey (Id a)

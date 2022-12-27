@@ -1,10 +1,10 @@
 module Lib.Infra.Adapter.Time
-  ( getCurrentTime
-  ) where
+    ( getCurrentTime
+    ) where
 
-import qualified Data.Time                                           as Time
+import qualified Data.Time as Time
 
-import           Data.Time.Clock                                      ( UTCTime )
+import Data.Time.Clock (UTCTime)
 
 type WithTime m = MonadIO m
 

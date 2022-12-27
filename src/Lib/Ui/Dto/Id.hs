@@ -2,12 +2,13 @@
 
 module Lib.Ui.Dto.Id where
 
-import           Data.UUID                                            ( UUID )
-import           Web.HttpApiData                                      ( FromHttpApiData
-                                                                      , ToHttpApiData
-                                                                      )
+import Data.UUID (UUID)
+import Web.HttpApiData
+    ( FromHttpApiData
+    , ToHttpApiData
+    )
 
-import           Lib.Domain.Id                                        ( Id(..) )
+import Lib.Domain.Id (Id (..))
 
 deriving via UUID instance FromHttpApiData (Id a)
 deriving via UUID instance ToHttpApiData (Id a)
