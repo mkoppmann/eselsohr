@@ -55,6 +55,9 @@ FROM gcr.io/distroless/static:nonroot@sha256:9ec950c09380320e203369982691eb821df
 # Copy executable from build stage
 COPY --from=build /home/builder/.cabal/bin/eselsohr-exe /app/eselsohr
 
+# Copy static folder from build stage
+COPY --from=build --chown=nonroot:nonroot /build/static /app/static
+
 # Copy data folder from build stage with correct permissions
 COPY --from=build --chown=nonroot:nonroot /data /data
 
@@ -67,6 +70,9 @@ ENV DATA_FOLDER=/data
 # Set Eselsohr’s listen address to all interfaces, so it can be used outside the
 # container.
 ENV LISTEN_ADDR=0.0.0.0
+
+# Set Eselsohr’s static folder path
+ENV STATIC_FOLDER_PATH=/app/static
 
 # Mark /data as volume for persistence
 VOLUME ["/data"]
