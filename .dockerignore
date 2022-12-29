@@ -1,6 +1,7 @@
 *
 !app/
 !src/
+!static/
 !test/
 !cabal.project
 !CHANGELOG.md
