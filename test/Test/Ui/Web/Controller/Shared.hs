@@ -91,7 +91,7 @@ withTestEnv = bracket setup clean
         Init.useRestrictedHttpManager
         void . async $ Server.persistenceApp env
         void . async $ testServer env
-        pure (env, Server.application 6979 env)
+        pure (env, Server.application 6979 "static/" env)
 
     clean :: (AppEnv, Application) -> IO ()
     clean (Env.Env{..}, _app) = removeDirectoryRecursive dataFolder
@@ -108,7 +108,7 @@ withTestEnv = bracket setup clean
                 }
 
     testServer :: AppEnv -> IO ()
-    testServer = runSettings (warpSettings "127.0.0.1" 6980) . Server.application 6980
+    testServer = runSettings (warpSettings "127.0.0.1" 6980) . Server.application 6980 "static/"
 
 redirectLocation :: (MonadFail m) => SResponse -> m ByteString
 redirectLocation SResponse{..} = do

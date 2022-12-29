@@ -35,17 +35,17 @@ import Lib.Infra.Log (runAppAsHandler)
 import Lib.Infra.Monad (AppEnv)
 import Lib.Ui.Web.Route (Api)
 
-server :: AppEnv -> Server Api
-server env =
+server :: FilePath -> AppEnv -> Server Api
+server staticFolder env =
     hoistServer (Proxy @Api) (runAppAsHandler env) $
         toServant Controller.collection
             :<|> toServant Controller.articleList
             :<|> toServant Controller.static
-            :<|> serveDirectoryWebApp "static"
+            :<|> serveDirectoryWebApp staticFolder
 
-application :: Port -> AppEnv -> Application
-application port env@Env.Env{..} =
-    serve (Proxy @Api) (server env)
+application :: Port -> FilePath -> AppEnv -> Application
+application port staticFolder env@Env.Env{..} =
+    serve (Proxy @Api) (server staticFolder env)
         -- Request middlewares
         & methodOverridePost
         & enforceHttps

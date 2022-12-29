@@ -74,6 +74,9 @@ data Config = Config
     , confPublicCollectionCreation :: !Bool
     -- ^ Wether the creation of collections should be public.
     -- Defaults to: 'False'
+    , confStaticFolderPath :: !FilePath
+    -- ^ The path to the folder with static resources.
+    -- Defaults to: 'static/'
     }
 
 loadConfig :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m Config
@@ -90,6 +93,7 @@ loadConfig mConfPath = do
     confKeyFile <- getKeyFile
     confDepMode <- getDeploymentMode
     confPublicCollectionCreation <- getCollectionCreation
+    confStaticFolderPath <- getStaticFolderPath
     clearEnv
     pure $ Config{..}
   where
@@ -156,6 +160,9 @@ loadConfig mConfPath = do
         lookupEnv "PUBLIC_COLLECTION_CREATION" >>= \case
             Nothing -> pure False
             Just pcc -> pure . fromMaybe False . readMaybe $ toTitleCase pcc
+
+    getStaticFolderPath :: (MonadIO m) => m FilePath
+    getStaticFolderPath = maybe (pure "static/") sanitizePath =<< lookupEnv "STATIC_FOLDER_PATH"
 
 clearEnv :: (MonadIO m) => m ()
 clearEnv = traverse_ (unsetEnv . fst) =<< getEnvironment
