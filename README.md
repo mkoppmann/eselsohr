@@ -29,7 +29,8 @@ If you have [Nix installed](https://nixos.org/download.html) with [Flakes suppor
 
 Eselsohr is distributed as a single binary and does not have any other dependencies.
 It can be configured by using [env vars](https://en.wikipedia.org/wiki/Environment_variable) or by using a configuration file (`eselsohr --config-file /path/to/file`).
-By default it looks for an `.env` file in the current working directory.
+The folder with the static resources is also required.
+By default it looks for an `.env` file and a `static/` directory in the current working directory.
 
 The following values can be set:
 
@@ -60,7 +61,8 @@ The following values can be set:
 * `STATIC_FOLDER_PATH`: The path to the folder with static resources.
     Defaults to `static/`.
 
-Currently, all configuration parameters are optional so starting Eselsohr can be as simple as executing the Eselsohr binary.
+Currently, all configuration parameters are optional.
+Starting Eselsohr can be as simple as executing the Eselsohr binary in a directory along with the static resources.
 If you don’t allow the public creation of collections, you can generate accesstokens for collections by running `eselsohr-exe collection new`.
 
 The `dist` directory in this repository provides deployment relevant files, like an example `rc` file for FreeBSD or a service file for systemd-based Linux distributions.
