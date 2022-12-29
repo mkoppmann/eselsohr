@@ -57,6 +57,8 @@ The following values can be set:
     Defaults to `Prod`.
 * `PUBLIC_COLLECTION_CREATION`: Wether the creation of collection should be public.
     Defaults to `False`.
+* `STATIC_FOLDER_PATH`: The path to the folder with static resources.
+    Defaults to `static/`.
 
 Currently, all configuration parameters are optional so starting Eselsohr can be as simple as executing the Eselsohr binary.
 If you don’t allow the public creation of collections, you can generate accesstokens for collections by running `eselsohr-exe collection new`.
