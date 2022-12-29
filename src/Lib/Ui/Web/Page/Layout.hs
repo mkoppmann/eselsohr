@@ -4,10 +4,6 @@ module Lib.Ui.Web.Page.Layout
     ) where
 
 import Lucid
-import Lucid.Servant (linkAbsHref_)
-import Servant (fieldLink)
-
-import qualified Lib.Ui.Web.Route as Route
 
 import Lib.Ui.Web.Route (HtmlPage)
 
@@ -16,7 +12,7 @@ render page = doctypehtml_ $ do
     head_ $ do
         title_ "Eselsohr"
         meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
-        link_ [rel_ "stylesheet", linkAbsHref_ $ fieldLink Route.stylesheet]
+        link_ [rel_ "stylesheet", type_ "text/css", href_ "static/style.css"]
     body_ $ do
         header
         main_ page
