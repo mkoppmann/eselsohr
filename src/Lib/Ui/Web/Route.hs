@@ -7,10 +7,10 @@ module Lib.Ui.Web.Route
     , CollectionSite (..)
     , ArticleListSite (..)
     , StaticSite (..)
+    , ResourcesSite (..)
     , linkAsText
     ) where
 
-import Clay (Css)
 import Lucid (Html)
 import Servant.API
     ( Capture
@@ -21,6 +21,7 @@ import Servant.API
     , Patch
     , Post
     , QueryParam
+    , Raw
     , ReqBody
     , (:<|>)
     , (:>)
@@ -29,7 +30,6 @@ import Servant.API.Generic
     ( GenericMode ((:-))
     , ToServantApi
     )
-import Servant.CSS.Clay (CSS)
 import Servant.HTML.Lucid (HTML)
 import Servant.Links (linkURI)
 import Servant.Server.Generic (AsServerT)
@@ -54,7 +54,7 @@ type AppServer = AsServerT App
 
 type ToApi (site :: Type -> Type) = ToServantApi site
 
-type Api = Collection :<|> ArticleList :<|> Static
+type Api = Collection :<|> ArticleList :<|> Static :<|> Resources
 
 type HtmlPage = Html ()
 
@@ -218,15 +218,20 @@ data StaticSite route = StaticSite
         :: route
             :- "invalid-token"
                 :> Get '[HTML] HtmlPage
-    , stylesheet
-        :: route
-            :- "static"
-                :> "style.css"
-                :> Get '[CSS] Css
     }
     deriving stock (Generic)
 
 type Static = ToApi StaticSite
+
+newtype ResourcesSite route = ResourcesSite
+    { resources
+        :: route
+            :- "static"
+                :> Raw
+    }
+    deriving stock (Generic)
+
+type Resources = ToApi ResourcesSite
 
 linkAsText :: Link -> Text
 linkAsText = (<>) "/" . show @Text . linkURI

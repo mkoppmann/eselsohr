@@ -24,6 +24,7 @@ import Servant
     , (:<|>) (..)
     )
 import Servant.API.Generic (toServant)
+import Servant.Server.StaticFiles (serveDirectoryWebApp)
 
 import qualified Lib.App.Env as Env
 import qualified Lib.Ui.Web.Controller.ArticleList as Controller
@@ -40,6 +41,7 @@ server env =
         toServant Controller.collection
             :<|> toServant Controller.articleList
             :<|> toServant Controller.static
+            :<|> serveDirectoryWebApp "static"
 
 application :: Port -> AppEnv -> Application
 application port env@Env.Env{..} =

@@ -4,12 +4,9 @@ module Lib.Ui.Web.Controller.Static
     , invalidToken
     ) where
 
-import Clay (Css)
-
 import qualified Lib.App.Env as Env
 import qualified Lib.Ui.Web.Page.Layout as Layout
 import qualified Lib.Ui.Web.Page.Static as Static
-import qualified Lib.Ui.Web.Page.Style as Style
 import qualified Lib.Ui.Web.Route as Route
 
 import Lib.App.Env
@@ -27,7 +24,7 @@ type WithEnv env m = (MonadReader env m, Has CollectionCreation env)
 
 static :: StaticSite AppServer
 static =
-    Route.StaticSite{Route.startpage = startpage, Route.invalidToken = invalidToken, Route.stylesheet = stylesheet}
+    Route.StaticSite{Route.startpage = startpage, Route.invalidToken = invalidToken}
 
 startpage :: WithEnv env m => m HtmlPage
 startpage = do
@@ -38,6 +35,3 @@ startpage = do
 
 invalidToken :: (Monad m) => m HtmlPage
 invalidToken = Layout.renderM Static.invalidToken
-
-stylesheet :: (Monad m) => m Css
-stylesheet = pure Style.app

@@ -34,6 +34,6 @@ staticControllerSpec = aroundAll withTestEnv $ do
             Test.get (fromRoute Route.invalidToken) `shouldRespondWith` 200
 
         it "returns the stylesheet with 200" $ do
-            Test.get (fromRoute Route.stylesheet) `shouldRespondWith` 200
+            Test.get (fromRoute Route.resources <> "/style.css") `shouldRespondWith` 200
   where
     fromRoute route = encodeUtf8 . linkAsText $ fieldLink route
