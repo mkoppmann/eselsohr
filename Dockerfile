@@ -7,7 +7,7 @@ LABEL maintainer="mkoppmann <dev@mkoppmann.at>"
 ###############
 # Build image #
 ###############
-FROM utdemir/ghc-musl:v24-ghc902@sha256:3ee9b1bd447b9c51752a57e0fb0d0223be0e1c982b7a30776310743b514fcd1f AS build
+FROM utdemir/ghc-musl:v24-ghc922@sha256:e0eafa9a550657b37066e4e23ae5d5a5a6ca3a7b007e0031cffa0f65e77b31f4 AS build
 
 # Install upx for shrinking the binary
 RUN apk --no-cache add upx=~3.96
