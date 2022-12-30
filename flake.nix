@@ -28,7 +28,6 @@
               pkgs.haskell.lib.addBuildTools drv (with hp;
               [
                 # Specify your build/dev dependencies here.
-                brittany
                 cabal-fmt
                 cabal-install
                 ghcid
