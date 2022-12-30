@@ -33,10 +33,7 @@ jobs:
             pkg update
 
             # Install dependencies.
-            # The GHC 8.10 port only contains the versioned ghc binary,
-            # so we provide a symlink here because Cabal requires it.
-            pkg install -y ghc810 hs-cabal-install
-            ln -s /usr/local/bin/ghc-8.10.7 /usr/local/bin/ghc
+            pkg install -y ghc hs-cabal-install
 
             # Disable generation of documentation. Overriding this via cli
             # flags is broken.

@@ -45,7 +45,7 @@ jobs:
       - uses: haskell/actions/setup@93635e8c4ac823f55cf3444537a63d3f2fd589de
         id: setup-haskell-cabal
         with:
-          ghc-version: "9.0"
+          ghc-version: "9.2"
           cabal-version: "latest"
 
       - name: Update Hackage snapshot
