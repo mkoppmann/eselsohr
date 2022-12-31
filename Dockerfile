@@ -7,17 +7,14 @@ LABEL maintainer="mkoppmann <dev@mkoppmann.at>"
 ###############
 # Build image #
 ###############
-FROM utdemir/ghc-musl:v24-ghc922@sha256:e0eafa9a550657b37066e4e23ae5d5a5a6ca3a7b007e0031cffa0f65e77b31f4 AS build
-
-# Install upx for shrinking the binary
-RUN apk --no-cache add upx=~3.96
+FROM haskell:9.2.5@sha256:3d80672b3174724d88a99305fa78d1e663c1bd95f53dfd744b256b0e4734b241 AS build
 
 # Create the data folder for the deployment stage here, because there is no
 # shell in distroless images available.
 # Also create a new user so we don’t run the build process as root and create
 # the folder for the files.
 RUN mkdir -p /data \
- && adduser -D builder \
+ && adduser --system --group builder \
  && mkdir -p /build \
  && chown -R builder:builder /build
 USER builder
@@ -36,21 +33,21 @@ RUN cabal build \
         all
 
 # Copy the rest of the source files and build the executable.
-# After the build, run upx to shrink the binary.
 COPY . .
 RUN cabal install \
-        --avoid-reinstalls \
         --disable-documentation \
         --disable-tests \
         --install-method=copy \
-        --overwrite-policy=always \
-        -O2 \
- && upx --best "${HOME}"/.cabal/bin/eselsohr-exe
+        -O2
 
 ####################
 # Deployment image #
 ####################
-FROM gcr.io/distroless/static:nonroot@sha256:9ec950c09380320e203369982691eb821df6a6974edf9f4bb8e661d4b77b9d99
+FROM gcr.io/distroless/base:nonroot@sha256:1390b366f268de7521e9921cff9856e2c82d3e5f92b45744b298e98c082eb760
+
+# Copy missing shared libraries from build stage
+COPY --from=build /lib/x86_64-linux-gnu/libz.so.1 /lib/x86_64-linux-gnu/libz.so.1
+COPY --from=build /usr/lib/x86_64-linux-gnu/libgmp.so.10 /usr/lib/x86_64-linux-gnu/libgmp.so.10
 
 # Copy executable from build stage
 COPY --from=build /home/builder/.cabal/bin/eselsohr-exe /app/eselsohr
