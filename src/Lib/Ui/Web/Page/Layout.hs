@@ -12,7 +12,7 @@ render page = doctypehtml_ $ do
     head_ $ do
         title_ "Eselsohr"
         meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1"]
-        link_ [rel_ "stylesheet", type_ "text/css", href_ "static/style.css"]
+        link_ [rel_ "stylesheet", type_ "text/css", href_ "/static/style.css"]
     body_ $ do
         header
         main_ page
