@@ -90,9 +90,9 @@ library
     hs-source-dirs:     src
     default-language:   GHC2021
     default-extensions:
-        DataKinds LambdaCase TypeFamilies OverloadedStrings DerivingVia
+        DataKinds LambdaCase OverloadedStrings DerivingVia
         DerivingStrategies RecordWildCards PatternSynonyms DeriveAnyClass
-        AllowAmbiguousTypes DuplicateRecordFields
+        DuplicateRecordFields
 
     ghc-options:
         -Wall -Wcompat -Widentities -Wincomplete-uni-patterns
