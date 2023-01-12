@@ -88,14 +88,11 @@ library
         Network.Wai.Middleware.NoOp
 
     hs-source-dirs:     src
-    default-language:   Haskell2010
+    default-language:   GHC2021
     default-extensions:
-        DataKinds FlexibleContexts LambdaCase ScopedTypeVariables
-        TypeApplications TypeOperators TypeFamilies OverloadedStrings
-        MultiParamTypeClasses FlexibleInstances ConstraintKinds DerivingVia
-        DerivingStrategies RecordWildCards InstanceSigs DeriveGeneric
-        PatternSynonyms DeriveAnyClass DeriveTraversable TupleSections
-        AllowAmbiguousTypes DuplicateRecordFields StandaloneDeriving
+        DataKinds LambdaCase TypeFamilies OverloadedStrings DerivingVia
+        DerivingStrategies RecordWildCards PatternSynonyms DeriveAnyClass
+        AllowAmbiguousTypes DuplicateRecordFields
 
     ghc-options:
         -Wall -Wcompat -Widentities -Wincomplete-uni-patterns
