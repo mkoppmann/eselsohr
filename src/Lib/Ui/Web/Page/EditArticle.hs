@@ -39,7 +39,7 @@ handler :: WithQuery env m => Id Article -> Maybe Accesstoken -> m HtmlPage
 handler _artId Nothing = Layout.renderM Static.notAuthorized
 handler artId (Just acc) = do
     (ref, objRef) <- lookupReferences acc
-    viewModel <- query . Query objRef acc artId $ collectionId ref
+    viewModel <- query $ Query objRef acc artId ref.collectionId
     Layout.renderM $ view viewModel
 
 ------------------------------------------------------------------------
@@ -57,7 +57,7 @@ query :: WithQuery env m => Query -> m View
 query Query{..} = do
     changeTitlePerm <- throwOnError $ Authz.canChangeArticleTitle objRef artId
     article <- getArticle colId artId
-    let artTitle = ArticleVm.title article
+    let artTitle = article.title
     pure View{..}
 
 ------------------------------------------------------------------------

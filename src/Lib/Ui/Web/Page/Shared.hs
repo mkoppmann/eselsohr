@@ -111,7 +111,7 @@ lookupReferences acc = do
     curTime <- Port.getCurrentTime
     cap <- throwOnError $ CapPm.toDomain capPm
     validCap <- capOrNotAuthError $ capStillValid curTime cap
-    pure (ref, Capability.objectReference validCap)
+    pure (ref, validCap.objectReference)
 
 getArticleListPm :: (WithFile env m) => Id Collection -> m ArticleListPm
 getArticleListPm colId = File.load colId ColPm.getArticleList
@@ -136,7 +136,7 @@ capOrNotAuthError :: (WithError m) => Maybe a -> m a
 capOrNotAuthError = throwOnNothing $ notAuthorized "No valid capability found"
 
 capStillValid :: UTCTime -> Capability -> Maybe Capability
-capStillValid curTime cap = case Capability.expirationDate cap of
+capStillValid curTime cap = case cap.expirationDate of
     Nothing -> Just cap
     Just expDate -> if expDate < curTime then Nothing else Just cap
 
@@ -165,7 +165,7 @@ getSharedLinks colId sharedRefFilter = do
     toUnlockLink = uncurry (UnlockLink.fromDomain colId)
 
     filterF :: Capability -> Bool
-    filterF = sharedRefFilter . Capability.objectReference
+    filterF cap = sharedRefFilter cap.objectReference
 
 ------------------------------------------------------------------------
 -- HTML

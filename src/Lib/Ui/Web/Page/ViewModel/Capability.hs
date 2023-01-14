@@ -19,7 +19,7 @@ data CapabilityVm = CapabilityVm
 
 fromDomain :: Capability -> CapabilityVm
 fromDomain cap = do
-    let id = Capability.id cap
-        petname = Capability.petname cap
-        expirationDate = Capability.expirationDate cap
+    let id = cap.id
+        petname = cap.petname
+        expirationDate = cap.expirationDate
     CapabilityVm{..}

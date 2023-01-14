@@ -47,7 +47,7 @@ mkCollection = CollectionPmV1 $ CollectionPmV1Data Map.empty Map.empty
 
 getArticleList :: CollectionPm -> ArticleListPm
 getArticleList col = case col of
-    CollectionPmV1 v1Data -> v1ArticleList v1Data
+    CollectionPmV1 v1Data -> v1Data.v1ArticleList
     _otherVersion -> getArticleList $ migrate col
 
 updateArticleList :: ArticleListPm -> CollectionPm -> CollectionPm
@@ -57,7 +57,7 @@ updateArticleList arts col = case col of
 
 getCapabilityList :: CollectionPm -> CapabilityListPm
 getCapabilityList col = case col of
-    CollectionPmV1 v1Data -> v1CapabilityList v1Data
+    CollectionPmV1 v1Data -> v1Data.v1CapabilityList
     _otherVersion -> getCapabilityList $ migrate col
 
 updateCapabilityList :: CapabilityListPm -> CollectionPm -> CollectionPm

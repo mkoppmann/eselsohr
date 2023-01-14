@@ -48,7 +48,7 @@ handler :: WithQuery env m => Maybe Accesstoken -> m HtmlPage
 handler Nothing = Layout.renderM Static.notAuthorized
 handler (Just acc) = do
     (ref, objRef) <- lookupReferences acc
-    viewModel <- query . Query objRef acc $ collectionId ref
+    viewModel <- query $ Query objRef acc ref.collectionId
     Layout.renderM $ view viewModel
 
 ------------------------------------------------------------------------
@@ -103,14 +103,8 @@ view View{..} = do
     sharedLinkItem :: UnlockLinkVm -> Html ()
     sharedLinkItem unlockLink = do
         li_ $ do
-            articlesLinkA (unlockAcc unlockLink) . petname $ capVm unlockLink
-            deleteSharedArticleListRefForm (CapVm.id $ capVm unlockLink) acc . fieldLink Route.shareArticleListPage $ Just acc
-
-    unlockAcc :: UnlockLinkVm -> Accesstoken
-    unlockAcc = UnlockLink.acc
-
-    capVm :: UnlockLinkVm -> CapabilityVm
-    capVm = UnlockLink.capVm
+            articlesLinkA unlockLink.acc $ petname unlockLink.capVm
+            deleteSharedArticleListRefForm unlockLink.capVm.id acc . fieldLink Route.shareArticleListPage $ Just acc
 
     articlesLinkA :: Accesstoken -> Text -> Html ()
     articlesLinkA artListAcc = a_ [linkAbsHref_ . fieldLink Route.articleListPage $ Just artListAcc] . toHtml
@@ -119,4 +113,4 @@ view View{..} = do
     getArticlesA = a_ [linkAbsHref_ . fieldLink Route.articleListPage $ Just acc] "Back to overview"
 
     petname :: CapabilityVm -> Text
-    petname cap = fromMaybe (toText $ CapVm.id cap) $ CapVm.petname cap
+    petname cap = fromMaybe (toText cap.id) cap.petname

@@ -61,7 +61,7 @@ removeExpiredCapabilities :: DeleteUnlockLinksPerm -> UTCTime -> CapabilityList 
 removeExpiredCapabilities _perm curTime = wrapMap $ Map.filter unexpiredCap
   where
     unexpiredCap :: Capability -> Bool
-    unexpiredCap cap = case Cap.expirationDate cap of
+    unexpiredCap cap = case cap.expirationDate of
         Nothing -> True
         Just expDate -> expDate > curTime
 

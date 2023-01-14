@@ -288,7 +288,7 @@ capabilityWithObjRef objRef = do
     pure (capId, cap)
 
 capabilityListWithCapability :: Capability -> CapabilityList
-capabilityListWithCapability cap = CapabilityList.fromMap $ Map.insert (Capability.id cap) cap Map.empty
+capabilityListWithCapability cap = CapabilityList.fromMap $ Map.insert cap.id cap Map.empty
 
 getCapabilityWithId :: Id Capability -> CapabilityList -> Capability
 getCapabilityWithId capId caps = CapabilityList.toMap caps ! capId

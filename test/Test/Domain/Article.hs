@@ -34,24 +34,24 @@ articleSpec = describe "Lib.Domain.Article" $ do
         article <- defaultArticle
         let newTitle = getNonEmptyText "New title"
             newArticle = Article.changeTitle newTitle article
-        Article.title newArticle `shouldBe` newTitle
+        newArticle.title `shouldBe` newTitle
 
     it "a read article can be marked as unread" $ do
         article <- defaultArticleWithState Article.Read
         let unreadArticle = Article.markAsUnread article
-        Article.state unreadArticle `shouldBe` Article.Unread
+        unreadArticle.state `shouldBe` Article.Unread
 
     it "an unread article stays unread when marked as unread" $ do
         article <- defaultArticleWithState Article.Unread
         let readArticle = Article.markAsUnread article
-        Article.state readArticle `shouldBe` Article.Unread
+        readArticle.state `shouldBe` Article.Unread
 
     it "an unread article can be marked as read" $ do
         article <- defaultArticleWithState Article.Unread
         let readArticle = Article.markAsRead article
-        Article.state readArticle `shouldBe` Article.Read
+        readArticle.state `shouldBe` Article.Read
 
     it "a read article stays read when marked as read" $ do
         article <- defaultArticleWithState Article.Unread
         let readArticle = Article.markAsRead article
-        Article.state readArticle `shouldBe` Article.Read
+        readArticle.state `shouldBe` Article.Read

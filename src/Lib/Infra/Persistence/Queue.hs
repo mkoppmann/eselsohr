@@ -47,7 +47,7 @@ commit colId repoAction = do
 fetchUpdates :: forall env m. (WithQueue env m) => CommandQueue m -> TVar (WorkerQueueMap m) -> m Void
 fetchUpdates commandQueue workerQueueMap = infinitely . atomically $ do
     command <- readTQueue commandQueue
-    let colId = Repo.collectionId $ Repo.repoCommand command
+    let colId = command.repoCommand.collectionId
     addToMap colId command
   where
     addToMap :: Id Collection -> RepositoryCommandSync m -> STM ()
@@ -84,5 +84,5 @@ worker queue =
 
 storeUpdate :: (WithQueue env m) => RepositoryCommandSync m -> m ()
 storeUpdate Repo.RepositoryCommandSync{..} = do
-    Repo.action repoCommand
+    repoCommand.action
     atomically (putTMVar syncVar ())

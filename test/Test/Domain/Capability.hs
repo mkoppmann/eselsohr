@@ -37,7 +37,7 @@ capabilitySpec = describe "Lib.Domain.Capability" $ do
     it "'mkCapability' does not accept empty petnames" $ do
         capId <- getRandomId
         let cap = Capability.mkCapability capId Capability.defaultOverviewRef (Just "") Nothing
-        Capability.petname cap `shouldNotSatisfy` isJust
+        cap.petname `shouldNotSatisfy` isJust
 
     it "'isSharedRef' returns 'True' if given 'SharedRef'" $ do
         let sharedRef = Capability.SharedRef $ Capability.SharedReference Capability.defaultOverviewRef

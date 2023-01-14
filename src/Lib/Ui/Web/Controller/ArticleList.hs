@@ -80,7 +80,7 @@ createArticle
 createArticle CreateArticleForm{..} = do
     (ref, objRef) <- lookupReferences acc
     deploymentMode <- grab @DeploymentMode
-    command <- throwOnError . mkCommand deploymentMode objRef $ collectionId ref
+    command <- throwOnError $ mkCommand deploymentMode objRef ref.collectionId
     void . throwOnErrorM $ Command.createArticle command
     redirectTo goto
   where
@@ -95,7 +95,7 @@ createArticle CreateArticleForm{..} = do
 changeArticleTitle :: (ArticleListRepo m, WithQuery env m) => Id Article -> ChangeArticleTitleForm -> m Redirection
 changeArticleTitle artId ChangeArticleTitleForm{..} = do
     (ref, objRef) <- lookupReferences acc
-    let command = mkCommand objRef $ collectionId ref
+    let command = mkCommand objRef ref.collectionId
     throwOnErrorM $ Command.changeArticleTitle command
     redirectTo goto
   where
@@ -106,7 +106,7 @@ changeArticleTitle artId ChangeArticleTitleForm{..} = do
 markArticleAsRead :: (ArticleListRepo m, WithQuery env m) => Id Article -> ChangeArticleStateForm -> m Redirection
 markArticleAsRead artId ChangeArticleStateForm{..} = do
     (ref, objRef) <- lookupReferences acc
-    let command = mkCommand objRef $ collectionId ref
+    let command = mkCommand objRef ref.collectionId
     throwOnErrorM $ Command.markArticleAsRead command
     redirectTo goto
   where
@@ -115,7 +115,7 @@ markArticleAsRead artId ChangeArticleStateForm{..} = do
 markArticleAsUnread :: (ArticleListRepo m, WithQuery env m) => Id Article -> ChangeArticleStateForm -> m Redirection
 markArticleAsUnread artId ChangeArticleStateForm{..} = do
     (ref, objRef) <- lookupReferences acc
-    let command = mkCommand objRef $ collectionId ref
+    let command = mkCommand objRef ref.collectionId
     throwOnErrorM $ Command.markArticleAsUnread command
     redirectTo goto
   where
@@ -124,7 +124,7 @@ markArticleAsUnread artId ChangeArticleStateForm{..} = do
 deleteArticle :: (ArticleListRepo m, WithQuery env m) => Id Article -> DeleteItemForm -> m Redirection
 deleteArticle artId DeleteItemForm{..} = do
     (ref, objRef) <- lookupReferences acc
-    let command = mkCommand objRef $ collectionId ref
+    let command = mkCommand objRef ref.collectionId
     throwOnErrorM $ Command.deleteArticle command
     redirectTo goto
   where
@@ -134,13 +134,13 @@ createSharedArticleListRef
     :: (CapabilityListRepo m, WithQuery env m) => CreateSharedArticleListRefForm -> m Redirection
 createSharedArticleListRef CreateSharedArticleListRefForm{..} = do
     (ref, objRef) <- lookupReferences acc
-    let command = mkCommand objRef $ collectionId ref
+    let command = mkCommand objRef ref.collectionId
     void . throwOnErrorM $ Command.addShareArticleList command
     redirectTo goto
   where
     mkCommand objRef colId = do
         let mPetname = petname
-            mExpDate = unExpirationDate <$> expirationDate
+            mExpDate = (.unExpirationDate) <$> expirationDate
             share = False
             sharedPerms =
                 mkArticlesPerms
@@ -156,7 +156,7 @@ deleteSharedArticleListRef
     :: (CapabilityListRepo m, WithQuery env m) => Id Capability -> DeleteItemForm -> m Redirection
 deleteSharedArticleListRef capId DeleteItemForm{..} = do
     (ref, objRef) <- lookupReferences acc
-    let command = mkCommand objRef $ collectionId ref
+    let command = mkCommand objRef ref.collectionId
     throwOnErrorM $ Command.deleteShareArticleList command
     redirectTo goto
   where
@@ -166,14 +166,14 @@ createSharedArticleRef
     :: (CapabilityListRepo m, WithQuery env m) => Id Article -> CreateSharedArticleRefForm -> m Redirection
 createSharedArticleRef artId CreateSharedArticleRefForm{..} = do
     (ref, objRef) <- lookupReferences acc
-    let command = mkCommand objRef $ collectionId ref
+    let command = mkCommand objRef ref.collectionId
     void . throwOnErrorM $ Command.addShareArticle command
     redirectTo goto
   where
     mkCommand objRef colId = do
         let
             mPetname = petname
-            mExpDate = unExpirationDate <$> expirationDate
+            mExpDate = (.unExpirationDate) <$> expirationDate
             share = False
             sharedPerms =
                 mkArticlePerms artId (isJust viewArticle) (isJust changeTitle) (isJust changeState) (isJust delete) share
@@ -183,7 +183,7 @@ deleteSharedArticleRef
     :: (CapabilityListRepo m, WithQuery env m) => Id Article -> Id Capability -> DeleteItemForm -> m Redirection
 deleteSharedArticleRef artId capId DeleteItemForm{..} = do
     (ref, objRef) <- lookupReferences acc
-    let command = mkCommand objRef $ collectionId ref
+    let command = mkCommand objRef ref.collectionId
     throwOnErrorM $ Command.deleteShareArticle command
     redirectTo goto
   where

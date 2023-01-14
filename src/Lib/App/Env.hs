@@ -53,7 +53,7 @@ data Env (m :: Type -> Type) = Env
 
 instance HasLog (Env m) Message m where
     getLogAction :: Env m -> LogAction m Message
-    getLogAction = logAction
+    getLogAction env = env.logAction
     {-# INLINE getLogAction #-}
 
     setLogAction :: LogAction m Message -> Env m -> Env m
@@ -64,28 +64,28 @@ class Has field env where
     obtain :: env -> field
 
 instance Has DataPath (Env m) where
-    obtain = dataFolder
+    obtain env = env.dataFolder
 
 instance Has BaseUrl (Env m) where
-    obtain = baseUrl
+    obtain env = env.baseUrl
 
 instance Has (WriteQueue m) (Env m) where
-    obtain = writeQueue
+    obtain env = env.writeQueue
 
 instance Has (LogAction m Message) (Env m) where
-    obtain = logAction
+    obtain env = env.logAction
 
 instance Has Https (Env m) where
-    obtain = https
+    obtain env = env.https
 
 instance Has Hsts (Env m) where
-    obtain = hsts
+    obtain env = env.hsts
 
 instance Has DeploymentMode (Env m) where
-    obtain = deploymentMode
+    obtain env = env.deploymentMode
 
 instance Has CollectionCreation (Env m) where
-    obtain = collectionCreation
+    obtain env = env.collectionCreation
 
 grab :: forall field env m. (MonadReader env m, Has field env) => m field
 grab = asks $ obtain @field
@@ -95,7 +95,7 @@ class HasWriteQueue env m where
     getWriteQueue :: env -> WriteQueue m
 
 instance HasWriteQueue (Env m) m where
-    getWriteQueue = writeQueue
+    getWriteQueue env = env.writeQueue
 
 envWriteQueue :: forall env m. (MonadReader env m, HasWriteQueue env m) => m (WriteQueue m)
 envWriteQueue = asks getWriteQueue

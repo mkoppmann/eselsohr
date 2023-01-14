@@ -76,19 +76,19 @@ createCollection = do
 createUnlockLink :: (CapabilityListRepo m, WithQuery env m) => CreateUnlockLinkForm -> m Redirection
 createUnlockLink CreateUnlockLinkForm{..} = do
     (ref, objRef) <- lookupReferences acc
-    let command = mkCommand objRef $ collectionId ref
+    let command = mkCommand objRef ref.collectionId
     void . throwOnErrorM $ Command.createUnlockLink command
     redirectTo goto
   where
     mkCommand objRef colId = do
         let mPetname = petname
-            mExpDate = unExpirationDate <$> expirationDate
+            mExpDate = (.unExpirationDate) <$> expirationDate
         Command.CreateUnlockLink{..}
 
 deleteUnlockLink :: (CapabilityListRepo m, WithQuery env m) => Id Capability -> DeleteItemForm -> m Redirection
 deleteUnlockLink capId DeleteItemForm{..} = do
     (ref, objRef) <- lookupReferences acc
-    let command = mkCommand objRef $ collectionId ref
+    let command = mkCommand objRef ref.collectionId
     throwOnErrorM $ Command.deleteUnlockLink command
     redirectTo goto
   where
@@ -97,13 +97,13 @@ deleteUnlockLink capId DeleteItemForm{..} = do
 createSharedOverviewRef :: (CapabilityListRepo m, WithQuery env m) => CreateSharedOverviewRefForm -> m Redirection
 createSharedOverviewRef CreateSharedOverviewRefForm{..} = do
     (ref, objRef) <- lookupReferences acc
-    let command = mkCommand objRef $ collectionId ref
+    let command = mkCommand objRef ref.collectionId
     void . throwOnErrorM $ Command.addShareUnlockLinks command
     redirectTo goto
   where
     mkCommand objRef colId = do
         let mPetname = petname
-            mExpDate = unExpirationDate <$> expirationDate
+            mExpDate = (.unExpirationDate) <$> expirationDate
             share = False
             sharedPerms = mkOverviewPerms (isJust viewUnlockLinks) (isJust createUnlockLinks) (isJust delete) share
         Command.AddShareUnlockLinks{..}
@@ -111,7 +111,7 @@ createSharedOverviewRef CreateSharedOverviewRefForm{..} = do
 deleteSharedOverviewRef :: (CapabilityListRepo m, WithQuery env m) => Id Capability -> DeleteItemForm -> m Redirection
 deleteSharedOverviewRef capId DeleteItemForm{..} = do
     (ref, objRef) <- lookupReferences acc
-    let command = mkCommand objRef $ collectionId ref
+    let command = mkCommand objRef ref.collectionId
     throwOnErrorM $ Command.deleteShareUnlockLinks command
     redirectTo goto
   where

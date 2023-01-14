@@ -122,5 +122,5 @@ main mConfPath command = do
     env <- mkAppEnv conf
     case command of
         Cli.RunServer -> runServer conf env
-        Cli.Migrate -> Migration.migrate $ Config.confDataFolder conf
+        Cli.Migrate -> Migration.migrate conf.confDataFolder
         _otherCliCommand -> Cli.runCli env command

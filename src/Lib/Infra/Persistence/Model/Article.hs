@@ -54,11 +54,11 @@ instance ToJSON ArticlePmV1Data where
 
 fromDomain :: Article -> ArticlePm
 fromDomain domArt = do
-    let v1Id = Domain.id domArt
-        v1Title = toText $ Domain.title domArt
-        v1Uri = Uri.fromDomain $ Domain.uri domArt
-        v1State = show $ Domain.state domArt
-        v1Creation = Domain.creation domArt
+    let v1Id = domArt.id
+        v1Title = toText domArt.title
+        v1Uri = Uri.fromDomain domArt.uri
+        v1State = show domArt.state
+        v1Creation = domArt.creation
     ArticlePmV1 $ ArticlePmV1Data{..}
 
 toDomain :: ArticlePm -> Either AppErrorType Article

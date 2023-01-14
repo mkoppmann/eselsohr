@@ -34,12 +34,12 @@ data ArticleStateVm = Unread | Read
 
 fromDomain :: Article -> ArticleVm
 fromDomain art = do
-    let id = Article.id art
-        title = toText $ Article.title art
-        uri = toText $ Article.uri art
-        uriHost = Uri.getHostname $ Article.uri art
-        state = articleStateVmFromDomain $ Article.state art
-        creation = Article.creation art
+    let id = art.id
+        title = toText art.title
+        uri = toText art.uri
+        uriHost = Uri.getHostname art.uri
+        state = articleStateVmFromDomain art.state
+        creation = art.creation
     ArticleVm{..}
 
 articleStateVmFromDomain :: ArticleState -> ArticleStateVm

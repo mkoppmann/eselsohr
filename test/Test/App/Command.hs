@@ -71,7 +71,7 @@ commandMockedSpecs = describe "Lib.App.Command" $ do
                 objRef = objRefWithAllArticlesPerms
                 command = Command.ChangeArticleTitle{..}
             void . runTestApp env $ Command.changeArticleTitle command
-            env & ArtRepo.loadAll colId `satisfies` articleWhere artId ((==) title . toText . Art.title)
+            env & ArtRepo.loadAll colId `satisfies` articleWhere artId (\art -> toText art.title == title)
 
         it "fails when changing an article’s title with insufficent permissions" $ do
             env <- defaultTestEnv
@@ -89,7 +89,7 @@ commandMockedSpecs = describe "Lib.App.Command" $ do
             let objRef = objRefWithAllArticlesPerms
                 command = Command.MarkArticleAsRead{..}
             void . runTestApp env $ Command.markArticleAsRead command
-            env & ArtRepo.loadAll colId `satisfies` articleWhere artId ((==) Art.Read . Art.state)
+            env & ArtRepo.loadAll colId `satisfies` articleWhere artId (\art -> art.state == Art.Read)
 
         it "fails when marking an article as read with insufficent permissions" $ do
             env <- defaultTestEnv
@@ -106,7 +106,7 @@ commandMockedSpecs = describe "Lib.App.Command" $ do
             let objRef = objRefWithAllArticlesPerms
                 command = Command.MarkArticleAsUnread{..}
             void . runTestApp env $ Command.markArticleAsUnread command
-            env & ArtRepo.loadAll colId `satisfies` articleWhere artId ((==) Art.Unread . Art.state)
+            env & ArtRepo.loadAll colId `satisfies` articleWhere artId (\art -> art.state == Art.Unread)
 
         it "fails when marking an article as unread with insufficent permissions" $ do
             env <- defaultTestEnv

@@ -92,13 +92,15 @@ library
     default-extensions:
         DataKinds LambdaCase OverloadedStrings DerivingVia
         DerivingStrategies RecordWildCards PatternSynonyms DeriveAnyClass
-        DuplicateRecordFields
+        DuplicateRecordFields OverloadedRecordDot NoFieldSelectors
+        DisambiguateRecordFields
 
     ghc-options:
         -Wall -Wcompat -Widentities -Wincomplete-uni-patterns
         -Wincomplete-record-updates -Wredundant-constraints
         -fhide-source-paths -Wpartial-fields -Wmissing-deriving-strategies
         -fwrite-ide-info -hiedir=.hie -Wunused-packages -j -freverse-errors
+        -Wredundant-bang-patterns -Wimplicit-lift -Winvalid-haddock
 
     build-depends:
         aeson >=2.0.3 && <2.2,
@@ -184,19 +186,19 @@ test-suite eselsohr-test
         Test.Ui.Web.Dto.Accesstoken
         Test.Unit
 
-    default-language:   Haskell2010
+    default-language:   GHC2021
     default-extensions:
-        DataKinds FlexibleContexts LambdaCase ScopedTypeVariables
-        TypeApplications TypeOperators TypeFamilies OverloadedStrings
-        MultiParamTypeClasses FlexibleInstances ConstraintKinds DerivingVia
-        DerivingStrategies RecordWildCards InstanceSigs DeriveGeneric
-        PatternSynonyms DeriveAnyClass DeriveTraversable
+        DataKinds LambdaCase OverloadedStrings DerivingVia
+        DerivingStrategies RecordWildCards PatternSynonyms DeriveAnyClass
+        TypeFamilies DuplicateRecordFields OverloadedRecordDot
+        NoFieldSelectors DisambiguateRecordFields
 
     ghc-options:
         -Wall -Wcompat -Widentities -Wincomplete-uni-patterns
         -Wincomplete-record-updates -Wredundant-constraints
         -fhide-source-paths -Wpartial-fields -Wmissing-deriving-strategies
         -fwrite-ide-info -hiedir=.hie -Wunused-packages -j -freverse-errors
+        -Wredundant-bang-patterns -Wimplicit-lift -Winvalid-haddock
         -threaded -rtsopts -with-rtsopts=-N
 
     build-depends:

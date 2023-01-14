@@ -24,7 +24,7 @@ data TestEnv (m :: Type -> Type) = TestEnv
 
 instance HasLog (TestEnv m) Message m where
     getLogAction :: TestEnv m -> LogAction m Message
-    getLogAction = logAction
+    getLogAction env = env.logAction
     {-# INLINE getLogAction #-}
 
     setLogAction :: LogAction m Message -> TestEnv m -> TestEnv m
@@ -35,10 +35,10 @@ class Has field env where
     obtain :: env -> field
 
 instance Has (LogAction m Message) (TestEnv m) where
-    obtain = logAction
+    obtain env = env.logAction
 
 instance Has CollectionState (TestEnv m) where
-    obtain = collectionState
+    obtain env = env.collectionState
 
 grab :: forall field env m. (MonadReader env m, Has field env) => m field
 grab = asks $ obtain @field

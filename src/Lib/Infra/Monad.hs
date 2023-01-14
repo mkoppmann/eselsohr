@@ -82,11 +82,13 @@ instance CollectionRepo App where
  "Lib.Infra.Log" module to also log the error.
 -}
 runAppAsIO :: AppEnv -> App a -> IO (Either AppError a)
-runAppAsIO env = firstF unAppException . try . runApp env
+runAppAsIO env = firstF unwrap . try . runApp env
+  where
+    unwrap (AppException err) = err
 
 {- | Helper for running 'App'.
  Do not use this function to run the application. Use runners with logging from
  "Lib.Infra.Log" module to also log the error.
 -}
 runApp :: AppEnv -> App a -> IO a
-runApp env = usingReaderT env . unApp
+runApp env app = usingReaderT env app.unApp

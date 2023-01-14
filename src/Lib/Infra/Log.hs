@@ -75,4 +75,4 @@ runAppLogIO_ env app = void $ runAppLogIO env app
  are no real errors so they don’t get logged.
 -}
 logMPErrorIO :: AppEnv -> AppError -> IO (Either AppError ())
-logMPErrorIO env err = if isRedirect $ appErrorType err then runAppAsIO env pass else runAppAsIO env . log E $ show err
+logMPErrorIO env err = if isRedirect err.appErrorType then runAppAsIO env pass else runAppAsIO env . log E $ show err

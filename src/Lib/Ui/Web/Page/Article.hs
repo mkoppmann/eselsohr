@@ -48,7 +48,7 @@ handler :: WithQuery env m => Id Article -> Maybe Accesstoken -> m HtmlPage
 handler _artId Nothing = Layout.renderM Static.notAuthorized
 handler artId (Just acc) = do
     (ref, objRef) <- lookupReferences acc
-    viewModel <- query . Query objRef acc artId $ collectionId ref
+    viewModel <- query $ Query objRef acc artId ref.collectionId
     Layout.renderM $ view viewModel
 
 ------------------------------------------------------------------------
@@ -93,33 +93,27 @@ view View{..} = do
     navBar
         [ when canViewArticles getArticlesA
         , when canShareLinks $ do
-            a_ [linkAbsHref_ . fieldLink Route.shareArticlePage artId $ Just acc] "Share this page"
+            a_ [linkAbsHref_ . fieldLink Route.shareArticlePage article.id $ Just acc] "Share this page"
         ]
 
-    h1_ . toHtml $ ArticleVm.title article
+    h1_ . toHtml $ article.title
     when canChangeArticleTitle $ p_ editArticleA
-    p_ . toHtml $ "Created: " <> prettyDate (ArticleVm.creation article)
-    p_ . toHtml $ "State: " <> show @Text (ArticleVm.state article)
-    p_ . a_ [href_ artUrl] . toHtml $ artUrl
+    p_ . toHtml $ "Created: " <> prettyDate article.creation
+    p_ . toHtml $ "State: " <> show @Text article.state
+    p_ . a_ [href_ article.uri] $ toHtml article.uri
     when canDeleteArticle $
         if canViewArticles
-            then deleteArticleForm artId acc . fieldLink Route.articleListPage $ Just acc
-            else deleteArticleForm artId acc $ fieldLink Route.startpage
-    case ArticleVm.state article of
-        ArticleVm.Read -> when canChangeArticleState $ markArticleAsUnreadForm artId acc showArticleLink
-        ArticleVm.Unread -> when canChangeArticleState $ markArticleAsReadForm artId acc showArticleLink
+            then deleteArticleForm article.id acc . fieldLink Route.articleListPage $ Just acc
+            else deleteArticleForm article.id acc $ fieldLink Route.startpage
+    case article.state of
+        ArticleVm.Read -> when canChangeArticleState $ markArticleAsUnreadForm article.id acc showArticleLink
+        ArticleVm.Unread -> when canChangeArticleState $ markArticleAsReadForm article.id acc showArticleLink
   where
     showArticleLink :: Link
-    showArticleLink = fieldLink Route.articlePage artId $ Just acc
-
-    artId :: Id Article
-    artId = ArticleVm.id article
-
-    artUrl :: Text
-    artUrl = ArticleVm.uri article
+    showArticleLink = fieldLink Route.articlePage article.id $ Just acc
 
     getArticlesA :: Html ()
     getArticlesA = a_ [linkAbsHref_ . fieldLink Route.articleListPage $ Just acc] "Back to overview"
 
     editArticleA :: Html ()
-    editArticleA = a_ [linkAbsHref_ . fieldLink Route.editArticlePage artId $ Just acc] "Edit title"
+    editArticleA = a_ [linkAbsHref_ . fieldLink Route.editArticlePage article.id $ Just acc] "Edit title"

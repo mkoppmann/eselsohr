@@ -58,7 +58,7 @@ handler :: WithQuery env m => Maybe Accesstoken -> m HtmlPage
 handler Nothing = Layout.renderM Static.notAuthorized
 handler (Just acc) = do
     (ref, objRef) <- lookupReferences acc
-    viewModel <- query . Query objRef acc $ collectionId ref
+    viewModel <- query $ Query objRef acc ref.collectionId
     Layout.renderM $ view viewModel
 
 ------------------------------------------------------------------------
@@ -90,7 +90,7 @@ getUnlockLinks colId curTime = do
     mapToSeq = Seq.fromList . Map.toList
 
     filterAndSortCaps :: Seq (a, Capability) -> Seq (a, Capability)
-    filterAndSortCaps = Seq.sortOn (Cap.expirationDate . snd) . Seq.filter (filterF . snd)
+    filterAndSortCaps = Seq.sortOn ((.expirationDate) . snd) . Seq.filter (filterF . snd)
 
     toUnlockLink :: (Id Capability, Capability) -> UnlockLinkVm
     toUnlockLink = uncurry (UnlockLink.fromDomain colId)
@@ -102,7 +102,7 @@ getUnlockLinks colId curTime = do
     isStillValid = isJust . capStillValid curTime
 
     isViewArticles :: Capability -> Bool
-    isViewArticles = isRight . Authz.canViewArticles . Cap.objectReference
+    isViewArticles cap = isRight $ Authz.canViewArticles cap.objectReference
 
 ------------------------------------------------------------------------
 -- View
@@ -151,22 +151,16 @@ view View{..} = do
   where
     renderActiveLinks :: UnlockLinkVm -> Html ()
     renderActiveLinks unlockLink = li_ $ do
-        articlesLinkA (unlockAcc unlockLink) . petname $ capVm unlockLink
-        p_ . small_ $ "Expires on: " <> expDate (capVm unlockLink)
+        articlesLinkA unlockLink.acc $ petname unlockLink.capVm
+        p_ . small_ $ "Expires on: " <> expDate unlockLink.capVm
         when canDeleteUnlockLink $ do
-            deleteUnlockLinkForm (CapVm.id $ capVm unlockLink) acc collectionUnlockLink
+            deleteUnlockLinkForm unlockLink.capVm.id acc collectionUnlockLink
 
     petname :: CapabilityVm -> Text
-    petname cap = fromMaybe (toText $ CapVm.id cap) $ CapVm.petname cap
+    petname cap = fromMaybe (toText cap.id) cap.petname
 
     expDate :: CapabilityVm -> Html ()
-    expDate = maybe "Never" (toHtml . prettyDate) . CapVm.expirationDate
-
-    capVm :: UnlockLinkVm -> CapabilityVm
-    capVm = UnlockLink.capVm
-
-    unlockAcc :: UnlockLinkVm -> Accesstoken
-    unlockAcc = UnlockLink.acc
+    expDate cap = maybe "Never" (toHtml . prettyDate) cap.expirationDate
 
     collectionUnlockLink :: Link
     collectionUnlockLink = fieldLink Route.overviewPage $ Just acc

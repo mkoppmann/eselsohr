@@ -73,7 +73,9 @@ instance CollectionRepo TestApp where
     createCollection = ColRepo.testCreateCollection
 
 runAppAsIO :: TestAppEnv -> TestApp a -> IO (Either AppError a)
-runAppAsIO env = firstF unAppException . try . runApp env
+runAppAsIO env = firstF unwrap . try . runApp env
+  where
+    unwrap (AppException err) = err
 
 runApp :: TestAppEnv -> TestApp a -> IO a
-runApp env = usingReaderT env . unApp
+runApp env app = usingReaderT env app.unApp

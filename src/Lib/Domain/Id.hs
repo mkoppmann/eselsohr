@@ -14,7 +14,7 @@ newtype Id a = Id {unId :: UUID}
     deriving (Eq, Ord, Read, Show) via UUID
 
 instance ToText (Id a) where
-    toText = show . unId
+    toText anId = show anId.unId
 
 mkNilId :: Id a
 mkNilId = coerce UUID.nil

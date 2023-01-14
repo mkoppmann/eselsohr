@@ -20,7 +20,6 @@ import qualified Lib.Ui.Web.Page.Static as Static
 import qualified Lib.Ui.Web.Page.ViewModel.Article as ArticleVm
 import qualified Lib.Ui.Web.Route as Route
 
-import Lib.Domain.Article (Article)
 import Lib.Domain.Authorization (ViewArticlesPerm)
 import Lib.Domain.Capability (ObjectReference)
 import Lib.Domain.Collection (Collection)
@@ -52,7 +51,7 @@ handler :: WithQuery env m => Maybe Accesstoken -> m HtmlPage
 handler Nothing = Layout.renderM Static.notAuthorized
 handler (Just acc) = do
     (ref, objRef) <- lookupReferences acc
-    viewModel <- query . Query objRef acc $ collectionId ref
+    viewModel <- query $ Query objRef acc ref.collectionId
     Layout.renderM $ view viewModel
 
 ------------------------------------------------------------------------
@@ -124,7 +123,7 @@ articleItem canChangeTitle canChangeState canDelete acc artVm = article_ [class_
     itemHeader :: Html ()
     itemHeader = div_ [class_ "item-header"] $ do
         span_ [class_ "item-title"] $ do
-            a_ [linkAbsHref_ . fieldLink Route.articlePage artId $ Just acc] . toHtml $ ArticleVm.title artVm
+            a_ [linkAbsHref_ . fieldLink Route.articlePage artVm.id $ Just acc] $ toHtml artVm.title
             when canChangeTitle $ small_ editArticleA
 
     itemMeta :: Html ()
@@ -134,23 +133,23 @@ articleItem canChangeTitle canChangeState canDelete acc artVm = article_ [class_
 
     itemMetaInfo :: Html ()
     itemMetaInfo = do
-        let aCreationDate = prettyDate $ ArticleVm.creation artVm
+        let aCreationDate = prettyDate artVm.creation
         ul_ [class_ "item-meta-info"] $ do
             li_ . time_ [datetime_ aCreationDate] . toHtml $ aCreationDate
             li_ "|"
-            li_ . a_ [href_ $ ArticleVm.uri artVm] . small_ . renderHostUrl $ ArticleVm.uriHost artVm
+            li_ . a_ [href_ artVm.uri] . small_ $ renderHostUrl artVm.uriHost
 
     itemMetaIcons :: Html ()
     itemMetaIcons = ul_ [class_ "item-meta-icons"] $ do
-        when canDelete . li_ $ deleteArticleForm artId acc listArticlesLink
+        when canDelete . li_ $ deleteArticleForm artVm.id acc listArticlesLink
 
-        case ArticleVm.state artVm of
+        case artVm.state of
             ArticleVm.Read -> when canChangeState $ do
                 li_ "|"
-                li_ $ markArticleAsUnreadForm artId acc listArticlesLink
+                li_ $ markArticleAsUnreadForm artVm.id acc listArticlesLink
             ArticleVm.Unread -> when canChangeState $ do
                 li_ "|"
-                li_ $ markArticleAsReadForm artId acc listArticlesLink
+                li_ $ markArticleAsReadForm artVm.id acc listArticlesLink
 
     listArticlesLink :: Link
     listArticlesLink = fieldLink Route.articleListPage $ Just acc
@@ -158,8 +157,5 @@ articleItem canChangeTitle canChangeState canDelete acc artVm = article_ [class_
     renderHostUrl :: Maybe Text -> Html ()
     renderHostUrl = maybe "" toHtml
 
-    artId :: Id Article
-    artId = ArticleVm.id artVm
-
     editArticleA :: Html ()
-    editArticleA = a_ [linkAbsHref_ . fieldLink Route.editArticlePage artId $ Just acc] "✏️"
+    editArticleA = a_ [linkAbsHref_ . fieldLink Route.editArticlePage artVm.id $ Just acc] "✏️"

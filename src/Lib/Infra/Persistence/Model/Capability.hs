@@ -49,10 +49,10 @@ instance ToJSON CapabilityPmV1Data where
 
 fromDomain :: Capability -> CapabilityPm
 fromDomain domCap = do
-    let v1Id = Domain.id domCap
-        v1ObjectReference = show $ Domain.objectReference domCap
-        v1Petname = Domain.petname domCap
-        v1ExpirationDate = Domain.expirationDate domCap
+    let v1Id = domCap.id
+        v1ObjectReference = show domCap.objectReference
+        v1Petname = domCap.petname
+        v1ExpirationDate = domCap.expirationDate
     CapabilityPmV1 $ CapabilityPmV1Data{..}
 
 toDomain :: CapabilityPm -> Either AppErrorType Capability

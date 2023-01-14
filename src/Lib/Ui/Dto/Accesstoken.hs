@@ -57,7 +57,7 @@ fromDomain Reference{..} = ReferenceDtoV1 $ ReferenceDtoV1Data (Id.toUuid collec
 toDomain :: ReferenceDto -> Reference
 toDomain ref = case ref of
     ReferenceDtoV1 v1Data ->
-        Reference (Id.fromUuid $ v1CollectionIdUuid v1Data) (Id.fromUuid $ v1CapabilityIdUuid v1Data)
+        Reference (Id.fromUuid v1Data.v1CollectionIdUuid) (Id.fromUuid v1Data.v1CapabilityIdUuid)
     _otherVersion -> toDomain $ migrate ref
 
 migrate :: ReferenceDto -> ReferenceDto
@@ -85,10 +85,10 @@ mkAccesstoken :: Reference -> Accesstoken
 mkAccesstoken = Accesstoken . Ser.serialise . fromDomain
 
 toReference :: Accesstoken -> Reference
-toReference = toDomain . Ser.deserialise . unAccesstoken
+toReference acc = toDomain $ Ser.deserialise acc.unAccesstoken
 
 encodeToBase32 :: Accesstoken -> Text
-encodeToBase32 = decodeUtf8 . encodeBase32Unpadded' . unAccesstoken
+encodeToBase32 acc = decodeUtf8 $ encodeBase32Unpadded' acc.unAccesstoken
 
 decodeFromBase32 :: Text -> Either Text Accesstoken
 decodeFromBase32 = either (const $ Left "invalid UrlToken") (Right . Accesstoken) . decodeBase32 . encodeUtf8

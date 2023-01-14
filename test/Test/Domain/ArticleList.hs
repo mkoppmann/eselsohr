@@ -33,7 +33,7 @@ articleListSpec :: Spec
 articleListSpec = describe "Lib.Domain.ArticleList" $ do
     it "can add a new article" $ do
         article <- defaultArticle
-        let articleId = Article.id article
+        let articleId = article.id
             articleList = ArticleList.mkArticleList
             perm = authorized $ Authz.canCreateArticles objRefWithAllArticlesPerms
             newArticleList = case ArticleList.addArticle perm articleId article articleList of
@@ -44,7 +44,7 @@ articleListSpec = describe "Lib.Domain.ArticleList" $ do
 
     it "cannot add an existing article" $ do
         article <- defaultArticle
-        let articleId = Article.id article
+        let articleId = article.id
             articleList = defaultArticleListWithArticle article
             perm = authorized $ Authz.canCreateArticles objRefWithAllArticlesPerms
             err = ArticleList.addArticle perm articleId article articleList
@@ -52,7 +52,7 @@ articleListSpec = describe "Lib.Domain.ArticleList" $ do
 
     it "can change the title of an existing article" $ do
         article <- defaultArticle
-        let articleId = Article.id article
+        let articleId = article.id
             articleList = defaultArticleListWithArticle article
             newTitle = getNonEmptyText "New title"
             perm = authorized $ Authz.canChangeArticleTitle objRefWithAllArticlesPerms articleId
@@ -60,7 +60,7 @@ articleListSpec = describe "Lib.Domain.ArticleList" $ do
                 Left _err -> articleList
                 Right newList -> newList
             changedArticle = getArticleWithId articleId newArticleList
-        Article.title changedArticle `shouldBe` newTitle
+        changedArticle.title `shouldBe` newTitle
 
     it "returns an error when changing the title of a non-existing article" $ do
         articleId <- getRandomId
@@ -72,14 +72,14 @@ articleListSpec = describe "Lib.Domain.ArticleList" $ do
 
     it "can mark an existing article as read" $ do
         article <- defaultArticle
-        let articleId = Article.id article
+        let articleId = article.id
             articleList = defaultArticleListWithArticle article
             perm = authorized $ Authz.canChangeArticleState objRefWithAllArticlesPerms articleId
             newArticleList = case ArticleList.markArticleAsRead perm articleList of
                 Left _err -> articleList
                 Right newList -> newList
             readArticle = getArticleWithId articleId newArticleList
-        Article.state readArticle `shouldBe` Article.Read
+        readArticle.state `shouldBe` Article.Read
 
     it "returns an error when marking a non-existing article as read" $ do
         articleId <- getRandomId
@@ -90,14 +90,14 @@ articleListSpec = describe "Lib.Domain.ArticleList" $ do
 
     it "can mark an existing article as unread" $ do
         article <- defaultArticle
-        let articleId = Article.id article
+        let articleId = article.id
             articleList = defaultArticleListWithArticle article
             perm = authorized $ Authz.canChangeArticleState objRefWithAllArticlesPerms articleId
             newArticleList = case ArticleList.markArticleAsUnread perm articleList of
                 Left _err -> articleList
                 Right newList -> newList
             unreadArticle = getArticleWithId articleId newArticleList
-        Article.state unreadArticle `shouldBe` Article.Unread
+        unreadArticle.state `shouldBe` Article.Unread
 
     it "returns an error when marking a non-existing article as unread" $ do
         articleId <- getRandomId
@@ -108,7 +108,7 @@ articleListSpec = describe "Lib.Domain.ArticleList" $ do
 
     it "can delete an existing article" $ do
         article <- defaultArticle
-        let articleId = Article.id article
+        let articleId = article.id
             articleList = defaultArticleListWithArticle article
             perm = authorized $ Authz.canDeleteArticle objRefWithAllArticlesPerms articleId
             newArticleList = ArticleList.removeArticle perm articleList
@@ -126,7 +126,7 @@ articleListSpec = describe "Lib.Domain.ArticleList" $ do
 ------------------------------------------------------------------------
 
 defaultArticleListWithArticle :: Article -> ArticleList
-defaultArticleListWithArticle art = ArticleList.fromMap $ Map.insert (Article.id art) art Map.empty
+defaultArticleListWithArticle art = ArticleList.fromMap $ Map.insert art.id art Map.empty
 
 getArticleWithId :: Id Article -> ArticleList -> Article
 getArticleWithId artId artList = ArticleList.toMap artList ! artId
