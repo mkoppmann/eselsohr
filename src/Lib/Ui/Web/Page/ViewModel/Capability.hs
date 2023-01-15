@@ -6,7 +6,7 @@ module Lib.Ui.Web.Page.ViewModel.Capability
 import Data.Time.Clock (UTCTime)
 import Prelude hiding (id)
 
-import qualified Lib.Domain.Capability as Capability
+import Lib.Domain.Capability qualified as Capability
 
 import Lib.Domain.Capability (Capability)
 import Lib.Domain.Id (Id)

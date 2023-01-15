@@ -2,8 +2,8 @@ module Test.Domain.NonEmptyText
     ( nonEmptyTextProps
     ) where
 
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import Hedgehog.Gen qualified as Gen
+import Hedgehog.Range qualified as Range
 
 import Hedgehog
     ( Group (Group)
@@ -14,7 +14,7 @@ import Hedgehog
     , property
     )
 
-import qualified Lib.Domain.NonEmptyText as NET
+import Lib.Domain.NonEmptyText qualified as NET
 
 nonEmptyTextProps :: Group
 nonEmptyTextProps =

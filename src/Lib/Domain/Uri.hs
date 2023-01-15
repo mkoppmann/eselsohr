@@ -7,14 +7,14 @@ module Lib.Domain.Uri
     , baseUri
     ) where
 
-import qualified Data.Text as T
-import qualified Net.IPv4 as IPv4
-import qualified Net.IPv6 as IPv6
-import qualified Net.IPv6.Helper as IPv6
-import qualified Text.Show
-import qualified Text.URI as U
-import qualified Text.URI.Lens as UL
-import qualified Validation
+import Data.Text qualified as T
+import Net.IPv4 qualified as IPv4
+import Net.IPv6 qualified as IPv6
+import Net.IPv6.Helper qualified as IPv6
+import Text.Show qualified
+import Text.URI qualified as U
+import Text.URI.Lens qualified as UL
+import Validation qualified
 
 import Lens.Micro
     ( (^.)

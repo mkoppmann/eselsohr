@@ -4,7 +4,7 @@ module Migration
 
 import UnliftIO.Directory (listDirectory)
 
-import qualified Lib.Infra.Persistence.Model.Collection as Collection
+import Lib.Infra.Persistence.Model.Collection qualified as Collection
 
 import Lib.Infra.Persistence.File
     ( decodeFile

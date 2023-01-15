@@ -3,7 +3,7 @@ module Lib.Ui.Server
     , application
     ) where
 
-import qualified Network.Wai.Middleware.EnforceHTTPS as EnforceHTTPS
+import Network.Wai.Middleware.EnforceHTTPS qualified as EnforceHTTPS
 
 import Network.Wai (Middleware)
 import Network.Wai.Handler.Warp (Port)
@@ -26,10 +26,10 @@ import Servant
 import Servant.API.Generic (toServant)
 import Servant.Server.StaticFiles (serveDirectoryWebApp)
 
-import qualified Lib.App.Env as Env
-import qualified Lib.Ui.Web.Controller.ArticleList as Controller
-import qualified Lib.Ui.Web.Controller.Collection as Controller
-import qualified Lib.Ui.Web.Controller.Static as Controller
+import Lib.App.Env qualified as Env
+import Lib.Ui.Web.Controller.ArticleList qualified as Controller
+import Lib.Ui.Web.Controller.Collection qualified as Controller
+import Lib.Ui.Web.Controller.Static qualified as Controller
 
 import Lib.Infra.Log (runAppAsHandler)
 import Lib.Infra.Monad (AppEnv)

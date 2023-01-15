@@ -3,8 +3,8 @@ module Test.Infra.Repo.ArticleList
     , testSaveAll
     ) where
 
-import qualified Lib.Infra.Persistence.Model.ArticleList as ArtListPm
-import qualified Lib.Infra.Persistence.Model.Collection as ColPm
+import Lib.Infra.Persistence.Model.ArticleList qualified as ArtListPm
+import Lib.Infra.Persistence.Model.Collection qualified as ColPm
 
 import Lib.Domain.ArticleList (ArticleList)
 import Lib.Domain.Collection (Collection)

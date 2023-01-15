@@ -8,7 +8,7 @@ module Lib.Infra.Persistence.Model.Collection
     , migrate
     ) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
 import Data.Aeson.Types
     ( FromJSON
@@ -17,8 +17,8 @@ import Data.Aeson.Types
     , genericToEncoding
     )
 
-import qualified Lib.Infra.Persistence.Model.ArticleList as ArticleList
-import qualified Lib.Infra.Persistence.Model.CapabilityList as CapabilityList
+import Lib.Infra.Persistence.Model.ArticleList qualified as ArticleList
+import Lib.Infra.Persistence.Model.CapabilityList qualified as CapabilityList
 
 import Lib.Infra.Persistence.Model.ArticleList (ArticleListPm)
 import Lib.Infra.Persistence.Model.CapabilityList (CapabilityListPm)

@@ -12,7 +12,7 @@ import Test.Hspec
 import Test.Hspec.Wai (shouldRespondWith)
 import Web.FormUrlEncoded (urlEncodeAsForm)
 
-import qualified Lib.Ui.Web.Route as Route
+import Lib.Ui.Web.Route qualified as Route
 
 import Lib.Ui.Web.Dto.Form (CreateUnlockLinkForm (..))
 import Test.Ui.Web.Controller.Shared

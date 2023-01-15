@@ -3,7 +3,7 @@ module Lib.Ui.Web.Page.ViewModel.UnlockLink
     , fromDomain
     ) where
 
-import qualified Lib.Ui.Web.Page.ViewModel.Capability as CapabilityVm
+import Lib.Ui.Web.Page.ViewModel.Capability qualified as CapabilityVm
 
 import Lib.Domain.Capability (Capability)
 import Lib.Domain.Collection (Collection)

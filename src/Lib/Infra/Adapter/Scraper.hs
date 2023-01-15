@@ -2,7 +2,7 @@ module Lib.Infra.Adapter.Scraper
     ( scrapWebsite
     ) where
 
-import qualified Text.HTML.Scalpel as SC
+import Text.HTML.Scalpel qualified as SC
 
 import Lib.Domain.Uri (Uri)
 

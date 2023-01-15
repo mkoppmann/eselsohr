@@ -24,7 +24,7 @@ import UnliftIO.Environment
     , unsetEnv
     )
 
-import qualified Lib.App.Env as Env
+import Lib.App.Env qualified as Env
 
 import Lib.App.Env
     ( DataPath

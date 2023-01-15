@@ -8,7 +8,7 @@ module Lib.Infra.Log
     , module Colog
     ) where
 
-import qualified Colog
+import Colog qualified
     ( Message
     , Msg (..)
     , WithLog

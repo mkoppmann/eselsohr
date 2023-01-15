@@ -69,13 +69,13 @@ import Prelude hiding
     , state
     )
 
-import qualified Lib.App.Port as Port
-import qualified Lib.Domain.Article as Art
-import qualified Lib.Domain.Authorization as Authz
-import qualified Lib.Domain.Capability as Cap
-import qualified Lib.Domain.Repo.ArticleList as ArtRepo
-import qualified Lib.Domain.Repo.CapabilityList as CapRepo
-import qualified Lib.Domain.Repo.Collection as ColRepo
+import Lib.App.Port qualified as Port
+import Lib.Domain.Article qualified as Art
+import Lib.Domain.Authorization qualified as Authz
+import Lib.Domain.Capability qualified as Cap
+import Lib.Domain.Repo.ArticleList qualified as ArtRepo
+import Lib.Domain.Repo.CapabilityList qualified as CapRepo
+import Lib.Domain.Repo.Collection qualified as ColRepo
 
 import Lib.App.Port
     ( MonadRandom

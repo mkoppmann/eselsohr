@@ -7,11 +7,11 @@ module Lib.Ui.Web.Page.EditArticle
 import Lucid
 import Servant (fieldLink)
 
-import qualified Lib.Domain.Authorization as Authz
-import qualified Lib.Ui.Web.Page.Layout as Layout
-import qualified Lib.Ui.Web.Page.Static as Static
-import qualified Lib.Ui.Web.Page.ViewModel.Article as ArticleVm
-import qualified Lib.Ui.Web.Route as Route
+import Lib.Domain.Authorization qualified as Authz
+import Lib.Ui.Web.Page.Layout qualified as Layout
+import Lib.Ui.Web.Page.Static qualified as Static
+import Lib.Ui.Web.Page.ViewModel.Article qualified as ArticleVm
+import Lib.Ui.Web.Route qualified as Route
 
 import Lib.Domain.Article (Article)
 import Lib.Domain.Authorization (ChangeTitlePerm)

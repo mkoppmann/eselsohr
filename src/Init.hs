@@ -3,10 +3,10 @@ module Init
     , useRestrictedHttpManager
     ) where
 
-import qualified Net.IPv4 as IPv4
-import qualified Net.IPv6 as IPv6
-import qualified Net.IPv6.Helper as IPv6
-import qualified Network.HTTP.Client.Restricted as Client
+import Net.IPv4 qualified as IPv4
+import Net.IPv6 qualified as IPv6
+import Net.IPv6.Helper qualified as IPv6
+import Network.HTTP.Client.Restricted qualified as Client
 
 import Network.HTTP.Client (Manager)
 import Network.HTTP.Client.TLS

@@ -11,7 +11,7 @@ import Data.Aeson.Types
 import Data.UUID (UUID)
 
 import Lib.Domain.Id (Id)
-import qualified Lib.Domain.Id as Domain
+import Lib.Domain.Id qualified as Domain
 
 deriving via UUID instance FromJSON (Id a)
 deriving via UUID instance FromJSONKey (Id a)

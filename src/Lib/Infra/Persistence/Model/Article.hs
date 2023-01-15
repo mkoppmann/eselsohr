@@ -17,8 +17,8 @@ import Prelude hiding
     , state
     )
 
-import qualified Lib.Domain.Article as Domain
-import qualified Lib.Infra.Persistence.Model.Uri as Uri
+import Lib.Domain.Article qualified as Domain
+import Lib.Infra.Persistence.Model.Uri qualified as Uri
 
 import Lib.Domain.Article (Article)
 import Lib.Domain.Error (AppErrorType)

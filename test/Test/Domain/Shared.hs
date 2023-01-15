@@ -17,12 +17,12 @@ module Test.Domain.Shared
 
 import Data.Time (UTCTime)
 
-import qualified Lib.Domain.Article as Article
-import qualified Lib.Domain.Capability as Capability
-import qualified Lib.Domain.NonEmptyText as NET
-import qualified Lib.Domain.Uri as Uri
-import qualified Lib.Infra.Adapter.Random as Adapter
-import qualified Lib.Infra.Adapter.Time as Adapter
+import Lib.Domain.Article qualified as Article
+import Lib.Domain.Capability qualified as Capability
+import Lib.Domain.NonEmptyText qualified as NET
+import Lib.Domain.Uri qualified as Uri
+import Lib.Infra.Adapter.Random qualified as Adapter
+import Lib.Infra.Adapter.Time qualified as Adapter
 
 import Lib.Domain.Article
     ( Article

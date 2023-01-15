@@ -2,7 +2,7 @@ module Test.Domain.CapabilityList
     ( capabilityListSpec
     ) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
 import Data.Map.Strict ((!))
 import Test.Hspec
@@ -15,9 +15,9 @@ import Test.Hspec
     , shouldNotSatisfy
     )
 
-import qualified Lib.Domain.Authorization as Authz
-import qualified Lib.Domain.Capability as Capability
-import qualified Lib.Domain.CapabilityList as CapabilityList
+import Lib.Domain.Authorization qualified as Authz
+import Lib.Domain.Capability qualified as Capability
+import Lib.Domain.CapabilityList qualified as CapabilityList
 
 import Lib.Domain.Article (Article)
 import Lib.Domain.Capability
@@ -25,9 +25,9 @@ import Lib.Domain.Capability
     , Capability
     , ObjectReference
     )
-import qualified Lib.Domain.Capability as Cap
+import Lib.Domain.Capability qualified as Cap
 import Lib.Domain.CapabilityList (CapabilityList)
-import qualified Lib.Domain.CapabilityList as CapbilityList
+import Lib.Domain.CapabilityList qualified as CapbilityList
 import Lib.Domain.Error (AppErrorType)
 import Lib.Domain.Id (Id)
 import Test.Domain.Shared

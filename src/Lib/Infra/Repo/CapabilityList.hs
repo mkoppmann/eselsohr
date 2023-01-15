@@ -4,10 +4,10 @@ module Lib.Infra.Repo.CapabilityList
     , saveAll
     ) where
 
-import qualified Lib.App.Port as Port
-import qualified Lib.Infra.Persistence.File as File
-import qualified Lib.Infra.Persistence.Model.CapabilityList as CapListPm
-import qualified Lib.Infra.Persistence.Model.Collection as ColPm
+import Lib.App.Port qualified as Port
+import Lib.Infra.Persistence.File qualified as File
+import Lib.Infra.Persistence.Model.CapabilityList qualified as CapListPm
+import Lib.Infra.Persistence.Model.Collection qualified as ColPm
 
 import Lib.App.Port (MonadRandom)
 import Lib.Domain.Capability (Capability)

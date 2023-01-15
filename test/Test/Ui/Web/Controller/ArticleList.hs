@@ -2,7 +2,7 @@ module Test.Ui.Web.Controller.ArticleList
     ( articleListControllerSpec
     ) where
 
-import qualified Data.ByteString.Char8 as B
+import Data.ByteString.Char8 qualified as B
 
 import Servant.Links (fieldLink)
 import Test.Hspec

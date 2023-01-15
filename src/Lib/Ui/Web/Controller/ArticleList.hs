@@ -2,16 +2,16 @@ module Lib.Ui.Web.Controller.ArticleList
     ( articleList
     ) where
 
-import qualified Lib.App.Command as Command
-import qualified Lib.App.Env as Env
-import qualified Lib.Domain.Uri as Uri
-import qualified Lib.Ui.Web.Page.Article as ArticlePage
-import qualified Lib.Ui.Web.Page.ArticleList as ArticleListPage
-import qualified Lib.Ui.Web.Page.CreateArticle as CreateArticlePage
-import qualified Lib.Ui.Web.Page.EditArticle as EditArticlePage
-import qualified Lib.Ui.Web.Page.ShareArticle as ShareArticlePage
-import qualified Lib.Ui.Web.Page.ShareArticleList as ShareArticleListPage
-import qualified Lib.Ui.Web.Route as Route
+import Lib.App.Command qualified as Command
+import Lib.App.Env qualified as Env
+import Lib.Domain.Uri qualified as Uri
+import Lib.Ui.Web.Page.Article qualified as ArticlePage
+import Lib.Ui.Web.Page.ArticleList qualified as ArticleListPage
+import Lib.Ui.Web.Page.CreateArticle qualified as CreateArticlePage
+import Lib.Ui.Web.Page.EditArticle qualified as EditArticlePage
+import Lib.Ui.Web.Page.ShareArticle qualified as ShareArticlePage
+import Lib.Ui.Web.Page.ShareArticleList qualified as ShareArticleListPage
+import Lib.Ui.Web.Route qualified as Route
 
 import Lib.App.Env
     ( DeploymentMode

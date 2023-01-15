@@ -2,9 +2,9 @@ module Lib.Infra.Adapter.Random
     ( getRandomId
     ) where
 
-import qualified Data.UUID.V4 as UUID
+import Data.UUID.V4 qualified as UUID
 
-import qualified Lib.Domain.Id as Id
+import Lib.Domain.Id qualified as Id
 
 import Lib.Domain.Id (Id)
 

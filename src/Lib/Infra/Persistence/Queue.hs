@@ -5,7 +5,7 @@ module Lib.Infra.Persistence.Queue
     , processUpdates
     ) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
 import UnliftIO (MonadUnliftIO)
 import UnliftIO.Async (mapConcurrently_)
@@ -19,7 +19,7 @@ import UnliftIO.STM
     , writeTQueue
     )
 
-import qualified Lib.Domain.Repo as Repo
+import Lib.Domain.Repo qualified as Repo
 
 import Lib.App.Env
     ( HasWriteQueue

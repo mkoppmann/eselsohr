@@ -15,7 +15,7 @@ module Lib.Domain.Repo.CapabilityList
 
 import Data.Time.Clock (UTCTime)
 
-import qualified Lib.Domain.CapabilityList as CapList
+import Lib.Domain.CapabilityList qualified as CapList
 
 import Lib.Domain.Authorization
     ( CreateUnlockLinksPerm

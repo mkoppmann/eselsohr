@@ -3,7 +3,7 @@ module Lib.Domain.NonEmptyText
     , fromText
     ) where
 
-import qualified Data.Text as T
+import Data.Text qualified as T
 
 import Lib.Domain.Error
     ( AppErrorType

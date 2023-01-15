@@ -33,8 +33,8 @@ module Lib.Ui.Web.Page.Shared
     , deleteSharedArticleRefForm
     ) where
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Sequence as Seq
+import Data.Map.Strict qualified as Map
+import Data.Sequence qualified as Seq
 
 import Data.Time
     ( UTCTime (..)
@@ -50,15 +50,15 @@ import Servant
     )
 import Prelude hiding (for_)
 
-import qualified Lib.App.Port as Port
-import qualified Lib.Domain.Capability as Capability
-import qualified Lib.Infra.Persistence.File as File
-import qualified Lib.Infra.Persistence.Model.Article as ArtPm
-import qualified Lib.Infra.Persistence.Model.Capability as CapPm
-import qualified Lib.Infra.Persistence.Model.Collection as ColPm
-import qualified Lib.Ui.Web.Page.ViewModel.Article as ArticleVm
-import qualified Lib.Ui.Web.Page.ViewModel.UnlockLink as UnlockLink
-import qualified Lib.Ui.Web.Route as Route
+import Lib.App.Port qualified as Port
+import Lib.Domain.Capability qualified as Capability
+import Lib.Infra.Persistence.File qualified as File
+import Lib.Infra.Persistence.Model.Article qualified as ArtPm
+import Lib.Infra.Persistence.Model.Capability qualified as CapPm
+import Lib.Infra.Persistence.Model.Collection qualified as ColPm
+import Lib.Ui.Web.Page.ViewModel.Article qualified as ArticleVm
+import Lib.Ui.Web.Page.ViewModel.UnlockLink qualified as UnlockLink
+import Lib.Ui.Web.Route qualified as Route
 
 import Lib.App.Port (MonadTime)
 import Lib.Domain.Article (Article)

@@ -3,10 +3,10 @@ module Test.Infra.Repo.Collection
     , testCreateCollection
     ) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
-import qualified Lib.Infra.Persistence.Model.Capability as CapPm
-import qualified Lib.Infra.Persistence.Model.Collection as ColPm
+import Lib.Infra.Persistence.Model.Capability qualified as CapPm
+import Lib.Infra.Persistence.Model.Collection qualified as ColPm
 
 import Lib.Domain.Capability (Capability)
 import Lib.Domain.Collection (Collection)

@@ -2,7 +2,7 @@ module Test.Ui.Web.Controller.Static
     ( staticControllerSpec
     ) where
 
-import qualified Test.Hspec.Wai as Test
+import Test.Hspec.Wai qualified as Test
 
 import Servant.Links (fieldLink)
 import Test.Hspec
@@ -16,7 +16,7 @@ import Test.Hspec.Wai
     , shouldRespondWith
     )
 
-import qualified Lib.Ui.Web.Route as Route
+import Lib.Ui.Web.Route qualified as Route
 
 import Lib.Ui.Web.Route (linkAsText)
 import Test.Ui.Web.Controller.Shared

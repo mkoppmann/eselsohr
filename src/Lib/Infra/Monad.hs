@@ -13,12 +13,12 @@ import UnliftIO
     , try
     )
 
-import qualified Lib.Infra.Adapter.Random as RandomImpl
-import qualified Lib.Infra.Adapter.Scraper as ScraperImpl
-import qualified Lib.Infra.Adapter.Time as TimeImpl
-import qualified Lib.Infra.Repo.ArticleList as ArtRepo
-import qualified Lib.Infra.Repo.CapabilityList as CapRepo
-import qualified Lib.Infra.Repo.Collection as ColRepo
+import Lib.Infra.Adapter.Random qualified as RandomImpl
+import Lib.Infra.Adapter.Scraper qualified as ScraperImpl
+import Lib.Infra.Adapter.Time qualified as TimeImpl
+import Lib.Infra.Repo.ArticleList qualified as ArtRepo
+import Lib.Infra.Repo.CapabilityList qualified as CapRepo
+import Lib.Infra.Repo.Collection qualified as ColRepo
 
 import Lib.App.Env (Env)
 import Lib.App.Port

@@ -5,10 +5,10 @@ module Lib.Infra.Persistence.Model.ArticleList
     , migrate
     ) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
-import qualified Lib.Domain.ArticleList as Domain
-import qualified Lib.Infra.Persistence.Model.Article as Article
+import Lib.Domain.ArticleList qualified as Domain
+import Lib.Infra.Persistence.Model.Article qualified as Article
 
 import Lib.Domain.Article (Article)
 import Lib.Domain.ArticleList (ArticleList)

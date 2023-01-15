@@ -7,8 +7,8 @@ module Lib.Ui.Dto.Accesstoken
     , decodeFromBase32
     ) where
 
-import qualified Codec.Serialise as Ser
-import qualified Text.Show
+import Codec.Serialise qualified as Ser
+import Text.Show qualified
 
 import Codec.Serialise.Class (Serialise)
 import Codec.Serialise.UUID ()
@@ -22,7 +22,7 @@ import Web.HttpApiData
     , ToHttpApiData (..)
     )
 
-import qualified Lib.Domain.Id as Id
+import Lib.Domain.Id qualified as Id
 
 import Lib.Domain.Capability (Capability)
 import Lib.Domain.Collection (Collection)

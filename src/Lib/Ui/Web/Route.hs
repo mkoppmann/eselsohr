@@ -1,4 +1,5 @@
 {-# LANGUAGE FieldSelectors #-}
+
 {- The field selectors are required so the routes can be used in the controllers. -}
 
 module Lib.Ui.Web.Route

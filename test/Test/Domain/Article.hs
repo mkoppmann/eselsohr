@@ -10,7 +10,7 @@ import Test.Hspec
     , shouldSatisfy
     )
 
-import qualified Lib.Domain.Article as Article
+import Lib.Domain.Article qualified as Article
 
 import Test.Domain.Shared
     ( defaultArticle

@@ -10,7 +10,7 @@ import Prelude hiding
     , state
     )
 
-import qualified Lib.Domain.Article as Article
+import Lib.Domain.Article qualified as Article
 
 import Lib.Domain.Article
     ( Article

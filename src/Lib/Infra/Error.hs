@@ -15,8 +15,8 @@ module Lib.Infra.Error
     , redirectTo
     ) where
 
-import qualified Control.Monad.Except as E
-import qualified Servant.Server as Servant
+import Control.Monad.Except qualified as E
+import Servant.Server qualified as Servant
     ( ServerError
     )
 

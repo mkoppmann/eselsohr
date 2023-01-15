@@ -5,7 +5,7 @@ module Lib.Ui.Cli.Handler
     , runCli
     ) where
 
-import qualified Lib.Ui.Cli.Command as Command
+import Lib.Ui.Cli.Command qualified as Command
 
 import Lib.App.Port (MonadRandom)
 import Lib.Domain.Repo.Collection (CollectionRepo)

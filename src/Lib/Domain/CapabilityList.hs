@@ -16,11 +16,11 @@ module Lib.Domain.CapabilityList
     , capabilityAlreadyExists
     ) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
 import Data.Time.Clock (UTCTime)
 
-import qualified Lib.Domain.Capability as Cap
+import Lib.Domain.Capability qualified as Cap
 
 import Lib.Domain.Authorization
     ( CreateUnlockLinksPerm

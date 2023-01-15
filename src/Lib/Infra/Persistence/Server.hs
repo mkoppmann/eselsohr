@@ -2,7 +2,7 @@ module Lib.Infra.Persistence.Server
     ( persistenceApp
     ) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
 import UnliftIO.Async
     ( conc

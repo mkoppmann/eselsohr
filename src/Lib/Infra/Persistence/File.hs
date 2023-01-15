@@ -9,9 +9,9 @@ module Lib.Infra.Persistence.File
     , allIdsInPath
     ) where
 
-import qualified Codec.Compression.GZip as GZip
-import qualified Data.Sequence as Seq
-import qualified Data.Text as T
+import Codec.Compression.GZip qualified as GZip
+import Data.Sequence qualified as Seq
+import Data.Text qualified as T
 
 import Data.Aeson
     ( decode
@@ -29,7 +29,7 @@ import UnliftIO.Directory
 import UnliftIO.IO.File (writeBinaryFileDurableAtomic)
 import Prelude hiding (init)
 
-import qualified Lib.Domain.Id as Id
+import Lib.Domain.Id qualified as Id
 
 import Lib.App.Env
     ( DataPath

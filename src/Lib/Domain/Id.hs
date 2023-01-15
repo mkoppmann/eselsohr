@@ -6,7 +6,7 @@ module Lib.Domain.Id
     , fromText
     ) where
 
-import qualified Data.UUID as UUID
+import Data.UUID qualified as UUID
 
 import Data.UUID (UUID)
 

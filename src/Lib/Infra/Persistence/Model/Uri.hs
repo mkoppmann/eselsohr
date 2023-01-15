@@ -4,7 +4,7 @@ module Lib.Infra.Persistence.Model.Uri
     , toDomain
     ) where
 
-import qualified Lib.Domain.Uri as Domain
+import Lib.Domain.Uri qualified as Domain
 
 import Lib.Domain.Error (AppErrorType)
 import Lib.Domain.Uri (Uri)

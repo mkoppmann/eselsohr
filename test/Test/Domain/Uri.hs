@@ -11,8 +11,8 @@ import Test.Hspec
     , shouldBe
     )
 
-import qualified Lib.Domain.Error as Error
-import qualified Lib.Domain.Uri as Uri
+import Lib.Domain.Error qualified as Error
+import Lib.Domain.Uri qualified as Uri
 
 import Lib.Domain.Error (AppErrorType)
 import Lib.Domain.Uri (Uri)

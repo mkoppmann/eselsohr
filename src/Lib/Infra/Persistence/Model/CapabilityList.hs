@@ -5,10 +5,10 @@ module Lib.Infra.Persistence.Model.CapabilityList
     , migrate
     ) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
-import qualified Lib.Domain.CapabilityList as Domain
-import qualified Lib.Infra.Persistence.Model.Capability as Capability
+import Lib.Domain.CapabilityList qualified as Domain
+import Lib.Infra.Persistence.Model.Capability qualified as Capability
 
 import Lib.Domain.Capability (Capability)
 import Lib.Domain.CapabilityList (CapabilityList)

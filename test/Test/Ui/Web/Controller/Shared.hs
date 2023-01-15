@@ -12,8 +12,8 @@ module Test.Ui.Web.Controller.Shared
     , getOverviewPage
     ) where
 
-import qualified Data.ByteString.Char8 as B
-import qualified Test.Hspec.Wai as Test
+import Data.ByteString.Char8 qualified as B
+import Test.Hspec.Wai qualified as Test
 
 import Network.HTTP.Types (methodPost)
 import Network.HTTP.Types.Header
@@ -50,12 +50,12 @@ import UnliftIO.Directory
 import Web.FormUrlEncoded (urlEncodeAsForm)
 import Web.HttpApiData (parseUrlPiece)
 
-import qualified Config
-import qualified Init
-import qualified Lib.App.Env as Env
-import qualified Lib.Infra.Persistence.Server as Server
-import qualified Lib.Ui.Server as Server
-import qualified Lib.Ui.Web.Route as Route
+import Config qualified
+import Init qualified
+import Lib.App.Env qualified as Env
+import Lib.Infra.Persistence.Server qualified as Server
+import Lib.Ui.Server qualified as Server
+import Lib.Ui.Web.Route qualified as Route
 
 import Config
     ( Config

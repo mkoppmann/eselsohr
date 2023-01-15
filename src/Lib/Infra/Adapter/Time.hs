@@ -2,7 +2,7 @@ module Lib.Infra.Adapter.Time
     ( getCurrentTime
     ) where
 
-import qualified Data.Time as Time
+import Data.Time qualified as Time
 
 import Data.Time.Clock (UTCTime)
 

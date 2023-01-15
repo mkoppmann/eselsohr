@@ -4,11 +4,11 @@ module Lib.Ui.Web.Controller.Collection
 
 import Servant.Links (fieldLink)
 
-import qualified Lib.App.Command as Command
-import qualified Lib.App.Env as Env
-import qualified Lib.Ui.Web.Page.CollectionOverview as CollectionOverviewPage
-import qualified Lib.Ui.Web.Page.ShareCollectionOverview as ShareCollectionOverviewPage
-import qualified Lib.Ui.Web.Route as Route
+import Lib.App.Command qualified as Command
+import Lib.App.Env qualified as Env
+import Lib.Ui.Web.Page.CollectionOverview qualified as CollectionOverviewPage
+import Lib.Ui.Web.Page.ShareCollectionOverview qualified as ShareCollectionOverviewPage
+import Lib.Ui.Web.Route qualified as Route
 
 import Lib.App.Env
     ( CollectionCreation

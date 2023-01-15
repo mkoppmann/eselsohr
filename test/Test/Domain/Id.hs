@@ -2,8 +2,8 @@ module Test.Domain.Id
     ( idProps
     ) where
 
-import qualified Data.UUID as UUID
-import qualified Data.UUID.V4 as UUID
+import Data.UUID qualified as UUID
+import Data.UUID.V4 qualified as UUID
 
 import Hedgehog
     ( Group (Group)
@@ -13,7 +13,7 @@ import Hedgehog
     , (===)
     )
 
-import qualified Lib.Domain.Id as Id
+import Lib.Domain.Id qualified as Id
 
 import Test.Domain.Shared (getRandomId)
 

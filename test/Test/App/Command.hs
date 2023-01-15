@@ -2,7 +2,7 @@ module Test.App.Command
     ( commandMockedSpecs
     ) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
 import Test.Hspec
     ( Expectation
@@ -11,18 +11,18 @@ import Test.Hspec
     , it
     )
 
-import qualified Lib.App.Command as Command
-import qualified Lib.Domain.Article as Art
-import qualified Lib.Domain.ArticleList as ArtList
-import qualified Lib.Domain.Authorization as Authz
-import qualified Lib.Domain.CapabilityList as CapList
-import qualified Lib.Domain.Repo.ArticleList as ArtRepo
-import qualified Lib.Domain.Repo.CapabilityList as CapRepo
+import Lib.App.Command qualified as Command
+import Lib.Domain.Article qualified as Art
+import Lib.Domain.ArticleList qualified as ArtList
+import Lib.Domain.Authorization qualified as Authz
+import Lib.Domain.CapabilityList qualified as CapList
+import Lib.Domain.Repo.ArticleList qualified as ArtRepo
+import Lib.Domain.Repo.CapabilityList qualified as CapRepo
 
 import Lib.Domain.Article (Article)
 import Lib.Domain.ArticleList (ArticleList)
 import Lib.Domain.Capability (Capability)
-import qualified Lib.Domain.Capability as Cap
+import Lib.Domain.Capability qualified as Cap
 import Lib.Domain.Collection (Collection)
 import Lib.Domain.Id (Id)
 import Test.Domain.Shared

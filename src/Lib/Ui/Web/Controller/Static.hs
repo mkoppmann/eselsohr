@@ -4,10 +4,10 @@ module Lib.Ui.Web.Controller.Static
     , invalidToken
     ) where
 
-import qualified Lib.App.Env as Env
-import qualified Lib.Ui.Web.Page.Layout as Layout
-import qualified Lib.Ui.Web.Page.Static as Static
-import qualified Lib.Ui.Web.Route as Route
+import Lib.App.Env qualified as Env
+import Lib.Ui.Web.Page.Layout qualified as Layout
+import Lib.Ui.Web.Page.Static qualified as Static
+import Lib.Ui.Web.Route qualified as Route
 
 import Lib.App.Env
     ( CollectionCreation

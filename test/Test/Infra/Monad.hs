@@ -6,11 +6,11 @@ module Test.Infra.Monad
 
 import Control.Monad.Except (MonadError (..))
 
-import qualified Lib.Infra.Adapter.Random as RandomImpl
-import qualified Lib.Infra.Adapter.Time as TimeImpl
-import qualified Test.Infra.Repo.ArticleList as ArtRepo
-import qualified Test.Infra.Repo.CapabilityList as CapRepo
-import qualified Test.Infra.Repo.Collection as ColRepo
+import Lib.Infra.Adapter.Random qualified as RandomImpl
+import Lib.Infra.Adapter.Time qualified as TimeImpl
+import Test.Infra.Repo.ArticleList qualified as ArtRepo
+import Test.Infra.Repo.CapabilityList qualified as CapRepo
+import Test.Infra.Repo.Collection qualified as ColRepo
 
 import Control.Exception
     ( catch

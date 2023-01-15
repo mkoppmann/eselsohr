@@ -13,7 +13,7 @@ import Prelude hiding
     , state
     )
 
-import qualified Lib.Domain.NonEmptyText as NET
+import Lib.Domain.NonEmptyText qualified as NET
 
 import Lib.Domain.Error (AppErrorType)
 import Lib.Domain.Id (Id)

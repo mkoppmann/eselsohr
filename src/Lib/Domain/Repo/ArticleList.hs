@@ -9,7 +9,7 @@ module Lib.Domain.Repo.ArticleList
     , removeArticle
     ) where
 
-import qualified Lib.Domain.ArticleList as ArtList
+import Lib.Domain.ArticleList qualified as ArtList
 
 import Lib.Domain.Article (Article)
 import Lib.Domain.ArticleList (ArticleList)

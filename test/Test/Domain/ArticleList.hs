@@ -2,7 +2,7 @@ module Test.Domain.ArticleList
     ( articleListSpec
     ) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
 import Data.Map.Strict ((!))
 import Test.Hspec
@@ -13,9 +13,9 @@ import Test.Hspec
     , shouldNotSatisfy
     )
 
-import qualified Lib.Domain.Article as Article
-import qualified Lib.Domain.ArticleList as ArticleList
-import qualified Lib.Domain.Authorization as Authz
+import Lib.Domain.Article qualified as Article
+import Lib.Domain.ArticleList qualified as ArticleList
+import Lib.Domain.Authorization qualified as Authz
 
 import Lib.Domain.Article (Article)
 import Lib.Domain.ArticleList (ArticleList)

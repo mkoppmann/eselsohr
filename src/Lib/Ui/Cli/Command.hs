@@ -3,8 +3,8 @@ module Lib.Ui.Cli.Command
     , WithEnv
     ) where
 
-import qualified Lib.App.Command as Command
-import qualified Lib.Ui.Dto.Accesstoken as Accesstoken
+import Lib.App.Command qualified as Command
+import Lib.Ui.Dto.Accesstoken qualified as Accesstoken
 
 import Lib.App.Env
     ( BaseUrl

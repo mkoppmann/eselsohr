@@ -6,7 +6,7 @@ module Lib.Infra.Persistence.Model.Shared
     , mappingError
     ) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
 import Lib.Domain.Error
     ( AppErrorType

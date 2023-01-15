@@ -11,7 +11,7 @@ import Test.Hspec
     )
 import Prelude hiding (id)
 
-import qualified Lib.Domain.Capability as Capability
+import Lib.Domain.Capability qualified as Capability
 
 import Lib.Domain.Capability
     ( Capability

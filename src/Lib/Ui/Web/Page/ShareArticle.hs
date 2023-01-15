@@ -8,13 +8,13 @@ import Lucid
 import Lucid.Servant (linkAbsHref_)
 import Servant (fieldLink)
 
-import qualified Lib.Domain.Authorization as Authz
-import qualified Lib.Domain.Capability as Cap
-import qualified Lib.Ui.Web.Page.Layout as Layout
-import qualified Lib.Ui.Web.Page.Static as Static
-import qualified Lib.Ui.Web.Page.ViewModel.Capability as CapVm
-import qualified Lib.Ui.Web.Page.ViewModel.UnlockLink as UnlockLink
-import qualified Lib.Ui.Web.Route as Route
+import Lib.Domain.Authorization qualified as Authz
+import Lib.Domain.Capability qualified as Cap
+import Lib.Ui.Web.Page.Layout qualified as Layout
+import Lib.Ui.Web.Page.Static qualified as Static
+import Lib.Ui.Web.Page.ViewModel.Capability qualified as CapVm
+import Lib.Ui.Web.Page.ViewModel.UnlockLink qualified as UnlockLink
+import Lib.Ui.Web.Route qualified as Route
 
 import Data.Time.Clock (UTCTime)
 import Lib.Domain.Article (Article)

@@ -3,8 +3,8 @@ module Test.Infra.Repo.CapabilityList
     , testSaveAll
     ) where
 
-import qualified Lib.Infra.Persistence.Model.CapabilityList as CapListPm
-import qualified Lib.Infra.Persistence.Model.Collection as ColPm
+import Lib.Infra.Persistence.Model.CapabilityList qualified as CapListPm
+import Lib.Infra.Persistence.Model.Collection qualified as ColPm
 
 import Lib.Domain.CapabilityList (CapabilityList)
 import Lib.Domain.Collection (Collection)

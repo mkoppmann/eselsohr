@@ -11,8 +11,8 @@ import Test.Hspec
     , shouldSatisfy
     )
 
-import qualified Lib.Domain.Authorization as Authz
-import qualified Lib.Domain.Capability as Cap
+import Lib.Domain.Authorization qualified as Authz
+import Lib.Domain.Capability qualified as Cap
 
 import Lib.Domain.Article (Article)
 import Lib.Domain.Capability

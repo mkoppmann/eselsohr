@@ -15,8 +15,8 @@ import Web.HttpApiData
     , toUrlPiece
     )
 
-import qualified Lib.Infra.Adapter.Random as Adapter
-import qualified Lib.Ui.Dto.Accesstoken as Accesstoken
+import Lib.Infra.Adapter.Random qualified as Adapter
+import Lib.Ui.Dto.Accesstoken qualified as Accesstoken
 
 import Lib.Ui.Dto.Accesstoken (Reference)
 

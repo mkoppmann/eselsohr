@@ -2,9 +2,9 @@ module Lib.Infra.Persistence.Cleanup
     ( removeExpiredCapabilitiesFromCollections
     ) where
 
-import qualified Lib.App.Command as Command
-import qualified Lib.Domain.Capability as Cap
-import qualified Lib.Infra.Persistence.File as File
+import Lib.App.Command qualified as Command
+import Lib.Domain.Capability qualified as Cap
+import Lib.Infra.Persistence.File qualified as File
 
 import Lib.App.Port (MonadTime)
 import Lib.Domain.Capability (ObjectReference)

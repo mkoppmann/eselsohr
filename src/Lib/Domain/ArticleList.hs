@@ -12,10 +12,10 @@ module Lib.Domain.ArticleList
     , articleAlreadyExists
     ) where
 
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 
-import qualified Lib.Domain.Article as Article
-import qualified Lib.Domain.Authorization as Authz
+import Lib.Domain.Article qualified as Article
+import Lib.Domain.Authorization qualified as Authz
 
 import Lib.Domain.Article (Article)
 import Lib.Domain.Authorization

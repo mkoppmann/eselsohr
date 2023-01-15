@@ -5,7 +5,7 @@ module Lib
     , runServer
     ) where
 
-import qualified Network.TLS.Extra.Cipher as TLS
+import Network.TLS.Extra.Cipher qualified as TLS
 
 import Network.TLS (Version (..))
 import Network.TLS.Cipher (Cipher)
@@ -27,11 +27,11 @@ import Network.Wai.Handler.WarpTLS
 import UnliftIO.Async (race_)
 import UnliftIO.STM (newTQueueIO)
 
-import qualified Config
-import qualified Init
-import qualified Lib.App.Env as Env
-import qualified Lib.Ui.Cli.Handler as Cli
-import qualified Migration
+import Config qualified
+import Init qualified
+import Lib.App.Env qualified as Env
+import Lib.Ui.Cli.Handler qualified as Cli
+import Migration qualified
 
 import Config
     ( Config

@@ -14,7 +14,7 @@ import Data.Aeson.Types
 import Data.Time.Clock (UTCTime)
 import Prelude hiding (id)
 
-import qualified Lib.Domain.Capability as Domain
+import Lib.Domain.Capability qualified as Domain
 
 import Lib.Domain.Capability (Capability)
 import Lib.Domain.Error (AppErrorType)
