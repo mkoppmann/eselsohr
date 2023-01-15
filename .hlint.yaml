@@ -1,3 +1,8 @@
+# Turn on some hints that are off by default
+- warn: {name: Redundant bracket due to operator fixities}
+- warn: {name: Use &&&}
+- warn: {name: Use Just}
+
 # hlint does not support `OverloadedRecordDot` currently
 - ignore: {name: Redundant id}
 
