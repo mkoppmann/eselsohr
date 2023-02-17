@@ -43,7 +43,7 @@ RUN cabal install \
 ####################
 # Deployment image #
 ####################
-FROM gcr.io/distroless/base:nonroot@sha256:5e49d74cf65ab7b9ab0e470c05f5a9f80201ed35f6ab61258b79cd6ce7832b50
+FROM gcr.io/distroless/base:nonroot@sha256:88f520a1cc0e79ad98ed766ea67418b5bc5e5f56a8cbdaf2cc24fdfffeb882f3
 
 # Copy missing shared libraries from build stage
 COPY --from=build /lib/x86_64-linux-gnu/libz.so.1 /lib/x86_64-linux-gnu/libz.so.1
