@@ -26,7 +26,7 @@ static :: StaticSite AppServer
 static =
     Route.StaticSite{Route.startpage = startpage, Route.invalidToken = invalidToken}
 
-startpage :: WithEnv env m => m HtmlPage
+startpage :: (WithEnv env m) => m HtmlPage
 startpage = do
     collectionCreation <- grab @CollectionCreation
     case collectionCreation of

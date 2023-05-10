@@ -45,7 +45,7 @@ type WithLog env m = Colog.WithLog env Colog.Message m
 {- | Main log action for the application. Prints message with some metadata to
  @stdout@.
 -}
-mainLogAction :: MonadIO m => Severity -> LogAction m Colog.Message
+mainLogAction :: (MonadIO m) => Severity -> LogAction m Colog.Message
 mainLogAction severity = Colog.filterBySeverity severity Colog.msgSeverity Colog.richMessageAction
 
 ----------------------------------------------------------------------------

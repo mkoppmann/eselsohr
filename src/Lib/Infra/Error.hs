@@ -46,7 +46,7 @@ import Lib.Domain.Error
 type WithError m = (MonadError AppError m, HasCallStack)
 
 -- | Specialized version of 'E.throwError'
-throwError :: WithError m => AppErrorType -> m a
+throwError :: (WithError m) => AppErrorType -> m a
 throwError = E.throwError . AppError (toSourcePosition callStack)
 {-# INLINE throwError #-}
 
@@ -105,35 +105,35 @@ toHttpError (AppError _callStack errorType) = case errorType of
 {- | Extract the value from a 'Maybe', throwing the given 'AppError' if
  the value does not exist
 -}
-throwOnNothing :: WithError m => AppErrorType -> Maybe a -> m a
+throwOnNothing :: (WithError m) => AppErrorType -> Maybe a -> m a
 throwOnNothing err value = withFrozenCallStack $ maybe (throwError err) pure value
 
 {- | Extract the value from a 'Maybe' in @m@, throwing the given 'AppError' if
  the value does not exist
 -}
-throwOnNothingM :: WithError m => AppErrorType -> m (Maybe a) -> m a
+throwOnNothingM :: (WithError m) => AppErrorType -> m (Maybe a) -> m a
 throwOnNothingM err action = withFrozenCallStack $ throwOnNothing err =<< action
 
 {- | Similar to 'throwOnNothing' but throws a 'NotFound' if the value does not
  exist
 -}
-notFoundOnNothing :: WithError m => Maybe a -> m a
+notFoundOnNothing :: (WithError m) => Maybe a -> m a
 notFoundOnNothing value = withFrozenCallStack $ throwOnNothing notFound value
 
 {- | Similar to 'throwOnNothingM' but throws a 'NotFound' if the value does not
  exist
 -}
-notFoundOnNothingM :: WithError m => m (Maybe a) -> m a
+notFoundOnNothingM :: (WithError m) => m (Maybe a) -> m a
 notFoundOnNothingM value = withFrozenCallStack $ throwOnNothingM notFound value
 
 -- | Extract the value from an 'Either', throwing the embedded 'AppErrorType' if the value is Left
-throwOnError :: WithError m => Either AppErrorType a -> m a
+throwOnError :: (WithError m) => Either AppErrorType a -> m a
 throwOnError value = withFrozenCallStack $ either throwError pure value
 
 -- | Extract the value from an 'Either' in @m@, throwing the embedded 'AppErrorType' if the value is Left
-throwOnErrorM :: WithError m => m (Either AppErrorType a) -> m a
+throwOnErrorM :: (WithError m) => m (Either AppErrorType a) -> m a
 throwOnErrorM action = withFrozenCallStack $ either throwError pure =<< action
 
 -- | Redirects to the given URL
-redirectTo :: WithError m => Text -> m a
+redirectTo :: (WithError m) => Text -> m a
 redirectTo = throwError . redirect303

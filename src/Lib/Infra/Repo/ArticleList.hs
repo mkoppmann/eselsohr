@@ -42,5 +42,5 @@ saveAll colId updates = commit colId action
         newArticles <- throwOnError $ foldlM (&) articles updates
         File.save colId $ ColPm.updateArticleList (ArtListPm.fromDomain newArticles) collection
 
-articlesFromCollection :: WithError m => CollectionPm -> m ArticleList
+articlesFromCollection :: (WithError m) => CollectionPm -> m ArticleList
 articlesFromCollection = throwOnError . ArtListPm.toDomain . ColPm.getArticleList

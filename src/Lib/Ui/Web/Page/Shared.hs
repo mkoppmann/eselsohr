@@ -103,7 +103,7 @@ type WithQuery env m = (WithFile env m, MonadTime m, WithError m, WithLog env m)
 
 type QueryMap a = Map (Id a) a
 
-lookupReferences :: WithQuery env m => Accesstoken -> m (Reference, ObjectReference)
+lookupReferences :: (WithQuery env m) => Accesstoken -> m (Reference, ObjectReference)
 lookupReferences acc = do
     let ref@(Reference colId capId) = toReference acc
     authList <- getCapabilityListPm colId
@@ -119,7 +119,7 @@ getArticleListPm colId = File.load colId ColPm.getArticleList
 getArticleMap :: (WithQuery env m) => Id Collection -> m (QueryMap Article)
 getArticleMap = throwOnError . traverse ArtPm.toDomain <=< getArticleListPm
 
-getArticle :: WithQuery env m => Id Collection -> Id Article -> m ArticleVm
+getArticle :: (WithQuery env m) => Id Collection -> Id Article -> m ArticleVm
 getArticle colId artId = do
     artPmMap <- getArticleListPm colId
     artPm <- notFoundError $ Map.lookup artId artPmMap

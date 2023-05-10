@@ -37,5 +37,5 @@ testSaveAll _colId updates = do
     newCapabilities <- fmap CapListPm.fromDomain . throwOnError $ foldlM (&) capabilities updates
     writeIORef collectionRef $ ColPm.updateCapabilityList newCapabilities collection
 
-capabilitiesFromCollection :: WithError m => CollectionPm -> m CapabilityList
+capabilitiesFromCollection :: (WithError m) => CollectionPm -> m CapabilityList
 capabilitiesFromCollection = throwOnError . CapListPm.toDomain . ColPm.getCapabilityList

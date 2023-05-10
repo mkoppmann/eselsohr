@@ -645,7 +645,7 @@ articlePermsTest name successArticlePerms failArticlePerms successArticlesPerms 
     returnErrorWhenCheckingArticlePermsGivenUnauthorizedSharedArticlesRef name failArticlesPerms auth
 
 returnArticlePermWhenGivenAuthorizedArticleRef
-    :: Show a
+    :: (Show a)
     => String
     -> (Id Article -> ArticlePerms)
     -> (ObjectReference -> Id Article -> Either AppErrorType a)
@@ -689,7 +689,7 @@ returnErrorWhenCheckingArticlePermsGivenArticleRefForWrongId name successPerms a
             perm `shouldBe` Authz.unauthorized
 
 returnArticlePermWhenGivenAuthorizedSharedArticleRef
-    :: Show a
+    :: (Show a)
     => String
     -> (Id Article -> ArticlePerms)
     -> (ObjectReference -> Id Article -> Either AppErrorType a)
@@ -755,7 +755,7 @@ returnErrorWhenGivenSharedOverviewRefForArticlePerm name auth = do
         perm `shouldBe` Authz.unauthorized
 
 returnArticlePermWhenGivenAuthorizedArticlesRef
-    :: Show a => String -> ArticlesPerms -> (ObjectReference -> Id Article -> Either AppErrorType a) -> SpecWith ()
+    :: (Show a) => String -> ArticlesPerms -> (ObjectReference -> Id Article -> Either AppErrorType a) -> SpecWith ()
 returnArticlePermWhenGivenAuthorizedArticlesRef name successPerms auth =
     it (name <> ": returns " <> name <> " when given an authorized 'ArticlesRef'") $ do
         artId <- getRandomId
@@ -777,7 +777,7 @@ returnErrorWhenCheckingArticlePermsGivenUnauthorizedArticlesRef name failPerms a
         perm `shouldBe` Authz.unauthorized
 
 returnArticlePermWhenGivenAuthorizedSharedArticlesRef
-    :: Show a => String -> ArticlesPerms -> (ObjectReference -> Id Article -> Either AppErrorType a) -> SpecWith ()
+    :: (Show a) => String -> ArticlesPerms -> (ObjectReference -> Id Article -> Either AppErrorType a) -> SpecWith ()
 returnArticlePermWhenGivenAuthorizedSharedArticlesRef name successPerms auth = do
     it (name <> ": returns " <> name <> " when given an authorized shared 'ArticlesRef'") $ do
         artId <- getRandomId

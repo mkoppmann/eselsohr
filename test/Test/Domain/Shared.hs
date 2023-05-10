@@ -38,18 +38,18 @@ authorized :: Either AppErrorType a -> a
 authorized (Left err) = error $ "Error when authorizing action: " <> show err
 authorized (Right perm) = perm
 
-defaultArticle :: MonadIO m => m Article
+defaultArticle :: (MonadIO m) => m Article
 defaultArticle = defaultArticleWithState Article.Unread
 
-defaultArticleWithId :: MonadIO m => Id Article -> m Article
+defaultArticleWithId :: (MonadIO m) => Id Article -> m Article
 defaultArticleWithId artId = defaultArticleWithIdAndState artId Article.Unread
 
-defaultArticleWithState :: MonadIO m => ArticleState -> m Article
+defaultArticleWithState :: (MonadIO m) => ArticleState -> m Article
 defaultArticleWithState artState = do
     artId <- getRandomId
     defaultArticleWithIdAndState artId artState
 
-defaultArticleWithIdAndState :: MonadIO m => Id Article -> ArticleState -> m Article
+defaultArticleWithIdAndState :: (MonadIO m) => Id Article -> ArticleState -> m Article
 defaultArticleWithIdAndState artId artState = do
     artCreation <- getCurrentTime
     let artTitle = getNonEmptyText "Default title"
@@ -66,10 +66,10 @@ getUri uri = case Uri.mkUri uri of
     Left err -> error $ "Error when creating default uri for article:" <> show err
     Right artUri -> artUri
 
-getCurrentTime :: MonadIO m => m UTCTime
+getCurrentTime :: (MonadIO m) => m UTCTime
 getCurrentTime = Adapter.getCurrentTime
 
-getRandomId :: MonadIO m => m (Id a)
+getRandomId :: (MonadIO m) => m (Id a)
 getRandomId = Adapter.getRandomId
 
 objRefWithAllOverviewPerms :: ObjectReference

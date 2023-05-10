@@ -71,7 +71,7 @@ shouldSucceed mkUri addr = either errorCase successCase $ mkUri addr
     errorMsg :: String -> String
     errorMsg err = "Should have returned uri, but got: " <> err
 
-shouldReturnError :: Show a => (Text -> Either AppErrorType Uri) -> Text -> NonEmpty a -> Expectation
+shouldReturnError :: (Show a) => (Text -> Either AppErrorType Uri) -> Text -> NonEmpty a -> Expectation
 shouldReturnError mkUri addr exception = either errorCase successCase $ mkUri addr
   where
     errorCase :: AppErrorType -> Expectation

@@ -35,7 +35,7 @@ import Lib.Ui.Web.Route (HtmlPage)
 -- Handler
 ------------------------------------------------------------------------
 
-handler :: WithQuery env m => Id Article -> Maybe Accesstoken -> m HtmlPage
+handler :: (WithQuery env m) => Id Article -> Maybe Accesstoken -> m HtmlPage
 handler _artId Nothing = Layout.renderM Static.notAuthorized
 handler artId (Just acc) = do
     (ref, objRef) <- lookupReferences acc
@@ -53,7 +53,7 @@ data Query = Query
     , colId :: !(Id Collection)
     }
 
-query :: WithQuery env m => Query -> m View
+query :: (WithQuery env m) => Query -> m View
 query Query{..} = do
     changeTitlePerm <- throwOnError $ Authz.canChangeArticleTitle objRef artId
     article <- getArticle colId artId

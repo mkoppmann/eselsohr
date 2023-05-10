@@ -25,7 +25,7 @@ import Lib.Ui.Web.Route (HtmlPage)
 -- Handler
 ------------------------------------------------------------------------
 
-handler :: WithQuery env m => Maybe Accesstoken -> m HtmlPage
+handler :: (WithQuery env m) => Maybe Accesstoken -> m HtmlPage
 handler Nothing = Layout.renderM Static.notAuthorized
 handler (Just acc) = do
     (_ref, objRef) <- lookupReferences acc
