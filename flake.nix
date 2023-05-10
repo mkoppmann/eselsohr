@@ -13,7 +13,7 @@
         overlays = [ ];
         pkgs =
           import nixpkgs { inherit system overlays; config.allowBroken = true; };
-        hp = pkgs.haskell.packages.ghc925;
+        hp = pkgs.haskell.packages.ghc927;
         project = returnShellEnv:
           hp.developPackage {
             inherit returnShellEnv;
