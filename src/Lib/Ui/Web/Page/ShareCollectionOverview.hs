@@ -47,7 +47,7 @@ import Lib.Ui.Web.Route (HtmlPage)
 -- Handler
 ------------------------------------------------------------------------
 
-handler :: WithQuery env m => Maybe Accesstoken -> m HtmlPage
+handler :: (WithQuery env m) => Maybe Accesstoken -> m HtmlPage
 handler Nothing = Layout.renderM Static.notAuthorized
 handler (Just acc) = do
     (ref, objRef) <- lookupReferences acc
@@ -64,7 +64,7 @@ data Query = Query
     , colId :: !(Id Collection)
     }
 
-query :: WithQuery env m => Query -> m View
+query :: (WithQuery env m) => Query -> m View
 query Query{..} = do
     let viewUnlockLinksPermVm = isRight $ Authz.canViewUnlockLinks objRef
         createUnlockLinksPermVm = isRight $ Authz.canCreateUnlockLinks objRef

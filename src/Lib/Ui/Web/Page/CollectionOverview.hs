@@ -54,7 +54,7 @@ import Lib.Ui.Web.Route (HtmlPage)
 -- Handler
 ------------------------------------------------------------------------
 
-handler :: WithQuery env m => Maybe Accesstoken -> m HtmlPage
+handler :: (WithQuery env m) => Maybe Accesstoken -> m HtmlPage
 handler Nothing = Layout.renderM Static.notAuthorized
 handler (Just acc) = do
     (ref, objRef) <- lookupReferences acc
@@ -71,7 +71,7 @@ data Query = Query
     , colId :: !(Id Collection)
     }
 
-query :: WithQuery env m => Query -> m View
+query :: (WithQuery env m) => Query -> m View
 query Query{..} = do
     let canCreateUnlockLink = isRight $ Authz.canCreateUnlockLinks objRef
         canDeleteUnlockLink = isRight $ Authz.canDeleteUnlockLinks objRef
@@ -81,7 +81,7 @@ query Query{..} = do
     unlockLinks <- getUnlockLinks colId earliestExpDate
     pure View{..}
 
-getUnlockLinks :: WithQuery env m => Id Collection -> UTCTime -> m (Seq UnlockLinkVm)
+getUnlockLinks :: (WithQuery env m) => Id Collection -> UTCTime -> m (Seq UnlockLinkVm)
 getUnlockLinks colId curTime = do
     capMap <- getCapabilityMap colId
     pure . fmap toUnlockLink . filterAndSortCaps $ mapToSeq capMap

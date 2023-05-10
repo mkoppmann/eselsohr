@@ -257,7 +257,7 @@ shouldSucceedDeletingExistingSharedCapability objRef auth sharedPerms sharedRef 
             newCaps' `shouldNotSatisfy` capabilityInList sharedCapId
 
 addSharedCapability
-    :: MonadIO m
+    :: (MonadIO m)
     => ObjectReference
     -> (ObjectReference -> Either AppErrorType a)
     -> b
@@ -275,13 +275,13 @@ addSharedCapability objRef auth sharedPerms sharedRef update = do
                 newCaps = fromRight caps $ update perm sharedCapId sharedCap caps
             pure $ Just (sharedCapId, sharedCap, newCaps, perm)
 
-capabilityListWithObjRef :: MonadIO m => ObjectReference -> m (Id Capability, Capability, CapabilityList)
+capabilityListWithObjRef :: (MonadIO m) => ObjectReference -> m (Id Capability, Capability, CapabilityList)
 capabilityListWithObjRef objRef = do
     (capId, cap) <- capabilityWithObjRef objRef
     let caps = capabilityListWithCapability cap
     pure (capId, cap, caps)
 
-capabilityWithObjRef :: MonadIO m => ObjectReference -> m (Id Capability, Capability)
+capabilityWithObjRef :: (MonadIO m) => ObjectReference -> m (Id Capability, Capability)
 capabilityWithObjRef objRef = do
     capId <- getRandomId
     let cap = Capability.Capability capId objRef Nothing Nothing
