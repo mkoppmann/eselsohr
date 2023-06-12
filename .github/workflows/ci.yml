@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
 
       - name: "Check formatting with Fourmolu"
-        uses: fourmolu/fourmolu-action@b8c81ae2d7b586f05230555b647b406442be9cba
+        uses: fourmolu/fourmolu-action@5f705691205a8e6efb36c043d7b461ecb97ee082
 
   build-binary:
     needs: hlint
