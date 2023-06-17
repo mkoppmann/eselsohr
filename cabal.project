@@ -3,6 +3,24 @@ package *
   executable-stripping: True
   library-stripping: True
 
+package entropy
+  documentation: False
+
+package servant-server
+  documentation: False
+
+package uuid
+  documentation: False
+
+package wai-app-static
+  documentation: False
+
+package wai-extra
+  documentation: False
+
+package wai-logger
+  documentation: False
+
 package eselsohr
   documentation: True
 
