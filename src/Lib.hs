@@ -60,7 +60,6 @@ mkAppEnv Config.Config{..} = do
 runServer :: Config -> AppEnv -> IO ()
 runServer Config.Config{..} env@Env.Env{..} = do
     Init.datafolder dataFolder
-    Init.useRestrictedHttpManager
     printIntro
     case https of
         Env.HttpsOn -> startTlsServer confCertFile confKeyFile
