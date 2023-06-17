@@ -88,7 +88,6 @@ withTestEnv = bracket setup clean
 
         env@Env.Env{..} <- mkAppEnv =<< setConfig =<< loadConfig Nothing
         runAppLogIO_ env $ Init.datafolder dataFolder
-        Init.useRestrictedHttpManager
         void . async $ Server.persistenceApp env
         void . async $ testServer env
         pure (env, Server.application 6979 "static/" env)
