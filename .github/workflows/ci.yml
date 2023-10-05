@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
 
       - name: "Check formatting with Fourmolu"
-        uses: fourmolu/fourmolu-action@5f705691205a8e6efb36c043d7b461ecb97ee082
+        uses: haskell-actions/run-fourmolu@5f705691205a8e6efb36c043d7b461ecb97ee082
 
   build-binary:
     needs: hlint
