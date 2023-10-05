@@ -13,12 +13,10 @@ jobs:
       - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
 
       - name: "Set up HLint"
-        uses: rwe/actions-hlint-setup@9f5da5e7cd43663fb7b2e2154a087c17f0471ed1
-        with:
-          version: "3.5"
+        uses: haskell-actions/hlint-setup@479607c42f1ab77f0a58ad02f981f5ebd7928415
 
       - name: "Run HLint"
-        uses: rwe/actions-hlint-run@c178fa6263930e604e377a21ef54403306bdc1c7
+        uses: haskell-actions/hlint-run@9abc70d8a40b111d76e44eb4ed4b45c76d723b3d
         with:
           path: '["app/", "src/", "test/"]'
           fail-on: warning
