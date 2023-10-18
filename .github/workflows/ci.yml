@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: "Set up HLint"
         uses: haskell-actions/hlint-setup@479607c42f1ab77f0a58ad02f981f5ebd7928415
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: "Check formatting with Fourmolu"
         uses: haskell-actions/run-fourmolu@5f705691205a8e6efb36c043d7b461ecb97ee082
@@ -39,7 +39,7 @@ jobs:
       CONFIG: "--enable-tests --enable-benchmarks"
 
     steps:
-      - uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
       - uses: haskell-actions/setup@9933312ae77442f1fc8a613c182206d0e45ea0e8
         id: setup-haskell-cabal
         with:
