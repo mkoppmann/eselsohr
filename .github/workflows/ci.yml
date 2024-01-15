@@ -80,7 +80,7 @@ jobs:
         run: mv dist/eselsohr-exe dist/eselsohr
 
       - name: Store application binary as artifact
-        uses: actions/upload-artifact@c7d193f32edcb7bfad88892161225aeda64e9392
+        uses: actions/upload-artifact@1eb3cb2b3e0f29609092a73eb033bb759a334595
         with:
           name: eselsohr
           path: dist/eselsohr
