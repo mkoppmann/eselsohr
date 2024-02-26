@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11
 
       - name: "Set up HLint"
-        uses: haskell-actions/hlint-setup@479607c42f1ab77f0a58ad02f981f5ebd7928415
+        uses: haskell-actions/hlint-setup@0b0024319753ba0c8b2fa21b7018ed252aed8181
 
       - name: "Run HLint"
         uses: haskell-actions/hlint-run@9abc70d8a40b111d76e44eb4ed4b45c76d723b3d
