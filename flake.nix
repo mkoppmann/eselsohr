@@ -13,28 +13,35 @@
         overlays = [ ];
         pkgs =
           import nixpkgs { inherit system overlays; config.allowBroken = true; };
-        hp = pkgs.haskell.packages.ghc94;
-        project = returnShellEnv:
-          hp.developPackage {
-            inherit returnShellEnv;
-            name = "eselsohr";
-            root = ./.;
-            withHoogle = true;
-            overrides = self: super: with pkgs.haskell.lib; {
-              # Use callCabal2nix to override Haskell dependencies here
-              # cf. https://tek.brick.do/K3VXJd8mEKO7
-            };
-            modifier = drv:
-              pkgs.haskell.lib.addBuildTools drv (with hp;
-              [
-                # Specify your build/dev dependencies here.
-                cabal-fmt
-                cabal-install
-                ghcid
-                haskell-language-server
-                pkgs.nixpkgs-fmt
-              ]);
+        jailbreakUnbreak = pkg:
+          pkgs.haskell.lib.doJailbreak (pkgs.haskell.lib.dontCheck (pkgs.haskell.lib.unmarkBroken pkg));
+        hp = pkgs.haskell.packages.ghc94.override {
+          overrides = hself: hsuper: {
+            typerep-map = jailbreakUnbreak hsuper.typerep-map;
           };
+        };
+        project = returnShellEnv:
+          pkgs.haskell.lib.doJailbreak
+            (hp.developPackage {
+              inherit returnShellEnv;
+              name = "eselsohr";
+              root = ./.;
+              withHoogle = true;
+              overrides = self: super: with pkgs.haskell.lib; {
+                # Use callCabal2nix to override Haskell dependencies here
+                # cf. https://tek.brick.do/K3VXJd8mEKO7
+              };
+              modifier = drv:
+                pkgs.haskell.lib.addBuildTools drv (with hp;
+                [
+                  # Specify your build/dev dependencies here.
+                  cabal-fmt
+                  cabal-install
+                  ghcid
+                  haskell-language-server
+                  pkgs.nixpkgs-fmt
+                ]);
+            });
       in
       {
         # Used by `nix build` & `nix run` (prod exe)
