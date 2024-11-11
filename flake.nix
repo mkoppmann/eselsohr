@@ -15,9 +15,9 @@
           import nixpkgs { inherit system overlays; config.allowBroken = true; };
         jailbreakUnbreak = pkg:
           pkgs.haskell.lib.doJailbreak (pkgs.haskell.lib.dontCheck (pkgs.haskell.lib.unmarkBroken pkg));
-        hp = pkgs.haskell.packages.ghc94.override {
+        hp = pkgs.haskell.packages.ghc98.override {
           overrides = hself: hsuper: {
-            typerep-map = jailbreakUnbreak hsuper.typerep-map;
+            # typerep-map = jailbreakUnbreak hsuper.typerep-map;
           };
         };
         project = returnShellEnv:

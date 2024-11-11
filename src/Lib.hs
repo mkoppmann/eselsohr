@@ -106,8 +106,6 @@ runServer Config.Config{..} env@Env.Env{..} = do
         , TLS.cipher_ECDHE_RSA_AES256GCM_SHA384
         , TLS.cipher_ECDHE_ECDSA_CHACHA20POLY1305_SHA256
         , TLS.cipher_ECDHE_RSA_CHACHA20POLY1305_SHA256
-        , TLS.cipher_DHE_RSA_AES128GCM_SHA256
-        , TLS.cipher_DHE_RSA_AES256GCM_SHA384
         ]
 
 warpSettings :: String -> Port -> Settings
