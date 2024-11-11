@@ -40,6 +40,7 @@
                   ghcid
                   haskell-language-server
                   pkgs.nixpkgs-fmt
+                  pkgs.zlib
                 ]);
             });
       in
