@@ -10,7 +10,7 @@ import Network.Wai.Handler.Warp (Port)
 import Network.Wai.Middleware.AddHeaders (addHeaders)
 import Network.Wai.Middleware.AddHsts (addHsts)
 import Network.Wai.Middleware.Gzip
-    ( def
+    ( defaultGzipSettings
     , gzip
     )
 import Network.Wai.Middleware.MethodOverridePost (methodOverridePost)
@@ -54,7 +54,7 @@ application port staticFolder env@Env.Env{..} =
         & addSecurityHeaders
         & realIpHeader "X-Forwarded-For"
         & hstsHeader
-        & gzip def
+        & gzip defaultGzipSettings
   where
     enforceHttps :: Middleware
     enforceHttps = case https of
