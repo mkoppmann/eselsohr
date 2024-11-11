@@ -19,7 +19,7 @@ modelListFromDomain fromDomain pmMap = second fromDomain <$> Map.toList pmMap
 
 modelListToDomain
     :: (pm -> Either AppErrorType domain) -> Map (Id domain) pm -> Either AppErrorType [(Id domain, domain)]
-modelListToDomain toDomain pmMap = traverse sequenceTuple $ second toDomain <$> Map.toList pmMap
+modelListToDomain toDomain pmMap = traverse (sequenceTuple . second toDomain) $ Map.toList pmMap
 
 sequenceTuple :: (Id domain, Either AppErrorType wm) -> Either AppErrorType (Id domain, wm)
 sequenceTuple (valId, eVal) = Right . (valId,) =<< eVal
