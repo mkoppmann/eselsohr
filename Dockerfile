@@ -7,7 +7,7 @@ LABEL maintainer="mkoppmann <dev@mkoppmann.at>"
 ###############
 # Build image #
 ###############
-FROM haskell:9.4-slim@sha256:05c991e739da861079f7a3213020818ebbd8d3d62ac212584bab7736f9e5ec95 AS build
+FROM haskell:9.8-slim@sha256:0875140e7fbcdf71702a5f12457be551cf90e07da7241fd07476b5e61f9d1662 AS build
 
 # Create the data folder for the deployment stage here, because there is no
 # shell in distroless images available.
@@ -50,7 +50,7 @@ COPY --from=build /lib/x86_64-linux-gnu/libz.so.1 /lib/x86_64-linux-gnu/libz.so.
 COPY --from=build /usr/lib/x86_64-linux-gnu/libgmp.so.10 /usr/lib/x86_64-linux-gnu/libgmp.so.10
 
 # Copy executable from build stage
-COPY --from=build /home/builder/.cabal/bin/eselsohr-exe /app/eselsohr
+COPY --from=build /home/builder/.local/bin/eselsohr-exe /app/eselsohr
 
 # Copy static folder from build stage
 COPY --from=build --chown=nonroot:nonroot /build/static /app/static
