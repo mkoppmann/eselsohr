@@ -17,7 +17,7 @@
           pkgs.haskell.lib.doJailbreak (pkgs.haskell.lib.dontCheck (pkgs.haskell.lib.unmarkBroken pkg));
         hp = pkgs.haskell.packages.ghc98.override {
           overrides = hself: hsuper: {
-            # typerep-map = jailbreakUnbreak hsuper.typerep-map;
+            base32 = jailbreakUnbreak hsuper.base32;
           };
         };
         project = returnShellEnv:
