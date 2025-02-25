@@ -40,43 +40,55 @@ import Lib.Domain.Uri
 -}
 data Config = Config
     { confDataFolder :: !DataPath
-    -- ^ File path to the data folder, where all collection are getting stored.
-    -- Defaults to: 'XdgData'
+    {- ^ File path to the data folder, where all collection are getting stored.
+    Defaults to: 'XdgData'
+    -}
     , confLogSeverity :: !Severity
-    -- ^ Severity level for the logger component.
-    -- Defaults to: 'Error'
+    {- ^ Severity level for the logger component.
+    Defaults to: 'Error'
+    -}
     , confServerPort :: !Port
-    -- ^ Port number on which the web server will listen.
-    -- Defaults to: @6979@
+    {- ^ Port number on which the web server will listen.
+    Defaults to: @6979@
+    -}
     , confBaseUrl :: !Uri
-    -- ^ Base URL to generate HTML links.
-    -- Defaults to @http://localhost@
+    {- ^ Base URL to generate HTML links.
+    Defaults to @http://localhost@
+    -}
     , confListenAddr :: !String
-    -- ^ Address where the web server will listen.
-    -- Defaults to: @127.0.0.1@
+    {- ^ Address where the web server will listen.
+    Defaults to: @127.0.0.1@
+    -}
     , confHttps :: !Bool
-    -- ^ Send @HSTS@ HTTP header.
-    -- Automatically enabled when @X-Forwarded-Proto@ HTTP header is set to
-    -- @https@.
-    -- Defaults to: 'False'
+    {- ^ Send @HSTS@ HTTP header.
+    Automatically enabled when @X-Forwarded-Proto@ HTTP header is set to
+    @https@.
+    Defaults to: 'False'
+    -}
     , confDisableHsts :: !Bool
-    -- ^ Do not send @HSTS@ HTTP header, when @HTTPS@ is set.
-    -- Defaults to: 'False'
+    {- ^ Do not send @HSTS@ HTTP header, when @HTTPS@ is set.
+    Defaults to: 'False'
+    -}
     , confCertFile :: !FilePath
-    -- ^ File path to the TLS certificate file.
-    -- Defaults to: 'certificate.pem'
+    {- ^ File path to the TLS certificate file.
+    Defaults to: 'certificate.pem'
+    -}
     , confKeyFile :: !FilePath
-    -- ^ File path to the TLS key file.
-    -- Defaults to: 'key.pem'
+    {- ^ File path to the TLS key file.
+    Defaults to: 'key.pem'
+    -}
     , confDepMode :: !DeploymentMode
-    -- ^ The mode the application is running in.
-    -- Defaults to: 'Prod'
+    {- ^ The mode the application is running in.
+    Defaults to: 'Prod'
+    -}
     , confPublicCollectionCreation :: !Bool
-    -- ^ Wether the creation of collections should be public.
-    -- Defaults to: 'False'
+    {- ^ Wether the creation of collections should be public.
+    Defaults to: 'False'
+    -}
     , confStaticFolderPath :: !FilePath
-    -- ^ The path to the folder with static resources.
-    -- Defaults to: 'static/'
+    {- ^ The path to the folder with static resources.
+    Defaults to: 'static/'
+    -}
     }
 
 loadConfig :: (MonadCatch m, MonadIO m) => Maybe FilePath -> m Config

@@ -30,29 +30,35 @@ newtype AppErrorType = InternalError IError
 data IError
     = -- | General not found.
       NotFound
-    | -- | Some exceptional circumstance has happened stop execution and return.
-      -- Optional text to provide some context in server logs.
+    | {- | Some exceptional circumstance has happened stop execution and return.
+      Optional text to provide some context in server logs.
+      -}
       ServerError !Text
-    | -- | A required permission level was not met. Optional text to provide some
-      -- context.
+    | {- | A required permission level was not met. Optional text to provide some
+      context.
+      -}
       NotAuthorized !Text
-    | -- | An expected parameter was not given by the client. Optional text to
-      -- provide the parameter’s name.
+    | {- | An expected parameter was not given by the client. Optional text to
+      provide the parameter’s name.
+      -}
       MissingParameter !Text
-    | -- | Given inputs do not conform to the expected format or shape. Optional
-      -- text to provide some context in server logs.
+    | {- | Given inputs do not conform to the expected format or shape. Optional
+      text to provide some context in server logs.
+      -}
       Invalid !Text
     | -- | Repository specific errors.
       StoreError !Text
     | -- | Limits on the multi-request are overflowed.
       LimitError
-    | -- | Redirect to given URL. Not a real error but a hack currently required
-      -- in Servant. 303 means that the browser use get to fetch the page and also
-      -- drop the body.
+    | {- | Redirect to given URL. Not a real error but a hack currently required
+      in Servant. 303 means that the browser use get to fetch the page and also
+      drop the body.
+      -}
       Redirect303 !ByteString
-    | -- | Redirect to given URL. Not a real error but a hack currently required
-      -- in Servant. 307 means that the browser use the same method and body for
-      -- the redirect.
+    | {- | Redirect to given URL. Not a real error but a hack currently required
+      in Servant. 307 means that the browser use the same method and body for
+      the redirect.
+      -}
       Redirect307 !ByteString
     deriving stock (Show, Eq)
 
