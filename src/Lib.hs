@@ -97,15 +97,15 @@ runServer Config.Config{..} env@Env.Env{..} = do
     --
     tlsCiphers :: [Cipher]
     tlsCiphers =
-        [ TLS.cipher_TLS13_AES128GCM_SHA256
-        , TLS.cipher_TLS13_AES256GCM_SHA384
-        , TLS.cipher_TLS13_CHACHA20POLY1305_SHA256
-        , TLS.cipher_ECDHE_ECDSA_AES128GCM_SHA256
-        , TLS.cipher_ECDHE_RSA_AES128GCM_SHA256
-        , TLS.cipher_ECDHE_ECDSA_AES256GCM_SHA384
-        , TLS.cipher_ECDHE_RSA_AES256GCM_SHA384
-        , TLS.cipher_ECDHE_ECDSA_CHACHA20POLY1305_SHA256
-        , TLS.cipher_ECDHE_RSA_CHACHA20POLY1305_SHA256
+        [ TLS.cipher13_AES_128_GCM_SHA256
+        , TLS.cipher13_AES_256_GCM_SHA384
+        , TLS.cipher13_CHACHA20_POLY1305_SHA256
+        , TLS.cipher_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        , TLS.cipher_DHE_RSA_WITH_AES_128_GCM_SHA256
+        , TLS.cipher_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        , TLS.cipher_DHE_RSA_WITH_AES_256_GCM_SHA384
+        , TLS.cipher_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256
+        , TLS.cipher_DHE_RSA_WITH_CHACHA20_POLY1305_SHA256
         ]
 
 warpSettings :: String -> Port -> Settings
