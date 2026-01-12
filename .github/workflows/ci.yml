@@ -40,7 +40,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
-      - uses: haskell-actions/setup@7786314267139caaaf743fbdb70341b116a8d25d
+      - uses: haskell-actions/setup@dc63c94789664bb2910876ec3dfeeaa24d23b96b
         id: setup-haskell-cabal
         with:
           ghc-version: "9.8"
