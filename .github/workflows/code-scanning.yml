@@ -34,7 +34,7 @@ jobs:
           no-fail: true
 
       - name: Upload Hadolint scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@b1bff81932f5cdfc8695c7752dcee935dcd061c8
+        uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc
         with:
           sarif_file: hadolint-results.sarif
           wait-for-processing: true
@@ -64,7 +64,7 @@ jobs:
           severity: "CRITICAL,HIGH"
 
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@b1bff81932f5cdfc8695c7752dcee935dcd061c8
+        uses: github/codeql-action/upload-sarif@38697555549f1db7851b81482ff19f1fa5c4fedc
         with:
           sarif_file: "trivy-results.sarif"
           wait-for-processing: true
