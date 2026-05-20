@@ -7,7 +7,7 @@ LABEL maintainer="mkoppmann <dev@mkoppmann.at>"
 ###############
 # Build image #
 ###############
-FROM haskell:9.8-slim@sha256:8bcfdca37b32c9261fa7c191258764b03556b5c5fb27af160a2e0daf6ecd908c AS build
+FROM haskell:9.8-slim@sha256:2f0b9ad94afeabf5ad82c2b0f723748e8965c5ab718a2fcfe0fd3ac9be72c36f AS build
 
 # Create the data folder for the deployment stage here, because there is no
 # shell in distroless images available.
