@@ -1,0 +1,38 @@
+cabal-version:      2.4
+name:               eselsohr-v2
+version:            0.1.0.0
+synopsis:           Build seed for Eselsohr 2
+license:            EUPL-1.2
+license-file:       LICENSE
+maintainer:         mkoppmann <dev@mkoppmann.at>
+author:             Michael Koppmann
+tested-with:        GHC ==9.10.3
+build-type:         Simple
+
+library
+    exposed-modules:   Eselsohr.Version
+    other-modules:     Paths_eselsohr_v2
+    autogen-modules:   Paths_eselsohr_v2
+    hs-source-dirs:    src
+    default-language:  GHC2024
+    ghc-options:       -Wall
+    build-depends:     base ^>=4.20.2.0
+
+executable eselsohr-v2
+    main-is:          Main.hs
+    hs-source-dirs:   app
+    default-language: GHC2024
+    ghc-options:      -Wall
+    build-depends:
+        base ^>=4.20.2.0,
+        eselsohr-v2
+
+test-suite eselsohr-v2-test
+    type:             exitcode-stdio-1.0
+    main-is:          Main.hs
+    hs-source-dirs:   test
+    default-language: GHC2024
+    ghc-options:      -Wall
+    build-depends:
+        base ^>=4.20.2.0,
+        eselsohr-v2

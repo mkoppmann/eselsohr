@@ -1,0 +1,18 @@
+cradle:
+  multi:
+    - path: "./v2"
+      config:
+        cradle:
+          cabal:
+            cabalProject: "./cabal-v2.project"
+            components:
+              - path: "./v2/src"
+                component: "lib:eselsohr-v2"
+              - path: "./v2/app"
+                component: "exe:eselsohr-v2"
+              - path: "./v2/test"
+                component: "test:eselsohr-v2-test"
+    - path: "./"
+      config:
+        cradle:
+          none:
