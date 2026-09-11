@@ -7,8 +7,9 @@ Eselsohr 2 should stay small enough for one developer to understand the complete
 
 Read [README.md](README.md) for the existing application and the author's prose.
 Read [the Eselsohr 2 design](docs/design/eselsohr-2.md) for agreed decisions, proposals, approval gates, and security requirements.
+Read [the security model](docs/security-model.md) for the approved operation policy and its enforcement limits.
 Use [the investigation](docs/design/investigation.md) for existing behavior and evidence, and [the roadmap](docs/design/roadmap.md) for bounded tasks and acceptance checks.
-The design describes the replacement's intended behavior; only its build seed is implemented.
+The design distinguishes the replacement's implemented pure model and policy from its intended application behavior.
 It does not describe the legacy application's behavior.
 
 The existing code is evidence of requirements and experiments, not an architecture that must be preserved.
@@ -21,6 +22,7 @@ Keep changes reviewable.
 Stop at unresolved architectural decisions that affect the task.
 Preserve unrelated changes.
 Do not add speculative documentation or abstractions.
+Preserve persistence ignorance: domain values and transitions must not depend on revision metadata, storage formats, or database limits.
 Keep docs current: distinguish implemented behavior from current proposals.
 Replace or remove obsolete information; Git history records past states.
 Update the design and roadmap when decisions or implementation status change.
@@ -51,7 +53,9 @@ Its root `cabal build` and `cabal test` commands are not a passing baseline; see
 
 The independent `v2/` package is `eselsohr-v2`.
 Its library, executable, and tests use GHC2024.
-It contains only a version command and an assertion-based smoke test, not bookmark functionality.
+It contains a version command, validated values, pure article transitions, grant validation, operation policy, and tests.
+Bearer authentication, persistence, protected transactions, and the web application remain unimplemented.
+Revision metadata and conflict handling belong to the future protected Store; its DTO and implementation are deferred to M4.
 These commands pass on Linux with GHC 9.10.3 and Cabal 3.16.1.0:
 
 ```sh
@@ -67,9 +71,13 @@ Fourmolu 0.20.1.0 and HLint 3.10 check every v2 Haskell source and pass on Linux
 See roadmap task 2.1 for the commands; use the existing formatter style and HLint defaults.
 
 D1 (independent package) and D2 (manual bookmarking first) are approved.
-M1 and task 2.1 are complete.
+M1 and tasks 2.1 and 3.1–3.6 are complete; M3 is ready for exit review.
 Local development is the current priority; GitHub CI tasks 2.2 and 2.3 are deferred.
-The next task is 3.1 and needs approval before work starts; D3–D5 remain pending.
+The eight-permission vocabulary and collection-bound scopes are approved.
+Delegation is limited to four edges; the root has all eight permissions and no expiry, and children have finite deadlines no later than their parent's.
+Ancestry validation binds an explicit leaf-to-root chain to the requested grant and collection; its opaque result records the supplied check time, not bearer possession or current stored authority.
+The approved operation policy rechecks the actor's expiration and binds targets; it permits management of structurally valid expired descendants.
+After M3 review, M4 needs a bounded task plan and approval before work starts; D3–D5 remain pending.
 Dependency versions and the Hackage index state are pinned.
 See roadmap task 1.3 for deliberate freeze updates and verified offline commands; machine-local overrides stay untracked.
 The contributor workflow should support Linux and macOS without requiring Nix or a particular developer's container setup.

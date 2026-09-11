@@ -4,13 +4,14 @@ The [design](eselsohr-2.md) is the current direction, not an instruction to impl
 Assign one task at a time.
 Each milestone ends with review; later findings may change the next task or the design.
 The [investigation](investigation.md) describes existing behavior and the current build baseline.
-Keep all three documents current rather than appending a log of superseded plans or tool observations.
+Keep these documents and the [security model](../security-model.md) current rather than appending a log of superseded plans or tool observations.
 
-Current state: M1 and task 2.1's formatting and linting checks are complete.
+Current state: M1 and tasks 2.1 and 3.1–3.6 are complete, covering formatting/linting, validated values, article transitions, grant validation, and operation policy.
 Local development is the current priority; GitHub CI tasks 2.2 and 2.3 are deferred.
 D1 and D2 are approved.
-No replacement domain, persistence, runtime, or web implementation exists.
-The next task is 3.1; it remains pending approval.
+Bearer authentication, persistence, protected transactions, runtime, and web behavior remain unimplemented.
+Article values and transitions are independent of persistence; revision metadata, conflict checks, and their DTO belong to M4.
+M3 is ready for exit review; M4 needs a bounded task plan and approval before work starts.
 Completing one task does not authorize later tasks or resolve their approval gates.
 
 ## Approval gates
@@ -23,8 +24,11 @@ Completing one task does not authorize later tasks or resolve their approval gat
 | D4: SQLite distribution | System SQLite or a maintained pinned bundled engine. Prefer system SQLite if both native platforms and the selected bindings validate it. | Before the persistence dependency/packaging choice in M4. Check the linked library, not merely the CLI version. |
 | D5: deletion lifecycle | Transactional tombstone with later controlled cleanup, or drain handles and delete the file immediately. Prefer tombstone/cleanup, subject to retention and recovery expectations. | Before owner deletion in M7. Basic article storage does not depend on this choice. |
 
-The complete permission/operation table needs approval before M3 policy work.
-Depth, size, timeout, and quota numbers in the design are proposals to settle in their consuming tasks.
+The eight-permission vocabulary and collection-bound scopes are approved and implemented in task 3.3.
+The four-edge depth limit, non-expiring root with all eight permissions, and strict finite child deadlines are approved and implemented in task 3.4.
+Task 3.5 validates an explicit leaf-to-root chain bound to the requested grant and collection and returns an opaque snapshot of that check.
+Task 3.6 implements the approved [operation table](../security-model.md#operation-policy), including deletion without Read, proper-descendant management of expired targets, and owner root inspection without root revocation.
+Size, timeout, and quota numbers in the design are proposals to settle in their consuming tasks.
 Do not reopen agreed single-set permissions, add-only access, bounded recursive delegation, hash-only bearer storage, operator creation, descendant management, owner deletion, offline migrations, or the choice to use effectful without new evidence.
 
 ## Task contract and verification vocabulary
@@ -37,7 +41,7 @@ Use normal Code mode for a settled task.
 Use another Plan-mode pass for an unresolved interface or security/operational contract.
 Use `/goal` only for a substantial fixed task whose allowed changes and completion tests are explicit; never use it for the whole roadmap or an open-ended security claim.
 
-The independent seed is verified on Linux with GHC 9.10.3 and Cabal 3.16.1.0.
+The independent package is verified on Linux with GHC 9.10.3 and Cabal 3.16.1.0.
 Run these commands from the repository root:
 
 ```sh
@@ -52,10 +56,10 @@ Do not report an empty suite as evidence.
 The old root package's failing solver is not a new task regression, but do not claim the whole repository is green while only the independent project builds.
 
 The root [HLS configuration](../../hie.yaml) selects the replacement components and excludes source outside `v2/`.
-With HLS 2.14.0.0 and GHC 9.10.3, this command typechecks all three files on Linux:
+With HLS 2.14.0.0 and GHC 9.10.3, this command typechecks every v2 Haskell source on Linux:
 
 ```sh
-haskell-language-server-wrapper -j 2 v2/src/Eselsohr/Version.hs v2/app/Main.hs v2/test/Main.hs
+rg --files v2/app v2/src v2/test -g '*.hs' -0 | xargs -0 haskell-language-server-wrapper -j 2
 ```
 
 Editors must launch HLS with `--lsp`.
@@ -96,13 +100,13 @@ Tasks 1.1–1.3 are complete.
 ### 1.2 Minimal replacement package
 
 * Status: implemented and verified on Linux.
-  Build, Test, and Version pass; the smoke test fails on a version mismatch.
+  Build, Test, and Version pass; the version assertion remains part of the current suite.
   Missing/unsupported CLI arguments fail with usage on stderr.
-  The solved plan contains only the replacement and installed GHC packages.
+  The solved plan contains the replacement and its dependencies, with no legacy package.
 * Goal and sequence: establish a green seed independently of the legacy compiler-bound package, so later domain and adapter tasks have a test home.
 * Scope: explicit `cabal-v2.project`, one `v2/eselsohr-v2.cabal`, a tiny library, an executable supporting `--version`, and a real assertion-based smoke test.
   Uses GHC 9.10.3/Cabal 3.16.1.0, GHC2024, and `base ^>=4.20.2.0`.
-  No third-party dependency or additional toolchain is needed for the seed.
+  Task 3.1 adds value and test dependencies to this package.
 * Non-goals: listening socket, dummy web application, domain features, effects, database files, old-module imports, compatibility adapters, or legacy bounds fixes.
 * Files: project/package manifests, minimal `v2/app`, `v2/src`, `v2/test` files, and a copy of the repository license inside the package.
 * Depends on: 1.1 and the approved D1/D2 choices.
@@ -161,7 +165,7 @@ The local build, test, formatting, linting, and HLS checks are sufficient to beg
 ### 2.1 Formatting and linting for the new package
 
 * Status: implemented and verified on Linux with Fourmolu 0.20.1.0 and HLint 3.10.
-  Both checks cover all three v2 Haskell sources, reject intentional violations, and pass again after restoration.
+  Both checks cover every v2 Haskell source and use the existing formatter style and HLint defaults.
 * Goal and sequence: establish small, consistent diffs before many new modules.
 * Scope: use the existing Fourmolu style and HLint defaults with these tested versions against only the new source.
   No additional formatter or linter configuration is needed.
@@ -238,15 +242,19 @@ Entry review: agree the operation table and numeric limits needed by each task.
 Exit review: policy inputs, monotonicity/attenuation laws, and the distinction between valid policy data and authentic capability possession.
 
 Paths below are relative to `v2/src/Eselsohr` and `v2/test`.
-Test group names are descriptive targets to establish, not names already present in the repository.
+The Values, Article, Permission, Scope, Attenuation, Chains, and Authorization test groups are implemented.
 
 ### 3.1 Validated identifiers, title, and URL
 
+* Status: implemented and verified on Linux.
+  The [validation contract](eselsohr-2.md#validated-values) defines UUIDv4 text, title normalization and bounds, and Unicode HTTP(S) URL syntax.
+  Build, Test, Version, formatting, linting, HLS, and offline build/test pass.
+  External consumer compilation checks confirm ID separation and private construction, with a compiling positive control.
 * Goal and sequence: give subsequent domain/policy work shared small value types.
 * Scope: distinct ID kinds, abstract Title and syntactic WebUrl, total parsers, rendering, and explicit validation boundaries.
-  Settle title length/whitespace and URL syntax rules in this task before implementing their constructors.
+  Validation rules are settled in the linked contract.
 * Non-goals: random ID/secret generation, public-address validation, persistence, policy records, a generic validation framework, or phantom-type tricks.
-* Files: `Id.hs`, `Article.hs` or a small URL module if warranted, value tests.
+* Files: `Id.hs`, `Article.hs`, `WebUrl.hs`, and the `Values` test group.
 * Depends on: 1.2; coordinate any dependency additions with 1.3 before merging.
 * Done when: invalid inputs cannot construct ordinary validated values; parsers are total; valid round-trips hold; ordinary signatures cannot mix ID kinds.
 * Verify: Build, Test with a Values group covering empty/oversized/malformed inputs and rendering round-trips; inspect constructors, instances, and roles.
@@ -257,14 +265,17 @@ Test group names are descriptive targets to establish, not names already present
 
 ### 3.2 Article state transitions
 
+* Status: implemented and verified on Linux.
+  The [transition contract](eselsohr-2.md#article-transitions) defines the five domain fields, structural equality, total transitions, no-ops, and idempotence.
+  Build, Test, Version, formatting, linting, and HLS pass.
 * Goal and sequence: define the state changes that protected persistence will apply.
-* Scope: Article with title/URL/state/creation/ID, pure changes, structural equality, and a revision/conflict model with explicit no-op and overflow behavior.
-* Non-goals: authorization witnesses on pure transformations, repository classes, HTTP forms, fetching, SQL, or unrelated article features.
+* Scope: Article with title/URL/state/creation/ID, pure changes, structural equality, no-ops, and idempotence.
+* Non-goals: revision metadata, conflict handling, database limits, authorization witnesses on pure transformations, repository classes, HTTP forms, fetching, SQL, or unrelated article features.
 * Files: `Article.hs` and Article tests.
 * Depends on: 3.1.
-  Resolve no-op/revision details in the task specification.
-* Done when: transformations preserve ID/creation and value invariants; expected state changes and stale-revision handling have unambiguous results.
-* Verify: Build, Test; full-field assertions and properties for each transition, no-op, revision mismatch, and representable revision bounds.
+  No-op behavior is settled in the linked contract.
+* Done when: transformations preserve ID/creation and value invariants without knowledge of storage or concurrency metadata.
+* Verify: Build, Test; full-field assertions and properties for construction, equality, each transition, no-ops, idempotence, and toggling twice.
 * Security: no invalid state is manufactured; structural equality must not let tests pass merely because the ID stayed the same.
   Pure changes grant no storage authority.
 * Mode: normal Code once specified.
@@ -272,12 +283,16 @@ Test group names are descriptive targets to establish, not names already present
 
 ### 3.3 Permission and scope inclusion
 
+* Status: implemented and verified on Linux.
+  The [inclusion contract](eselsohr-2.md#permission-and-scope-inclusion) defines the eight permissions, collection-bound scopes, and candidate-first subset predicates.
+  Build, Test, Version, formatting, linting, and HLS pass.
+  Tests check all 65,536 permission-set pairs and 65,536 nested subset chains, plus scope pairs/triples with repeated article IDs across collections.
 * Goal and sequence: replace ambiguous permission ordering with mathematical subset semantics before writing delegation or operation checks.
 * Scope: the agreed permission vocabulary as a Set, WholeCollection/OneArticle scope, and explicit collection/target-aware inclusion functions.
 * Non-goals: expiry, ancestor traversal, bearer secrets, generic witnesses, SQL, or deciding an operation merely because it appears in the UI.
 * Files: `Capability.hs` and permission/scope tests.
-* Depends on: 3.1's IDs and approval of the finite permission vocabulary; not 3.2.
-* Done when: exhaustive permission-set pairs obey reflexivity, transitivity, antisymmetry, and pointwise inclusion; scope cannot cross collection/article targets.
+* Depends on: 3.1's IDs and the approved finite permission vocabulary; not 3.2.
+* Done when: permission sets obey reflexivity, transitivity, antisymmetry, and pointwise inclusion; scope cannot cross collection/article targets.
 * Verify: Build, Test with Permission/Scope groups; compare implementation to explicit membership logic over all pairs, plus representative distinct IDs.
 * Security: never use derived ordering of aggregate records/sets for attenuation.
   Reducing one permission cannot mask adding another.
@@ -286,38 +301,51 @@ Test group names are descriptive targets to establish, not names already present
 
 ### 3.4 Local child attenuation
 
+* Status: implemented and verified on Linux.
+  The [attenuation contract](eselsohr-2.md#local-child-attenuation) defines snapshot shapes, the four-edge limit, strict deadlines, and ordered failures for a supplied parent-child pair.
+  Build, Test, Version, formatting, linting, and HLS pass.
 * Goal and sequence: establish a single delegation edge before reasoning about a tree.
-* Scope: child rights/scope/deadline/depth checks, explicit root/non-root shape, immutable parent relation, and nondelegable owner status.
+* Scope: child rights/scope/deadline/depth checks, explicit root/non-root shape, immediate parent binding, and rejection of roots supplied as children.
 * Non-goals: SQL, stored-tree traversal, revocation execution, random tokens, issuing links, or spreading depth/expiry constants through unrelated modules.
 * Files: `Capability.hs` and attenuation tests.
-* Depends on: 3.3 and approved deadline/depth rules; the design's four-edge limit is only a candidate until this task's input contract settles it.
+* Depends on: 3.3 and the approved deadline/depth rules in the linked contract.
 * Done when: a valid child never has greater effective authority; expired or depth-exhausted parents cannot delegate; finite child deadlines are enforced.
 * Verify: Build, Test; properties for generated parent/child pairs and boundary examples at expiry equality, scope narrowing, and maximum depth.
 * Security: `Delegate` controls issuance, not copying an existing bearer URL.
   A complete permission set cannot manufacture owner-only deletion authority.
+  Snapshots remain unvalidated policy inputs; local checks do not establish ancestry or bearer possession, and persisted parent immutability belongs to the store.
 * Mode: normal Code after policy choices.
   Branch: stacked on 3.3; separate worktree only useful for a competing policy experiment, not duplicate implementation.
 
 ### 3.5 Bounded ancestry validation
 
+* Status: implemented and verified on Linux.
+  The [ancestry contract](eselsohr-2.md#bounded-ancestry-validation) defines the bounded input, requested grant and collection binding, complete path checks, ordered failures, and opaque result.
+  Build, Test, Version, formatting, linting, and HLS pass.
+  External consumer compilation checks confirm private construction and the absence of unchecked reconstruction or record updates, with a compiling positive control.
 * Goal and sequence: lift local attenuation to a full grant chain without introducing persistence or trusting arbitrary snapshots.
 * Scope: bounded pure validation of root shape, missing parents, cycles, collection mismatches, every delegation edge, and ancestor expiry.
 * Non-goals: database queries, long-lived authorization caches, cleanup workers, token possession checks, or repairing an invalid chain automatically.
-* Files: `Capability.hs` or a small `Authorization.hs` boundary and chain tests.
+* Files: `Capability.hs` and `Chains.hs` tests.
 * Depends on: 3.4.
 * Done when: validation terminates within the bound and fails closed for every invalid ancestor/edge; a valid descendant cannot outlive its chain.
 * Verify: Build, Test; generated valid trees then single-invariant corruptions, missing/cyclic parents, wrong collection, and exact deadline cases.
 * Security: a validated snapshot is policy input, not bearer authenticity or proof that authority remains valid in a later transaction.
+  The supplied check time is retained as metadata, and the result does not decide D3.
 * Mode: normal Code.
   Branch: close to 3.4; no separate worktree needed unless comparing interfaces before the implementation is selected.
 
 ### 3.6 Operation policy and security specification
 
+* Status: implemented and verified on Linux; M3 is ready for exit review.
+  The [security model](../security-model.md) defines the approved operation table, actor revalidation, target ancestry, and the boundary between policy data and authentic authority.
+  Authorization tests exhaust all 256 permission sets and 6,561 subset pairs across three actor scopes, with generated trees and explicit rejection cases.
+  Structural validation shares the bounded chain checks while allowing expired management targets; it returns ordinary snapshots.
 * Goal and sequence: centralize the complete decision table before persistent mutation or web routes depend on scattered permission checks.
 * Scope: pure decisions for read, add, edit, delete, issue, inspect, revoke, and owner deletion; durable laws extracted from the old tests; current security specification consistent with the approved policy.
 * Non-goals: Authorized wrappers, effect declarations, SQL, UI, crypto, or a large characterization suite coupled to the old App/TestApp architecture.
-* Files: `Authorization.hs`, policy tests, and `docs/security-model.md` once the approved rules warrant it; move overlapping material out of the design.
-* Depends on: 3.2–3.5 and approval of the full operation table, including article deletion's Read conjunction and descendant-management behavior.
+* Files: `Authorization.hs`, shared checks in `Capability.hs`, policy tests, and `docs/security-model.md`; overlapping material moves out of the design.
+* Depends on: 3.2–3.5 and the approved operation table, including DeleteArticles alone for article deletion and proper-descendant management.
 * Done when: the operation table and tests agree; removing rights never enables an operation; cross-target/branch actions fail; add-only grants do not gain Read.
 * Verify: Build, Test; exhaustive rights combinations and generated scope/chain cases, with table-to-test coverage and explicit fail-closed cases.
 * Security: possession, decision, state transition, and persistence remain distinct.
@@ -338,6 +366,9 @@ Depends on M1, the relevant M3 policy, and D3/D4 before freezing their interface
 An opening-only prototype can run earlier without those false dependencies.
 
 Separate slices: restricted existing-only opening and linked-engine checks; schema/constraints and validated decoders; token parser/hash lookup; one protected read; one title mutation with revision and revoke-race tests.
+Introduce revision metadata alongside Article through the Store's DTO, with storage representation and bounds owned by the adapter.
+Test revision zero on insertion, rejection of older and newer expected revisions even for no-ops, unchanged revisions for matching no-ops, and one increment per committed change.
+Check malformed and out-of-range metadata before narrowing, exhaustion without wrapping or partial writes, and authorization before a revision comparison in the same protected transaction.
 Keep raw SQL and directory authority inside the adapter.
 No full CRUD API, web, pool, effects framework, or elaborate migration history.
 Review with two real temporary databases, repeated object IDs, missing/wrong files, malformed rows, rollback, and concurrent requests.
@@ -465,9 +496,9 @@ Update documents when current behavior or decisions change; do not add a running
 Commit only when asked, and never push.
 The author reviews and pushes.
 
-The next task is 3.1, validated identifiers, title, and URL.
-D1/D2 are settled, M1 and task 2.1 are complete, and CI tasks 2.2 and 2.3 are deferred.
-Task 3.1 needs approval before work starts; settle its validation rules before implementation.
+M3 is ready for exit review of policy inputs, attenuation laws, and the distinction between policy data and authentic capability possession.
+D1/D2 are settled, M1 and tasks 2.1 and 3.1–3.6 are complete, and CI tasks 2.2 and 2.3 are deferred.
+After review, M4 needs a bounded task plan and approval before work starts; D3–D5 remain pending.
 
 The machine-specific execution environment belongs in the session's task input, not contributor instructions.
 A fresh local session should be told to use the existing Haskell toolchain environment, verify its path/versions, and avoid host installations or global changes.

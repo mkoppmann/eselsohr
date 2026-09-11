@@ -58,7 +58,7 @@ These APIs do not make bypassing policy impossible throughout the application.
 
 The existing `canChangeArticleTitle` tests the write permission alone.
 [EditArticle.query](../../src/Lib/Ui/Web/Page/EditArticle.hs) likewise checks that write permission and then loads the article title, without a separate Read check.
-Eselsohr 2's agreed Read-plus-write rule is an explicit redesign requirement, not a guarantee established by the current policy or editing page.
+Eselsohr 2's Read requirement for renaming and read-state changes is an explicit redesign requirement, not a guarantee established by the legacy policy or editing page.
 
 `Command.createUnlockLink` constructs a capability with `defaultArticlesRef`.
 Permission to create such links therefore carries indirect article authority.
@@ -83,7 +83,7 @@ Its `Show` instance emits the bearer representation.
 A syntactically valid Base32 string is not necessarily a valid token payload.
 
 `Page.Shared.lookupReferences` loads a collection's capabilities, resolves the supplied ID, and checks expiration.
-`capStillValid` treats equality with the deadline as valid; the redesign proposes a strict `now < expiresAt` rule.
+`capStillValid` treats equality with the deadline as valid; the replacement's local attenuation validator uses the approved strict `now < expiresAt` rule.
 The check is separate from later reads and writes.
 It does not make a previously issued witness fresh at mutation time.
 
@@ -159,6 +159,8 @@ The systemd unit's private state directory, restrictive umask, and privilege res
 [Authorization tests](../../test/Test/Domain/Authorization.hs) contain 815 lines of mostly example combinations.
 Preserve their behavioral questions, then use exhaustive permission-set checks and generated scope/ancestry cases.
 Do not preserve a faulty attenuation comparison as expected behavior.
+The replacement's [operation tests](../../v2/test/Authorization.hs) retain the useful questions about missing rights, exact targets, Read plus rename/read-state permissions, owner-only deletion, and delegation bounds.
+They follow the approved replacement policy for deletion without Read and recursive descendant management.
 
 The fake [article repository](../../test/Test/Infra/Repo/ArticleList.hs), [capability repository](../../test/Test/Infra/Repo/CapabilityList.hs), and [collection repository](../../test/Test/Infra/Repo/Collection.hs) share one `IORef CollectionPm` and ignore collection IDs in key operations.
 They cannot prove collection isolation.
@@ -176,7 +178,7 @@ Replacement integration tests need scoped lifetimes, ephemeral ports where a rea
 [cabal.project](../../cabal.project) is an ordinary Cabal project; native Cabal does not intrinsically require Nix.
 The available verified toolchain is GHC 9.10.3 (`base` 4.20.2.0), Cabal 3.16.1.0, Fourmolu 0.20.1.0, HLint 3.10, and HLS 2.14.0.0, including its GHC 9.10.3 executable.
 Fourmolu and HLint are callable as `fourmolu-0.20.1.0` and `hlint-3.10`; their unversioned aliases are not currently set.
-Verification covers the Linux seed, not a wider platform support matrix.
+Verification covers the Linux replacement package, not a wider platform support matrix.
 
 `cabal build --offline --dry-run --builddir=<temporary-build-dir> all` and `cabal test --offline --dry-run --builddir=<temporary-test-dir> all` both exit 1 with Cabal-7107: the package's base constraint excludes the installed 4.20.2.0.
 Neither reaches compilation or test execution.
@@ -184,31 +186,39 @@ The intended GHC 9.8 build is unverified.
 Legacy bounds, legacy dependencies, and global tool configuration were left unchanged.
 The temporary-directory placeholders are deliberately not reusable machine paths.
 
-The independent [replacement seed](../../v2/eselsohr-v2.cabal) builds and tests on Linux with GHC 9.10.3, `base` 4.20.2.0, and Cabal 3.16.1.0.
+The independent [replacement package](../../v2/eselsohr-v2.cabal) builds and tests on Linux with GHC 9.10.3, `base` 4.20.2.0, and Cabal 3.16.1.0.
 Its version command prints `eselsohr-v2 0.1.0.0`; missing or unsupported arguments exit 1 with usage on stderr.
-The smoke test executes one explicit assertion and fails on a version mismatch.
-The solved package plan contains the three replacement components and installed GHC packages, with no legacy `eselsohr` package.
+Its Tasty suite retains the version assertion and tests the [validated values](eselsohr-2.md#validated-values) and [pure article transitions](eselsohr-2.md#article-transitions) with examples and bounded QuickCheck generators.
+The [permission/scope inclusion](eselsohr-2.md#permission-and-scope-inclusion) groups compare all permission-set pairs with pointwise membership, check nested subset chains, and test scopes with repeated article IDs across collections.
+The [local attenuation](eselsohr-2.md#local-child-attenuation) group checks snapshot shapes, parent binding, permission/scope/lifetime bounds, strict expiration, depth limits, and error precedence with examples and bounded properties.
+The [ancestry](eselsohr-2.md#bounded-ancestry-validation) group checks complete paths in generated trees, corruptions, missing/cyclic ancestors, target/collection binding, deadline boundaries, and bounded list traversal.
+The [operation policy](../security-model.md#operation-policy) group checks every permission combination and subset pair across collection/article scopes, plus generated tree relationships, expired management targets, actor expiration rechecks, and malformed paths.
+External consumer checks confirm that ID kinds cannot be substituted or coerced, ID/title/URL constructors are private, and `Read`/`IsString` cannot bypass validation.
+Article is a public snapshot of five domain fields with structural equality and no `Show` instance.
+Its tests check total transitions, field preservation, no-ops, idempotence, and restoration after toggling twice.
+Revision metadata and conflict handling belong to the future protected Store; the pure article model has no database limits.
+ValidChain consumer checks reject constructor access, raw coercion, record updates, Read, and generic reconstruction, with a compiling positive control.
+The solved package plan contains the replacement components and their pinned dependencies, with no legacy `eselsohr` package.
 See the [roadmap](roadmap.md#task-contract-and-verification-vocabulary) for the verified commands.
-This is only a build seed; macOS verification remains pending.
+Bearer authentication, protected persistent operations, and web behavior remain unimplemented; macOS verification remains pending.
 
 The root [HLS configuration](../../hie.yaml) selects `cabal-v2.project` and maps the v2 library, executable, and test directories to their Cabal components.
 Source outside `v2/` uses a `none` cradle and receives no HLS project diagnostics.
 This follows the supported [explicit Cabal configuration](https://github.com/haskell/hie-bios#cabal).
-HLS 2.14.0.0 with GHC 9.10.3 typechecks all three v2 source files on Linux.
+HLS 2.14.0.0 with GHC 9.10.3 typechecks every v2 source file on Linux.
 LSP initialization and clean shutdown also pass through the local editor launcher with `--lsp`.
 Interactive editor behavior and macOS project loading remain unverified.
 Editor launchers must pass `--lsp`; without it HLS runs its command-line setup tester.
 
 The [independent project](../../cabal-v2.project) pins the cached Hackage index state `2026-09-09T02:42:09Z`.
-Its [freeze file](../../cabal-v2.project.freeze) pins only `base` and GHC's bundled packages.
+Its [freeze file](../../cabal-v2.project.freeze) pins the complete value/test dependency solution, including `uuid-types`, `network-uri`, `idna2008`, and Tasty.
 Normal and offline build/test runs resolve the same components and dependency versions; repeated freezes are byte-identical.
-Offline compilation and testing also pass in a fresh project build directory, using the existing compiler and package-index cache.
+Offline compilation and testing also pass in a fresh project build directory, using the existing compiler and populated dependency caches.
 This does not establish an empty-cache bootstrap.
 Cabal 3.16.1.0 reads `cabal-v2.project.freeze` and `cabal-v2.project.local`; local settings override project/freeze settings.
 Build/test results assume no local overrides.
 
-Fourmolu 0.20.1.0 and HLint 3.10 pass over all three v2 Haskell sources using the existing [formatter configuration](../../fourmolu.yaml) and HLint defaults.
-Both checks reject intentional violations and pass again after restoration.
+Fourmolu 0.20.1.0 and HLint 3.10 pass over every v2 Haskell source using the existing [formatter configuration](../../fourmolu.yaml) and HLint defaults.
 See [roadmap task 2.1](roadmap.md#21-formatting-and-linting-for-the-new-package) for the commands.
 
 Legacy quality commands are evidenced by [CI](../../.github/workflows/ci.yml): HLint over `app/`, `src/`, `test/`, and Fourmolu checking.

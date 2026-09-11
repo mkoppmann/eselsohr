@@ -1,12 +1,14 @@
 module Main (main) where
 
-import Control.Monad (unless)
+import Articles (articleTests)
+import Attenuation (attenuationTests)
+import Authorization (authorizationTests)
+import Capabilities (capabilityTests)
+import Chains (chainTests)
 import Eselsohr.Version (version)
-import System.Exit (die)
+import Test.Tasty (defaultMain, testGroup)
+import Test.Tasty.HUnit (testCase, (@?=))
+import Values (valueTests)
 
 main :: IO ()
-main = do
-    let expectedVersion = "0.1.0.0"
-    unless (version == expectedVersion) $
-        die ("FAIL: expected version " ++ expectedVersion ++ ", got " ++ version)
-    putStrLn "PASS: package version (1 assertion)"
+main = defaultMain $ testGroup "Eselsohr" [testCase "package version" (version @?= "0.1.0.0"), valueTests, articleTests, capabilityTests, attenuationTests, chainTests, authorizationTests]

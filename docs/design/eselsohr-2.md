@@ -1,15 +1,16 @@
 # Eselsohr 2
 
 Eselsohr stores web articles to read later or share with others.
-It should be a small reference application for secure functional software and object-capability ideas, understandable by one developer.
+It should be a small reference application for domain-driven design, secure functional software, and object-capability ideas, understandable by one developer.
 It remains a bookmark manager, not an archiving service or account platform.
 
 This document describes the current planning decisions.
 It is a direction to review as work progresses, not permission to implement every milestone at once.
 The legacy implementation remains unchanged.
-The replacement has an independent build seed with a version command and a smoke test; no bookmark functionality is implemented.
+The replacement has an independent package with a version command, validated values, pure article transitions, grant validation, operation policy, and tests.
+Bearer authentication, persistence, protected transactions, and web behavior remain unimplemented.
 Read the [investigation](investigation.md) for evidence about the old source, and the [roadmap](roadmap.md) for implementation tasks.
-Code and SQL below are design sketches, not compiled or tested interfaces.
+The validated values, article transitions, inclusion predicates, local child attenuation, bounded ancestry validation, and operation policy below are implemented; the remaining code and SQL are design sketches.
 
 ## Agreed decisions
 
@@ -25,18 +26,23 @@ Automatic metadata fetching remains intended functionality, but does not block t
 Investigate the restricted fetcher separately.
 
 Pure domain transformations stay ordinary functions.
+Persistence ignorance is an agreed constraint: domain values and transitions do not carry revision metadata or enforce database representation limits.
+The protected Store owns concurrency checks, and the persistence adapter owns storage representations and their bounds.
 Use `effectful` for meaningful external authority; the exact effect interfaces remain undecided.
 Do not turn every dependency into an effect or expose arbitrary `IO` to ordinary application logic.
 
 Capabilities have one permission set, including permission to delegate, rather than separate sets for use and granting.
-Delegation is bounded and recursive.
+The eight permissions and collection-bound scopes in the [inclusion contract](#permission-and-scope-inclusion) are approved.
+Delegation is recursive and limited to four edges from the root at depth zero.
 A child cannot gain permissions, widen its target, or outlive its parent.
 Revocation and expiration of an ancestor deny access through its descendants.
-The numerical depth limit and complete operation policy still need review.
+The [operation policy](../security-model.md#operation-policy) is approved and implemented.
 
 Keep a long-lived, bookmarkable owner link for management and issuing shorter everyday links.
+The root has all eight permissions and no expiration; every child has a finite deadline, with equality to that deadline already expired.
 Everyday links default to seven days; the owner may explicitly choose longer lifetimes.
-Delegated management applies to the delegate's own descendants, while the owner can manage the whole tree.
+Delegated management applies to proper descendants, including expired targets and intermediate descendants.
+The owner can manage descendants and inspect its own root metadata; root revocation and replacement belong to the future CLI reset.
 
 Store cryptographic hashes of high-entropy bearer secrets, not reusable tokens.
 Show a newly issued URL once.
@@ -44,7 +50,8 @@ Later management can display metadata, revoke a link, or issue a replacement, bu
 
 Support add-only links: a contributor can submit an article without reading other articles.
 Submission must not automatically issue read authority.
-Editing existing articles requires read permission and the relevant write permission.
+Renaming an article or changing its read state requires read permission and the relevant write permission.
+Deleting an article requires DeleteArticles alone, within the holder's scope.
 Collection creation is an operator CLI action.
 The owner may delete the whole collection through the web interface; this authority is nondelegable.
 
@@ -82,24 +89,9 @@ The first approach is preferred, but retention and cleanup behavior remain open.
 
 ## Security boundaries
 
-Treat malicious requests, stolen URLs, leaked logs or referrers, malformed or compromised databases, races, and SSRF as threats.
-Authority must remain bound to its collection and object.
-Authorization and protected state changes must use a consistent transaction view; an earlier check cannot justify a later mutation after revocation.
-Persisted authority needs validation, including its ancestry, rather than trust because it came from SQLite.
-
-Types and private constructors can prevent some misuse by cooperating Haskell code.
-Effects restrict the authority exposed by an interface.
-Neither contains arbitrary malicious code running with the application's process privileges.
-Separate files limit some storage mistakes, not access by a process that can open every file.
-Hash-only capability records do not disclose reusable bearer secrets, but database contents can still contain sensitive URLs or text.
-
-A bearer URL can be copied.
-Delegation controls newly issued authority, not copying of existing authority.
-Revocation cannot retract downloaded data, and deleting a collection does not erase backups.
-Restoring an old backup can restore revoked authority.
-These limits must remain explicit in tests and operator guidance.
-A detailed security document belongs with the approved operation policy.
-Until then, the threat model and property table below preserve the proposed requirements without claiming they are established.
+The [security model](../security-model.md) defines the approved operation policy, threat model, and enforcement requirements.
+Pure policy uses supplied snapshots; authentic bearer possession and transaction freshness remain responsibilities of the future protected Store.
+D3–D5 remain open.
 
 ## Implementation sequence
 
@@ -112,131 +104,215 @@ Approval of this design is not authorization to run that whole sequence autonomo
 The legacy code uses MTL-style interfaces and compressed JSON collection files, not SQLite.
 See the [build baseline](investigation.md#build-ci-and-nix-baseline) for its compiler constraint and the replacement's verification results.
 
-The independent `eselsohr-v2` seed builds and tests on Linux with GHC 9.10.3 and Cabal 3.16.1.0.
-It provides only `--version` and an assertion-based smoke test.
-Dependency versions and the Hackage index state are pinned; offline build/test checks pass using the existing compiler and package-index cache.
+The independent `eselsohr-v2` package builds and tests on Linux with GHC 9.10.3 and Cabal 3.16.1.0.
+It provides `--version`, the values, transitions, grant validation, and operation policy below, and a Tasty suite with examples, exhaustive permission checks, and QuickCheck properties.
+Dependency versions and the Hackage index state are pinned; offline build/test checks pass with populated dependency caches.
 The [roadmap](roadmap.md#task-contract-and-verification-vocabulary) lists the verified commands.
 A developer's container setup and machine paths must not become project requirements.
 
-## Threat model
+## Validated values
 
-Protect article contents, bearer secrets, grant relationships, and the integrity and availability of each collection.
-Trust the operator, the operating system, the process's trusted handlers, the cryptographic implementation, and an adequately maintained SQLite/TLS stack.
-Do not mistake those assumptions for properties established by Haskell types.
+Task 3.1 is implemented in [Id](../../v2/src/Eselsohr/Id.hs), [Article](../../v2/src/Eselsohr/Article.hs), and [WebUrl](../../v2/src/Eselsohr/WebUrl.hs).
+The identifier, title, and URL types are abstract values with total constructors returning `Either`, explicit text renderers, and small input errors without the submitted text.
+No constructor, `Read`, `IsString`, or generic reconstruction instance bypasses validation.
 
-| Actor or event | Required response and limit |
-| --- | --- |
-| Malicious remote client | Parse totally, bound input/work, deny unauthorized reads, mutations, and fetches. An identifier alone supplies no authority. |
-| Stolen capability URL | Treat possession as authority until expiration or revocation. No account identity can distinguish thief from intended holder. |
-| Logs, browser history, referrers, extensions, screenshots | Minimize propagation and lifetime. No-store/no-referrer and log redaction help; they cannot remove all copies of a URL. |
-| Read-only copy of one database | Article data and grant metadata are disclosed. Hash-only grant records should not reveal reusable secrets, nor authority for other collection databases. Article URLs/text might themselves contain secrets. |
-| Writable compromise of one database | Its integrity and authorization are lost: an attacker could insert a chosen secret hash. Validate malformed state and confine database access, but do not promise integrity against its writer. |
-| Whole data directory or process compromise | All accessible collections are at risk. Separate files and effect signatures do not sandbox the process. |
-| Hostile remote website/DNS | Prevent SSRF through the actual socket and redirect path; bound work and treat metadata as untrusted text. |
-| Concurrent revoke, edit, delegate, delete | Define transaction ordering, revalidate authority at use, and reject stale updates. Avoid network work inside database transactions. |
-| Corrupt or attacker-controlled persisted state | Fail closed on invalid IDs, enums, schema, grant chains, or metadata mismatch. SQLite itself must be patched; constraints are not a malicious-file sandbox. |
-| Buggy cooperating application module | Give it only the protected operation families it needs. No global connection, data-directory lookup, or arbitrary IO in ordinary logic. |
-| Resource exhaustion | Bound request bodies, query results, grant depth/count, database work, and fetch concurrency. A shared process/disk remains a cross-collection availability dependency. |
-| Old backup restored | State, including formerly revoked grants, can return. Preventing rollback needs external trusted state; the proposed small design does not supply it. |
+`CollectionId`, `ArticleId`, and `CapabilityId` are distinct UUID newtypes.
+Their parsers accept exactly 36-character lowercase, hyphenated UUIDv4 text with the standard variant.
+Other versions, nil, mixed case, and whitespace are rejected.
+An ID establishes neither existence nor authority.
 
-## Security properties and their enforcement
+`Title` accepts at most 4,096 input code points, collapses Unicode White_Space runs to one ASCII space, and trims both ends.
+The result must contain 1–500 Unicode code points and no other control characters.
+Other characters retain their case and normalization form.
 
-These are targets.
-Tests provide evidence and regression detection, not a proof against all programs, inputs, machines, or deployment mistakes.
+`WebUrl` requires an absolute HTTP(S) URL with a nonempty host and no userinfo, literal whitespace, controls, or backslashes.
+Ports may be omitted or numerically equal to the scheme's default, 80 for HTTP and 443 for HTTPS; rendering removes explicit default ports.
+Input is limited to 8,192 code points and the rendered ASCII URL to 8,192 characters.
+`network-uri` validates URI syntax; `idna2008` validates domain labels with strict IDNA2008 checks and case/NFC mappings, rendering lowercase punycode.
+Emoji domains, malformed labels, invalid UTF-8 in encoded hosts, and DNS presentation escapes are rejected.
+IPv6 literals use bracketed address syntax; IPvFuture and zone identifiers are rejected.
+Unicode in paths, queries, and fragments becomes UTF-8 percent encoding, while existing escapes, path separators, query order, and fragments are preserved.
+Domain trailing dots are preserved.
+`WebUrl` has no `Show` instance; callers render it explicitly.
+Local/private hosts are accepted without DNS or address classification: URL syntax does not establish a safe network destination.
 
-| Property | Primary enforcement | Limits and evidence |
-| --- | --- | --- |
-| Different identifier kinds cannot be accidentally substituted | Distinct abstract Haskell types; nominal roles if a parameterized ID is retained | Compile-time protection for ordinary typed code, not token authenticity; inspect exports/coercions. |
-| Titles, URLs, states are validated before ordinary use | Smart constructors and small ADTs; validated database decoders | SQL NOT NULL/CHECK/STRICT adds independent checks where expressible. URL syntax is not destination safety. |
-| A bearer cannot feasibly be guessed or recovered from its stored digest | CSPRNG secret and domain-separated cryptographic hash | Computational guarantee assuming entropy and primitives; parsing/round-trip tests cannot prove randomness. |
-| A capability for collection/object A cannot act on B | Collection-bound handler, checked database identity, scope policy, bound action target | Runtime checks and module API; integration tests with two files and repeated article IDs. No global Store escape hatch. |
-| Delegation never increases effective authority | Pure subset/scope/lifetime/depth checks plus transaction validation of ancestors | SQL foreign keys preserve relationships, not arbitrary cross-row subset laws; exhaustive/property tests. |
-| Removing rights cannot enable an operation | Monotone operation policy over actual permission sets | Exhaustive finite checks plus scoped/ancestry generators. Owner status is separate, never inferred from a full set. |
-| Unauthorized requests cannot reach protected persistence mutation | Only guarded operations exported from the trusted store implementation | Closed witnesses may add a static gate if selected at D3. Neither witnesses nor tests prove freshness without transactional checking. |
-| Revocation/expiry invalidates descendants | Immutable parent chain, bounded validation, cascade deletion or equivalent checked state | Same transaction snapshot as use. Already completed or earlier-linearized work is not retracted; clock is trusted. |
-| One collection open/migration cannot select or mutate another | Canonical locator, existing-only open, metadata check, no exposed ATTACH/raw SQL, explicit CLI target | Filesystem ownership/no-symlink policy and two-file failure tests. The runtime still holds directory authority. |
-| Concurrent writes preserve authorization and domain invariants | SQLite transactions, revision check, constraints | Multi-connection race tests with barriers, not sleeps. Return success only after commit. |
-| PublicWeb cannot connect to forbidden destinations | Production resolver/connector, redirect checks, bounded HTTP behavior | Real connector tests. Egress firewall is defense-in-depth; a policy-only fake is insufficient. |
-| Capability URLs do not appear in routine logs or outbound requests | Allowlisted logging fields, redacted errors, canonical routing, no referrer forwarding | HTTP/proxy integration checks; operational log configuration. Browser-side copying remains possible. |
-| One database copy does not expose another's grant secrets | Independent random secrets, collection-bound hashing, no central reusable secret store | Storage/content inspection tests demonstrate format properties, not OS isolation or absence of user-pasted secrets. |
-| Deleted collections stop authorizing requests | Owner-only transactional tombstone and grant removal; controlled later cleanup | Integration/race tests; filesystem deletion and backup retention are separate operations. |
+## Article transitions
 
-## Capability model and indirect authority
+Task 3.2 is implemented in [Article](../../v2/src/Eselsohr/Article.hs), with examples and properties in the [Article test group](../../v2/test/Articles.hs).
+`Article` is a public record containing an `ArticleId`, `Title`, `WebUrl`, `ArticleState`, and creation time as `UTCTime`.
+Its equality compares all five fields; use an explicit ID comparison when identity is the question.
+It has no `Show` instance, so a containing value cannot accidentally render its URL through derived `Show`.
+`ArticleState` is `Unread` or `Read`.
 
-A capability is more than its permission set.
-Effective authority is the tuple of collection, target scope, operations, lifetime, valid ancestors, delegation budget, and nondelegable owner status.
-A public collection ID locates a file; only a valid bearer secret authorizes access to it.
-
-Indirect authority is compatible with object capabilities.
-A holder who can mint a Read capability can obtain Read authority, even if an API calls this only management.
-Maintaining separate use/grant sets would make that distinction easy to misdescribe and would add policy states without confining the holder.
-The agreed single set makes use and delegable rights explicit.
-`Delegate` allows issuance of a subset; it never creates a right absent from the parent.
-Copying the parent's own bearer URL remains possible without `Delegate`.
-
-Proposed values, with constructors private where they protect invariants:
+The article model has no revision metadata, concurrency errors, or database limits.
+Its transitions are total functions over validated values:
 
 ```haskell
-newtype CollectionId = CollectionId UUID
-newtype ArticleId = ArticleId UUID
-newtype CapabilityId = CapabilityId UUID
-newtype Title = Title Text
-newtype WebUrl = WebUrl URI
-newtype Revision = Revision Word64
+newArticle :: ArticleId -> Title -> WebUrl -> UTCTime -> Article
+rename :: Title -> Article -> Article
+setReadState :: ArticleState -> Article -> Article
+```
 
-data ArticleState = Unread | Read
-data Scope = WholeCollection | OneArticle ArticleId
+`newArticle` preserves the supplied ID, title, URL, and creation time exactly, with initial state `Unread`.
+The caller supplies time; these functions do not read a clock or choose a timestamp storage encoding.
+Each edit changes only its named field and preserves all other fields.
+Assigning the existing title or state preserves the article's value; repeating an assignment is idempotent.
+Title equality uses its normalized value.
+There is no URL editing operation.
+
+The future protected Store must load current state and check authority and revision metadata within the transaction.
+Its metadata DTO and implementation are deferred to M4.
+These pure functions do not settle D3's protected-operation API.
+
+## Permission and scope inclusion
+
+Task 3.3 is implemented in [Capability](../../v2/src/Eselsohr/Capability.hs), with exhaustive checks in the [Permission and Scope test groups](../../v2/test/Capabilities.hs).
+The public values and predicates are:
+
+```haskell
 data Permission
   = ReadArticles | AddArticles | ChangeTitles | ChangeReadState
   | DeleteArticles | Delegate | InspectLinks | RevokeLinks
-  deriving stock (Eq, Ord, Enum, Bounded)
+  deriving stock (Eq, Ord, Enum, Bounded, Show)
 type Permissions = Set Permission
 
-data Action a where
-  ListArticles :: Action [Article]
-  ChangeTitle :: ArticleId -> Revision -> Title -> Action ()
-  IssueChild :: ChildRequest -> Action IssuedLink
+data Scope
+  = WholeCollection CollectionId
+  | OneArticle CollectionId ArticleId
+  deriving stock (Eq, Show)
 
-mkTitle :: Text -> Either InvalidInput Title
-parseWebUrl :: Text -> Either InvalidInput WebUrl
-rename :: Title -> Article -> Article
-setReadState :: ArticleState -> Article -> Article
-
-attenuates :: GrantSnapshot -> ChildRequest -> Either Rejection ()
-validateChain :: Instant -> CollectionId -> [GrantSnapshot]
-              -> Either Rejection ValidChain
-decide :: Instant -> ValidChain -> Action a -> Either Rejection ()
+permissionsSubsetOf :: Permissions -> Permissions -> Bool
+scopeSubsetOf :: Scope -> Scope -> Bool
 ```
 
-The sketch's `Ord Permission` only orders set elements; inclusion uses `Set.isSubsetOf`, not ordering of sets or records.
-Distinct ID newtypes avoid accidental mixing; IDs are not capabilities.
-Prefer structural equality for articles and grant snapshots, and an explicit ID comparison when identity is the question.
-Bound and normalize titles at their smart constructor; exact length/whitespace policy belongs in the domain task, not in hidden SQL behavior.
+Both predicates take the candidate first and its containing parent second.
+Permission inclusion uses `Set.isSubsetOf`; ordering of aggregate sets or records does not express inclusion.
+`Ord Permission` serves set storage, and Scope has no `Ord` instance.
+Every permission combination is representable, including the empty set; inclusion adds no implied rights and does not require `Delegate`.
+For example, an add-only set cannot contain a request for Read.
+Whole-collection deletion remains owner authority outside this vocabulary.
 
-`ValidChain` means checked policy input, not proof that a remote client possesses the corresponding secret.
-It must not become a long-lived authorization cache.
-Validate missing parents, cycles, cross-collection inputs, every attenuation edge, ancestor deadlines, and depth.
-Proposed maximum depth is four delegation edges; this number is not approved.
-Root is the unique owner, proposed without expiration; children have finite deadlines.
-Parent links cannot be reparented.
+Scopes include their collection ID, and equality compares their complete contents.
+Different collections never include each other's scopes, even when article IDs match.
+Within one collection, WholeCollection includes itself and every OneArticle; OneArticle includes only the same article and never WholeCollection.
+The public constructors supply policy values, not evidence of article existence or bearer possession.
+Operation eligibility is defined by the [operation policy](#operation-policy); bearer issuance and transaction checks remain unimplemented.
 
-The proposed operation table needs approval in M3:
+## Local child attenuation
 
-| Operation | Required authority |
+Task 3.4 is implemented in [Capability](../../v2/src/Eselsohr/Capability.hs), with examples and properties in the [Attenuation test group](../../v2/test/Attenuation.hs).
+The public snapshot and validator are:
+
+```haskell
+data GrantSnapshot = GrantSnapshot
+  { grantId :: CapabilityId
+  , grantParentId :: Maybe CapabilityId
+  , grantScope :: Scope
+  , grantPermissions :: Permissions
+  , grantExpiresAt :: Maybe UTCTime
+  , grantDepth :: Int
+  }
+  deriving stock (Eq, Show)
+
+maxDelegationDepth :: Int
+maxDelegationDepth = 4
+
+attenuates :: UTCTime -> GrantSnapshot -> GrantSnapshot
+           -> Either AttenuationError ()
+```
+
+The caller supplies the current time, then the parent and child snapshots.
+A local root shape has no parent, WholeCollection scope, all eight permissions, no expiration, and depth zero.
+A local child shape has a parent ID different from its own, a finite expiration, and depth 1–4.
+Depth bounds are checked before incrementing, including for extreme Int inputs.
+
+`attenuates` returns the first applicable error in this order, or `Right ()` when all checks pass:
+
+| Error | Rejection condition |
 | --- | --- |
-| List/read articles | ReadArticles, with every returned article in scope |
-| Add article | AddArticles on WholeCollection; not on an existing OneArticle target |
-| Rename/change read state | ReadArticles plus the matching write permission on that article |
-| Delete article | ReadArticles plus DeleteArticles on that article; confirm this conjunction with the complete policy |
-| Issue child | Delegate, valid ancestry, subset rights, narrower/equal scope, no later expiration, remaining depth |
-| Inspect issued links | InspectLinks, limited to own descendants; metadata only |
-| Revoke issued link | RevokeLinks, limited to own descendants; cannot revoke ancestor or sibling |
-| Delete collection | Nondelegable root-owner status, not merely all eight permissions |
+| InvalidParent | Parent fails the local root/child shape rules. |
+| ParentExpired | Parent deadline is at or before the supplied time. |
+| DelegateRequired | Parent lacks Delegate. |
+| DepthExhausted | Parent is at depth four. |
+| InvalidChild | Child fails the child shape rules, including a root supplied as a child. |
+| ChildExpired | Child deadline is at or before the supplied time. |
+| ParentMismatch | Child names a different parent, or parent and child IDs match. |
+| DepthMismatch | Child depth is not parent depth plus one. |
+| ScopeWidened | Child scope is not included in parent scope. |
+| PermissionsIncreased | Child permissions are not included in parent permissions. |
+| ChildOutlivesParent | Child deadline exceeds the parent's finite deadline. |
 
-A parent can delegate an article-scoped child only for an article in its own scope.
-Scope membership and article existence must be checked transactionally.
-Owner management may operate on the complete tree.
-Link lists must never reconstruct a bearer or expose sibling grants as reusable alternatives.
+Errors are nullary values with Eq and Show, without submitted input.
+A child may share its parent's deadline; a root may delegate any finite future deadline.
+The seven-day default belongs to later issuance/UI work, not this validator.
+A depth-four child may retain Delegate, but cannot delegate further.
+
+Snapshots are publicly constructible, unvalidated policy inputs with structural equality and no bearer secrets or independent owner flag.
+Collection identity comes from Scope.
+Success establishes only one local edge; ancestry, root uniqueness, existence, revocation, and bearer possession remain unchecked.
+There is no reparenting operation, and the future store must enforce immutable persisted parent links.
+These functions read no clock and do not issue or persist a grant.
+
+## Bounded ancestry validation
+
+Task 3.5 is implemented in [Capability](../../v2/src/Eselsohr/Capability.hs), with examples and generated trees in the [Chains test group](../../v2/test/Chains.hs).
+The caller supplies the check time, expected collection, requested grant ID, and every snapshot from that grant back to its root:
+
+```haskell
+validateChain :: UTCTime -> CollectionId -> CapabilityId -> [GrantSnapshot]
+              -> Either ChainError ValidChain
+
+chainGrants :: ValidChain -> NonEmpty GrantSnapshot
+chainCheckedAt :: ValidChain -> UTCTime
+
+validateGrantStructure :: CollectionId -> CapabilityId -> [GrantSnapshot]
+                       -> Either ChainError (NonEmpty GrantSnapshot)
+```
+
+The list contains one to five grants in leaf-to-root order.
+The size check inspects at most six list constructors, before reading snapshot contents, and rejects oversized input without inspecting its remaining tail.
+This bounds the list traversal, not the evaluation of arbitrary undefined Haskell values.
+Validation returns the first applicable error in this order:
+
+| Error | Rejection condition |
+| --- | --- |
+| EmptyChain | No snapshots were supplied. |
+| ChainTooLong | More than five snapshots were supplied. |
+| RequestedGrantMismatch | The first snapshot does not have the requested grant ID. |
+| CollectionMismatch | Any scope belongs to a different collection. |
+| RepeatedGrantId | An ID occurs more than once, even with different contents. |
+| MissingRoot | The final snapshot still names a parent. |
+| InvalidRoot | The final snapshot fails the approved root shape. |
+| InvalidEdge AttenuationError | The first failing edge, checked from root toward leaf, fails local attenuation. |
+
+Each edge uses `attenuates` at the supplied time and preserves its error order.
+A root-only chain is valid; an ordinary leaf need not retain Delegate.
+Repeated-ID checks and exact parent linkage to a terminal root reject cycles without graph traversal.
+Missing intermediate parents, reordered entries, and extra roots fail; the validator does not sort, truncate, repair, or ignore entries.
+
+Task 3.6 adds `validateGrantStructure` for management targets that may have expired.
+It shares the bounded traversal, shape, binding, and attenuation checks, omitting only ParentExpired and ChildExpired.
+Finite child deadlines, lifetime inclusion, root shape, and every other ordered failure remain required.
+It returns ordinary snapshots, never a ValidChain or evidence of current authority.
+
+`ValidChain` has a private constructor, ordinary read-only accessors, structural Eq, and Show.
+It preserves the supplied snapshots and their order together with the check time.
+It has no record-update fields, Read, Generic, or unchecked reconstruction API.
+`ChainError` has Eq and Show and contains no submitted snapshots or identifiers.
+
+Success establishes valid policy inputs at the supplied time, not bearer possession, current database state, or authority to perform an operation.
+The check time is metadata and does not make a retained result fresh automatically.
+The future store must supply current snapshots and revalidate inside the protected transaction; revocation execution, collection-wide root uniqueness, and immutable persisted parents remain its responsibility.
+This result does not decide D3 or implement an authorized-action wrapper.
+
+## Operation policy
+
+Task 3.6 is implemented in [Authorization](../../v2/src/Eselsohr/Authorization.hs), with exhaustive permission checks and generated path tests.
+The [security model](../security-model.md#operation-policy) is the operation table and decision contract.
+Operation values describe eligibility and targets; article payloads belong to domain transitions, while revision metadata belongs to the future Store API.
+Pure decisions do not perform protected effects or settle D3.
+
+## Bearer format
 
 Proposed bearer format is `v2.<canonical-collection-uuid>.<base64url-secret>` with 256 random secret bits.
 The database stores an independent public grant ID and `SHA256(domain-separator || collection-id || secret)`.
@@ -257,18 +333,23 @@ Only the runtime can turn a parsed locator into a connection.
 Application code must not receive a global `openCollection`, `Connection`, raw SQL, or data path.
 A Store effect with every operation on every collection would mostly rename dependency injection; it would not establish least authority.
 
-Illustrative application-facing operations, not a committed effect declaration:
+A protected read must supply articles with revision metadata kept outside Article so an edit can carry the expected stored version.
+A protected title change accepts an article ID, a validated title, and an expected revision.
+The metadata DTO and concrete read/change signatures belong to M4 and D3.
+
+An illustrative metadata-fetch operation, not a committed effect declaration:
 
 ```haskell
-loadArticles :: Store :> es => Eff es (Either Rejection [Article])
-changeTitle :: Store :> es
-            => ArticleId -> Revision -> Title
-            -> Eff es (Either ChangeFailure ())
 fetchMetadata :: PublicWeb :> es
               => WebUrl -> Eff es (Either FetchFailure Metadata)
 ```
 
 The Store interpreter validates bearer possession and current authority inside each protected operation's transaction.
+It compares the expected revision with the current stored revision after authorization and before applying an edit, rejecting any mismatch even for an apparent no-op.
+Submitted revisions are untrusted concurrency metadata and supply no authority.
+Newly stored articles start at revision zero; matching no-ops retain the revision, and committed changes increment it once.
+The adapter must reject revisions it cannot represent and refuse counter exhaustion without wrapping or leaving partial writes.
+These checks and their database tests remain unimplemented.
 Pure transitions such as `rename` do not need an authorization witness: transforming an in-memory value is not persisting it.
 The protected persistence interface is the gate.
 
@@ -307,6 +388,7 @@ app/Main.hs
 src/Eselsohr/
   Id.hs
   Article.hs
+  WebUrl.hs
   Capability.hs
   Authorization.hs
   Store.hs
@@ -356,7 +438,7 @@ Keep the directory private and disallow arbitrary ATTACH, extensions, or SQL thr
 Do not scan every database during a request.
 
 The following four-table schema illustrates the intended constraints.
-Timestamp units, bounds, and the example depth limit must be finalized before implementation.
+Timestamp units and storage bounds must be finalized before implementation; the depth limit is four edges.
 
 ```sql
 CREATE TABLE collection_meta (
@@ -404,7 +486,7 @@ NULL article scope means whole collection.
 At most one root is enforced by the index; exactly one root for a live collection is a creation/runtime invariant.
 The schema alone does not forbid every cycle, validate a URL, enforce parent permission inclusion, ensure the root has the intended rights, or prove a deadline is no later than its parent's.
 Validate those in pure code and inside issuance transactions, and revalidate decoded state.
-A SQL revision integer also needs a checked Haskell conversion and overflow policy.
+Decode SQL revision metadata separately from Article and check its nonnegative integer representation in the adapter; storage decoders remain unimplemented.
 
 SQLite's [STRICT tables](https://www.sqlite.org/stricttables.html) require SQLite 3.37.0 or later and restrict column storage types.
 That is a feature minimum, not a security patch policy.
@@ -431,7 +513,7 @@ Loading a collection: Web totally parses the bearer; Runtime derives and opens t
 Ordinary application logic never chooses an unrelated file.
 Invalid locators must not create files or provide a useful collection-existence oracle.
 
-Changing a title: parse the ID, revision, and Title; enter a write transaction; resolve the presented capability and current ancestry; check Read plus title permission and target scope; load the article and reject a stale revision; apply the pure transformation; persist the new revision; commit; issue a server-generated same-application redirect.
+Changing a title: parse the ID, expected revision, and Title; enter a write transaction; resolve the presented capability and current ancestry; check Read plus title permission and target scope; load the current article and separate revision metadata; reject a revision mismatch; apply `rename title article`; persist a changed article with an incremented revision or accept a matching no-op; commit; issue a server-generated same-application redirect.
 Failures cannot leave partial state.
 
 Adding manually: validate submitted values and call the protected Add operation.
@@ -450,7 +532,7 @@ An interrupted response does not justify storing a recoverable bearer: the opera
 Parent and child IDs used by the UI are metadata, not secrets.
 
 Revoking: check descendant management authority and delete the selected subtree transactionally.
-Proposed expiry is `now < expiresAt`; equality is expired.
+Apply the approved strict deadline rule, `now < expiresAt`; equality is expired.
 An operation ordered before revocation may finish; one whose protected authorization occurs after revocation commits must fail.
 Revocation cannot recall bytes already delivered.
 Avoid cached witnesses or automatic reparenting.
@@ -543,12 +625,20 @@ The migration library's existence is not evidence that automatic request-time mi
 ## Tests, maintenance, and delivery
 
 Keep security laws small and reusable.
-Exhaust all pairs of the proposed eight permission sets (65,536 pairs), with representative scope cases and generated valid/invalid grant trees.
-Test lost permissions, mismatched collection/article IDs, missing/cyclic/expired ancestors, child expiry/depth, and descendant-only management.
+Article tests check construction, all five equality fields, field preservation, no-ops, idempotence, and restoration after toggling read state twice.
+Permission tests exhaust all 65,536 pairs of the eight-permission vocabulary's 256 subsets and all 65,536 nested subset chains.
+Scope tests cover inclusion, structural equality, and order laws over two collections and three article IDs reused across them.
+Attenuation tests cover local snapshot shapes, ordered failures, deadline/depth boundaries, and generated valid or malformed edges.
+Ancestry tests cover complete paths in generated trees, corrupted or missing ancestors, collection binding, deadline/depth boundaries, and bounded traversal of infinite lists.
+External consumer checks exercise the ValidChain construction boundary; its check time and snapshots remain policy data, not authentic authority.
+Operation tests cover the table over all 256 permission sets and monotonicity over all 6,561 subset pairs, each across whole-collection and two article scopes.
+Examples and generated trees cover owner and descendant management, expired targets, actor expiration rechecks, inconsistent ancestor snapshots, and issuance failures.
+Structural validation tests preserve non-time checks and bounded traversal while allowing expired targets.
 Pure tests exercise policy; separate compile-time/export checks exercise the selected protected API.
 Neither replaces HTTP and database tests.
 
 Persistence tests use real temporary databases and independent connections: structural round-trips; direct constraint violations; fail-closed decoding; existing-only opening; wrong metadata; no effects on another file; commit/rollback and busy behavior; controlled revoke-versus-edit/delegate races.
+Revision tests belong here: reject older and newer expected revisions even for no-ops, preserve the counter on matching no-ops, increment once per committed change, and handle representation limits without wrapping or partial writes.
 Use barriers to establish ordering.
 Migration tests cover old supported schemas, interrupted steps, future-version refusal, and unchanged neighboring collections.
 
@@ -564,7 +654,7 @@ Backups include grant hashes/metadata; article-only exports deliberately exclude
 CLI root reset should revoke the old tree and issue a new one-time owner URL.
 
 Use native Cabal on Linux and macOS.
-GHC 9.10.3 and Cabal 3.16.1.0 build and test the seed on Linux.
+GHC 9.10.3 and Cabal 3.16.1.0 build and test the replacement package on Linux.
 HLS 2.14.0.0 loads its library, executable, and tests through the root `hie.yaml`; macOS remains unverified.
 This is not yet a wider support matrix.
 The independent project and its freeze file pin dependency versions and the index state.
@@ -576,7 +666,7 @@ A wrapper/Makefile/Justfile is unnecessary until it shortens a real workflow.
 Document the SQLite development dependency if D4 selects the system library.
 
 GitHub CI work is deferred while the local development experience is the priority.
-The existing local build, test, formatting, linting, and HLS checks are sufficient to begin domain work.
+The existing local build, test, formatting, linting, and HLS checks support the current domain work.
 When CI work resumes, PR/push CI should run native build/tests and parallel formatting/linting, with least-privilege permissions, cancellation of superseded work, and cache keys including OS, architecture, compiler, Cabal, and dependency inputs.
 Keep Haddock, release artifacts/static linking, packaging, optional Nix checks, and wider compiler/platform matrices on suitable main/scheduled/tag jobs.
 Measure cold and warm feedback rather than promising a duration.
@@ -589,6 +679,6 @@ State the actual runtime libraries and CA-certificate requirements instead of cl
 An optional container packages the same executable.
 A small optional Nix flake should support relevant Linux/macOS architectures without blanket broken-package overrides; no heavy framework is justified yet.
 
-Alongside D3–D5, remaining human choices are local to their milestones: the complete operation table, numeric input/grant/fetch limits, owner-link recovery UX, deletion/backup retention expectations, and platform support proven affordable by CI.
+Alongside D3–D5, remaining human choices are local to their milestones: numeric input/grant/fetch limits, owner-link recovery UX, deletion/backup retention expectations, and platform support proven affordable by CI.
 Preserve those as open questions until the task needs them.
 Do not create ADRs for unresolved alternatives or treat this document's examples as approval.
