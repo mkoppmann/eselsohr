@@ -1,4 +1,4 @@
-cabal-version:      2.4
+cabal-version:      3.0
 name:               eselsohr-v2
 version:            0.1.0.0
 synopsis:           Eselsohr 2 bookmark manager
@@ -9,7 +9,12 @@ author:             Michael Koppmann
 tested-with:        GHC ==9.10.3
 build-type:         Simple
 
+common language
+    default-language:   GHC2024
+    default-extensions: OverloadedStrings
+
 library
+    import:            language
     exposed-modules:
         Eselsohr.Article
         Eselsohr.Authorization
@@ -20,7 +25,6 @@ library
     other-modules:     Paths_eselsohr_v2
     autogen-modules:   Paths_eselsohr_v2
     hs-source-dirs:    src
-    default-language:  GHC2024
     ghc-options:       -Wall
     build-depends:
         base ^>=4.20.2.0,
@@ -32,20 +36,50 @@ library
         time ^>=1.12.2,
         uuid-types ^>=1.0.6.1
 
+library sqlite-internal
+    import:           language
+    visibility:       private
+    exposed-modules:
+        Eselsohr.Store.SQLite.Articles
+        Eselsohr.Store.SQLite.Bearer
+        Eselsohr.Store.SQLite.Codec
+        Eselsohr.Store.SQLite.Open
+        Eselsohr.Store.SQLite.Schema
+    other-modules:
+        Eselsohr.Store.SQLite.Internal.Authority
+        Eselsohr.Store.SQLite.Internal.Transaction
+    hs-source-dirs:    persistence
+    ghc-options:      -Wall
+    build-depends:
+        base ^>=4.20.2.0,
+        base64-bytestring ^>=1.2.1.0,
+        bytestring ^>=0.12.2.0,
+        containers ^>=0.7,
+        cryptohash-sha256 ^>=0.11.102.1,
+        direct-sqlite ^>=2.3.29,
+        directory ^>=1.3.8.5,
+        eselsohr-v2,
+        filepath ^>=1.5.4.0,
+        sqlite-simple ^>=0.4.19.0,
+        text ^>=2.1.3,
+        time ^>=1.12.2,
+        unix ^>=2.8.7.0,
+        uuid-types ^>=1.0.6.1
+
 executable eselsohr-v2
+    import:           language
     main-is:          Main.hs
     hs-source-dirs:   app
-    default-language: GHC2024
     ghc-options:      -Wall
     build-depends:
         base ^>=4.20.2.0,
         eselsohr-v2
 
 test-suite eselsohr-v2-test
+    import:           language
     type:             exitcode-stdio-1.0
     main-is:          Main.hs
     hs-source-dirs:   test
-    default-language: GHC2024
     ghc-options:      -Wall
     build-depends:
         base ^>=4.20.2.0,
@@ -63,3 +97,35 @@ test-suite eselsohr-v2-test
         Capabilities
         Chains
         Values
+
+test-suite eselsohr-v2-sqlite-test
+    import:           language
+    type:             exitcode-stdio-1.0
+    main-is:          Main.hs
+    hs-source-dirs:   test-sqlite
+    ghc-options:      -Wall -threaded
+    other-modules:
+        BearerTests
+        CodecTests
+        ReadTests
+        SchemaTests
+        SqliteFixtures
+        TitleTests
+    build-depends:
+        base ^>=4.20.2.0,
+        base64-bytestring ^>=1.2.1.0,
+        bytestring ^>=0.12.2.0,
+        containers ^>=0.7,
+        direct-sqlite ^>=2.3.29,
+        directory ^>=1.3.8.5,
+        eselsohr-v2,
+        eselsohr-v2:sqlite-internal,
+        filepath ^>=1.5.4.0,
+        sqlite-simple ^>=0.4.19.0,
+        tasty ^>=1.5.4,
+        tasty-hunit ^>=0.10.2,
+        tasty-quickcheck ^>=0.11.1,
+        temporary ^>=1.3,
+        text ^>=2.1.3,
+        time ^>=1.12.2,
+        unix ^>=2.8.7.0

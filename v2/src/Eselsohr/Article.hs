@@ -1,10 +1,22 @@
-{-# LANGUAGE OverloadedStrings #-}
+{- |
+Module      : Eselsohr.Article
+Description : Articles, validated titles, and pure edits
 
+An t'Article' contains an identifier, title, bookmark URL, read state, and creation time.
+
+'mkTitle' constructs validated titles by normalizing whitespace and checking input limits and characters.
+'newArticle' creates an unread article from the supplied values.
+
+'rename' and 'setReadState' change only their corresponding field, preserving the remaining article data.
+-}
 module Eselsohr.Article
-    ( Title
+    ( -- * Titles
+      Title
     , TitleError (..)
     , mkTitle
     , renderTitle
+
+      -- * Articles
     , ArticleState (..)
     , Article (..)
     , newArticle
@@ -18,6 +30,10 @@ import Data.Text qualified as Text
 import Data.Time (UTCTime)
 import Eselsohr.Id (ArticleId)
 import Eselsohr.WebUrl (WebUrl)
+
+------------------------------------------------------------------------
+-- Titles
+------------------------------------------------------------------------
 
 newtype Title = Title Text
     deriving stock (Eq, Show)
@@ -46,6 +62,10 @@ isWhitespace c = isSpace c || c `elem` ['\x85', '\x2028', '\x2029']
 
 renderTitle :: Title -> Text
 renderTitle (Title title) = title
+
+------------------------------------------------------------------------
+-- Articles
+------------------------------------------------------------------------
 
 data ArticleState = Unread | Read
     deriving stock (Eq, Show)

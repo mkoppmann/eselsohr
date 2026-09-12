@@ -1,5 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
+{- |
+Module      : Attenuation
+Description : Delegation checks for parent and child grants
 
+'attenuationTests' exercises the local delegation rules for permissions, scope, expiration, parent identity, and depth.
+Examples check failures and their precedence; generated grant pairs check acceptance and preservation of validity under further restriction.
+-}
 module Attenuation (attenuationTests) where
 
 import Control.Monad (forM_)
@@ -28,6 +33,10 @@ attenuationTests = localOption (QuickCheckTests 500) $ case fixtures of
     Left err -> testCase "attenuation fixtures" (assertFailure (show err))
     Right f -> testGroup "Attenuation" [examples f, properties f]
 
+------------------------------------------------------------------------
+-- Examples
+------------------------------------------------------------------------
+
 examples :: Fixtures -> TestTree
 examples f =
     testGroup
@@ -36,7 +45,7 @@ examples f =
             maxDelegationDepth @?= 4
             attenuates now root parent @?= Right ()
             attenuates now parent child @?= Right ()
-        , testCase "root shape requires whole collection, no expiry, and depth zero" $
+        , testCase "a root requires whole collection, no expiry, and depth zero" $
             forM_ [root{grantScope = articleScope}, root{grantExpiresAt = Just (at 100)}, root{grantParentId = Just (grantId parent)}] $
                 \invalid -> attenuates now invalid parent @?= Left InvalidParent
         , testCase "every root permission is required" $
@@ -60,7 +69,7 @@ examples f =
         , testCase "depth must advance exactly once" $
             forM_ [1, 3, 4] $
                 \depth -> attenuates now parent child{grantDepth = depth} @?= Left DepthMismatch
-        , testCase "depth 3 to 4 succeeds and terminal Delegate is inert" $ do
+        , testCase "a depth-four child may have Delegate but cannot delegate further" $ do
             attenuates now parent{grantDepth = 3} child{grantDepth = 4, grantPermissions = Set.singleton Delegate} @?= Right ()
             attenuates now parent{grantDepth = 4} child @?= Left DepthExhausted
         , testCase "Delegate is required without implying other permissions" $ do
@@ -82,6 +91,7 @@ examples f =
             forM_ [addUTCTime (-picosecond) now, now] $ \deadline -> do
                 attenuates now parent{grantExpiresAt = Just deadline} child @?= Left ParentExpired
                 attenuates now parent child{grantExpiresAt = Just deadline} @?= Left ChildExpired
+
             let future = Just (addUTCTime picosecond now)
             attenuates now parent{grantExpiresAt = future} child{grantExpiresAt = future} @?= Right ()
             attenuates now parent child{grantExpiresAt = future} @?= Right ()
@@ -90,7 +100,7 @@ examples f =
             attenuates now parent child{grantExpiresAt = Just (addUTCTime picosecond (at 100))} @?= Left ChildOutlivesParent
         , testCase "seven days is not an attenuation lifetime cap" $
             attenuates now root parent{grantExpiresAt = Just (at (30 * 86400))} @?= Right ()
-        , testCase "snapshot equality compares every field" $ do
+        , testCase "grant equality compares every field" $ do
             let variants =
                     [ child{grantId = grantId root}
                     , child{grantParentId = Just (grantId root)}
@@ -100,6 +110,7 @@ examples f =
                     , child{grantDepth = 3}
                     ]
                 rebuilt = GrantSnapshot (grantId child) (grantParentId child) (grantScope child) (grantPermissions child) (grantExpiresAt child) (grantDepth child)
+
             rebuilt @?= child
             forM_ variants $ \different -> assertBool (show different) (child /= different)
         , testCase "overlapping faults preserve the documented error order" $
@@ -126,20 +137,28 @@ examples f =
         , (PermissionsIncreased, parent, child{grantPermissions = extraRights, grantExpiresAt = Just (at 101)})
         ]
 
+------------------------------------------------------------------------
+-- Properties
+------------------------------------------------------------------------
+
 properties :: Fixtures -> TestTree
 properties f =
     testGroup
         "Properties"
-        [ testProperty "generated valid edges pass" $ forAll (genValidEdge f) $ \(instant, parent, child) ->
+        [ testProperty "generated valid edges pass" . forAll (genValidEdge f) $ \(instant, parent, child) ->
             attenuates instant parent child === Right ()
-        , testProperty "successful edges satisfy every local invariant" $ forAll (genCandidateEdge f) $ \(instant, parent, child) ->
+        , testProperty "successful edges satisfy every local invariant" . forAll (genCandidateEdge f) $ \(instant, parent, child) ->
             attenuates instant parent child /= Right () || edgeLaws instant parent child
-        , testProperty "further restriction preserves acceptance" $ forAll (genValidEdge f) $ \(instant, parent, child) ->
+        , testProperty "further restriction preserves acceptance" . forAll (genValidEdge f) $ \(instant, parent, child) ->
             case grantExpiresAt child of
                 Nothing -> counterexample "generated child has no deadline" False
                 Just deadline -> forAll (genRestrictedChild f instant deadline child) $ \restricted ->
                     attenuates instant parent restricted === Right ()
         ]
+
+------------------------------------------------------------------------
+-- Grant generators and fixtures
+------------------------------------------------------------------------
 
 genValidEdge :: Fixtures -> Gen (UTCTime, GrantSnapshot, GrantSnapshot)
 genValidEdge f = do
@@ -153,6 +172,7 @@ genValidEdge f = do
             if depth == 0
                 then rootGrant f
                 else (parentGrant f){grantDepth = depth, grantPermissions = rights, grantScope = scope, grantExpiresAt = Just (addUTCTime (fromInteger parentSeconds) instant)}
+
     childRights <- Set.fromList <$> sublistOf (Set.toList (grantPermissions parent))
     childScope <- genNarrowScope f (grantScope parent)
     let child = (childGrant f){grantParentId = Just (grantId parent), grantDepth = depth + 1, grantPermissions = childRights, grantScope = childScope, grantExpiresAt = Just (addUTCTime (fromInteger childSeconds) instant)}
@@ -231,6 +251,7 @@ fixtures = do
     otherCollection <- parseCollectionId "123e4567-e89b-42d3-a456-426614174101"
     firstArticle <- parseArticleId "123e4567-e89b-42d3-a456-426614174200"
     secondArticle <- parseArticleId "123e4567-e89b-42d3-a456-426614174201"
+
     let scope = WholeCollection collection
         root = GrantSnapshot rootId Nothing scope allPermissions Nothing 0
         parent = GrantSnapshot parentId (Just rootId) scope (Set.fromList [ReadArticles, AddArticles, Delegate]) (Just (at 100)) 1

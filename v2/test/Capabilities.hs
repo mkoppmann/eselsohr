@@ -1,5 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
+{- |
+Module      : Capabilities
+Description : Permission and scope inclusion tests
 
+'capabilityTests' checks permission inclusion against membership across all 256 permission sets.
+Scope tests compare representative collections and articles by the targets they contain, including repeated article IDs in different collections.
+-}
 module Capabilities (capabilityTests) where
 
 import Control.Monad (forM_)
@@ -12,6 +17,10 @@ import Test.Tasty.HUnit (assertBool, assertEqual, testCase, (@?=))
 
 capabilityTests :: TestTree
 capabilityTests = testGroup "Capability" [permissionTests, scopeTests]
+
+------------------------------------------------------------------------
+-- Permission
+------------------------------------------------------------------------
 
 permissionTests :: TestTree
 permissionTests =
@@ -41,6 +50,7 @@ permissionTests =
                     , middle <- subsequences parent
                     , child <- subsequences middle
                     ]
+
             length chains @?= 65536
             forM_ chains $ \(child, middle, parent) ->
                 assertBool (show (child, middle, parent)) (permissionsSubsetOf child middle && permissionsSubsetOf middle parent && permissionsSubsetOf child parent)
@@ -58,6 +68,7 @@ permissionTests =
         , testCase "giving up existing rights cannot compensate for gaining another" $ do
             let existing = Set.fromList [ReadArticles, Delegate]
                 requested = Set.singleton AddArticles
+
             permissionsSubsetOf requested existing @?= False
             permissionsSubsetOf existing requested @?= False
         ]
@@ -70,6 +81,10 @@ permissionSets = [(values, Set.fromList values) | values <- subsequences permiss
 
 permissionPairs :: [(([Permission], Permissions), ([Permission], Permissions))]
 permissionPairs = [(candidate, parent) | candidate <- permissionSets, parent <- permissionSets]
+
+------------------------------------------------------------------------
+-- Scope
+------------------------------------------------------------------------
 
 scopeTests :: TestTree
 scopeTests =
@@ -102,17 +117,17 @@ scopeTests =
                         assertBool (show (child, middle, parent)) (not (scopeSubsetOf child middle && scopeSubsetOf middle parent) || scopeSubsetOf child parent)
         ]
 
--- A finite target universe gives an oracle independent of scope pattern matching.
+-- Compare scopes by the collection/article pairs they include, independently of the implementation's pattern matching.
 scopeFixtures :: IO [(Scope, [(CollectionId, ArticleId)])]
 scopeFixtures = do
     collections <- traverse (rightOrFail . parseCollectionId) ["123e4567-e89b-42d3-a456-426614174000", "123e4567-e89b-42d3-a456-426614174001"]
     articles <- traverse (rightOrFail . parseArticleId) ["123e4567-e89b-42d3-a456-426614174000", "123e4567-e89b-42d3-a456-426614174001", "123e4567-e89b-42d3-a456-426614174002"]
-    pure $
-        concat
-            [ (WholeCollection collection, [(collection, article) | article <- articles])
-                : [(OneArticle collection article, [(collection, article)]) | article <- articles]
-            | collection <- collections
-            ]
+
+    pure . concat $
+        [ (WholeCollection collection, [(collection, article) | article <- articles])
+            : [(OneArticle collection article, [(collection, article)]) | article <- articles]
+        | collection <- collections
+        ]
 
 rightOrFail :: (Show e) => Either e a -> IO a
 rightOrFail = either (fail . show) pure

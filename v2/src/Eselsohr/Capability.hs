@@ -1,3 +1,14 @@
+{- |
+Module      : Eselsohr.Capability
+Description : Grant permissions, delegation limits, and ancestry validation
+
+Grants associate permission sets with a collection or article and, for delegated grants, an expiration time.
+'permissionsSubsetOf' and 'scopeSubsetOf' compare a candidate permission set or scope with its containing parent.
+
+'attenuates' checks the delegation limits for one parent and child.
+'validateChain' checks a supplied path from a grant back to its root, including every ancestor's expiration, and returns a t'ValidChain'.
+'validateGrantStructure' performs ancestry validation while allowing expired grants for link management.
+-}
 module Eselsohr.Capability
     ( -- * Permissions and scopes
       Permission (..)
@@ -151,7 +162,7 @@ validChildShape grant = case (grantParentId grant, grantExpiresAt grant) of
 -- Grant chains
 ------------------------------------------------------------------------
 
--- | A complete policy snapshot checked at the supplied time, not current bearer authority.
+-- | A grant and its ancestors, validated at the supplied time.
 data ValidChain = ValidChain UTCTime (NonEmpty GrantSnapshot)
     deriving stock (Eq, Show)
 
@@ -166,7 +177,7 @@ data ChainError
     | InvalidEdge AttenuationError
     deriving stock (Eq, Show)
 
--- | Return the checked snapshots in leaf-to-root order.
+-- | Return the checked grants from the requested grant back to the root.
 chainGrants :: ValidChain -> NonEmpty GrantSnapshot
 chainGrants (ValidChain _ grants) = grants
 
@@ -178,7 +189,7 @@ validateChain :: UTCTime -> CollectionId -> CapabilityId -> [GrantSnapshot] -> E
 validateChain instant collection requested snapshots =
     ValidChain instant <$> checkGrantChain (CheckExpiry instant) collection requested snapshots
 
--- | Check ancestry and attenuation while allowing expired grants, without establishing current authority.
+-- | Check parent links and delegation limits while allowing expired grants.
 validateGrantStructure :: CollectionId -> CapabilityId -> [GrantSnapshot] -> Either ChainError (NonEmpty GrantSnapshot)
 validateGrantStructure = checkGrantChain AllowExpired
 
@@ -196,12 +207,12 @@ checkGrantChain expiry collection requested snapshots =
         | isJust (grantParentId root) = Left MissingRoot
         | not (validRootShape root) = Left InvalidRoot
         | otherwise = do
-            checkEdges (reverse (NonEmpty.toList grants))
+            checkEdges . reverse $ NonEmpty.toList grants
             Right grants
       where
         root = NonEmpty.last grants
         identifiers = grantId <$> grants
     checkEdges (parent : child : rest) = do
-        first InvalidEdge (attenuatesWith expiry parent child)
+        first InvalidEdge $ attenuatesWith expiry parent child
         checkEdges (child : rest)
     checkEdges _ = Right ()

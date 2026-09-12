@@ -1,5 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
+{- |
+Module      : Authorization
+Description : Operation permissions and target relationship tests
 
+'authorizationTests' compares operation decisions with an independent permission table across every permission set and representative scopes.
+Examples and generated grant trees cover child issuance, owner operations, descendant management, and expiration at the supplied decision time.
+-}
 module Authorization (authorizationTests) where
 
 import Control.Exception (evaluate)
@@ -26,6 +31,10 @@ authorizationTests = localOption (QuickCheckTests 500) $ case fixtures of
     Left err -> testCase "policy fixtures" (assertFailure (show err))
     Right f -> testGroup "Authorization" [permissionTable f, examples f, structureExamples f, properties f]
 
+------------------------------------------------------------------------
+-- Permission table
+------------------------------------------------------------------------
+
 permissionTable :: Fixtures -> TestTree
 permissionTable f =
     testGroup
@@ -35,11 +44,12 @@ permissionTable f =
                 let path = actorPath f rights scope
                 forM_ (cases f path) $ \(operation, expected) ->
                     assertEqual (show (rights, scope, operation)) expected (policy now path operation == Right ())
-        , testCase "removing rights never enables an operation with consistent snapshots" $
+        , testCase "removing rights never enables an operation when shared grants agree" $
             forM_ allRights $ \strong -> forM_ (map Set.fromList (subsequences (Set.toList strong))) $ \weak ->
                 forM_ scopes $ \scope -> do
                     let strongPath = actorPath f strong scope
                         weakPath = actorPath f weak scope
+
                     forM_ (zip (cases f strongPath) (cases f weakPath)) $ \((strongOp, _), (weakOp, _)) ->
                         assertBool
                             (show (strong, weak, scope, weakOp))
@@ -88,6 +98,10 @@ cases f path =
             WholeCollection _ -> True
             OneArticle _ scopedArticle -> article == scopedArticle
 
+------------------------------------------------------------------------
+-- Examples
+------------------------------------------------------------------------
+
 examples :: Fixtures -> TestTree
 examples f =
     testGroup
@@ -117,7 +131,7 @@ examples f =
             let sibling = childOf (siblingId f) Set.empty (at 50) root
             forM_ [full, owner, sibling :| [root]] $ \target ->
                 forM_ (management target) $ \operation -> policy now full operation @?= Left OperationDenied
-        , testCase "management is metadata authority and does not grant article Read" $ do
+        , testCase "InspectLinks and RevokeLinks do not permit reading articles" $ do
             let path = actorPath f (Set.fromList [Delegate, InspectLinks, RevokeLinks]) whole
                 target = childOf (childId f) Set.empty (at 50) (NonEmpty.head path) :| NonEmpty.toList path
             forM_ (management target) $ \operation -> policy now path operation @?= Right ()
@@ -133,12 +147,13 @@ examples f =
                 Right checkedActor -> do
                     let expiryFailure = Left (ActorChainRejected (InvalidEdge ChildExpired))
                         operation = InspectLink (grantId child) (child : grants)
+
                     decide (addUTCTime (-picosecond) (at 100)) checkedActor operation @?= Right ()
                     decide (at 100) checkedActor operation @?= expiryFailure
                     decide (at 101) checkedActor operation @?= expiryFailure
                     decide (at 100) checkedActor (error "operation forced") @?= expiryFailure
                     chainCheckedAt checkedActor @?= now
-        , testCase "management requires the same holder snapshots and complete ancestor suffix" $ do
+        , testCase "management requires matching fields for the acting grant and all shared ancestors" $ do
             let changedRoot = root{grantId = otherRootId f}
                 changedActor = actor{grantParentId = Just (grantId changedRoot)}
                 targets =
@@ -148,6 +163,7 @@ examples f =
                     , child{grantScope = articleScope} :| [actor{grantScope = articleScope}, root]
                     , childOf (childId f) Set.empty (at 50) changedRoot :| [changedRoot]
                     ]
+
             forM_ targets $ \target -> do
                 assertBool "target is structurally valid" (not (isLeft (structure target)))
                 forM_ (management target) $ \operation -> policy now full operation @?= Left OperationDenied
@@ -168,6 +184,7 @@ examples f =
             policy now full (IssueChild child{grantExpiresAt = Just now}) @?= Left (ChildChainRejected (InvalidEdge ChildExpired))
             policy now full (IssueChild child{grantExpiresAt = Just (at 101)}) @?= Left (ChildChainRejected (InvalidEdge ChildOutlivesParent))
             policy now full (IssueChild child{grantExpiresAt = Nothing}) @?= Left (ChildChainRejected (InvalidEdge InvalidChild))
+
             let narrowed = actorPath f allPermissions articleScope
             policy now narrowed (IssueChild child) @?= Left (ChildChainRejected (InvalidEdge ScopeWidened))
         , testCase "depth four cannot issue another child even with Delegate" $ do
@@ -189,13 +206,18 @@ examples f =
     grandchild = childOf (grandchildId f) Set.empty (at 25) child
     structure target = validateGrantStructure collection (grantId (NonEmpty.head target)) (NonEmpty.toList target)
 
+------------------------------------------------------------------------
+-- Structural validation
+------------------------------------------------------------------------
+
 structureExamples :: Fixtures -> TestTree
 structureExamples f =
     testGroup
         "Structural validation"
-        [ testCase "expiration is omitted while finite deadlines and lifetime inclusion remain required" $ do
+        [ testCase "expired grants are allowed but children still need deadlines no later than their parents'" $ do
             let expiredActor = actor{grantExpiresAt = Just (at (-10))}
                 expiredChild = child{grantExpiresAt = Just (at (-20))}
+
             check [expiredChild, expiredActor, root] @?= Right (expiredChild :| [expiredActor, root])
             check [child{grantExpiresAt = Just (at (-9))}, expiredActor, root] @?= Left (InvalidEdge ChildOutlivesParent)
             check [child{grantExpiresAt = Nothing}, expiredActor, root] @?= Left (InvalidEdge InvalidChild)
@@ -209,7 +231,7 @@ structureExamples f =
             check [child{grantParentId = Just (grantId child)}, actor, root] @?= Left (InvalidEdge InvalidChild)
             check [child, actor, actor] @?= Left RepeatedGrantId
         , testCase "structural and management traversal remain bounded before inspecting contents" $
-            forM_ [repeat root, replicate 6 (error "snapshot forced") ++ error "tail forced"] $ \path -> do
+            forM_ [repeat root, replicate 6 (error "grant evaluated") ++ error "tail forced"] $ \path -> do
                 timeout 1000000 (evaluate (check path)) >>= (@?= Just (Left ChainTooLong))
                 forM_ [InspectLink, RevokeLink] $ \operation ->
                     timeout 1000000 (evaluate (policy now full (operation (grantId child) path))) >>= (@?= Just (Left (TargetChainRejected ChainTooLong)))
@@ -220,6 +242,10 @@ structureExamples f =
     root = rootGrant f
     child = childOf (childId f) Set.empty (at 50) actor
     check = validateGrantStructure (collectionA f) (grantId child)
+
+------------------------------------------------------------------------
+-- Properties
+------------------------------------------------------------------------
 
 properties :: Fixtures -> TestTree
 properties f =
@@ -287,8 +313,12 @@ properties f =
                     ]
         ]
 
+------------------------------------------------------------------------
+-- Policy helpers and fixtures
+------------------------------------------------------------------------
+
 checked :: UTCTime -> NonEmpty GrantSnapshot -> Either PolicyError ValidChain
-checked instant path = first ActorChainRejected (validateChain instant collection (grantId actor) (NonEmpty.toList path))
+checked instant path = first ActorChainRejected $ validateChain instant collection (grantId actor) (NonEmpty.toList path)
   where
     actor = NonEmpty.head path
     collection = case grantScope actor of
@@ -323,6 +353,7 @@ genTree f = do
             scope <- case grantScope parent of
                 WholeCollection collection -> elements [WholeCollection collection, OneArticle collection (articleA f), OneArticle collection (articleB f)]
                 scope@(OneArticle _ _) -> pure scope
+
             let upper = maybe 1000000 (floor . (`diffUTCTime` instant)) (grantExpiresAt parent)
             seconds <- chooseInteger (1, upper)
             let child = (childOf identifier rights (addUTCTime (fromInteger seconds) instant) parent){grantScope = scope}

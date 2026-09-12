@@ -1,5 +1,14 @@
-{-# LANGUAGE OverloadedStrings #-}
+{- |
+Module      : Eselsohr.WebUrl
+Description : Validated HTTP and HTTPS bookmark URLs
 
+A t'WebUrl' is an absolute HTTP or HTTPS bookmark URL with a nonempty host, no user information, and an omitted or default port.
+'parseWebUrl' validates the syntax and input length, normalizes the scheme and host, removes explicit default ports, and encodes Unicode text for rendering.
+'renderWebUrl' returns the normalized URL.
+
+Validation performs no DNS lookup or network access.
+Local and private hosts are accepted, so a stored bookmark still needs destination checks before fetching.
+-}
 module Eselsohr.WebUrl
     ( WebUrl
     , WebUrlError (..)
@@ -43,12 +52,14 @@ parseWebUrl input
             "http:" -> Right "80"
             "https:" -> Right "443"
             _ -> Left UnsupportedScheme
+
         auth <- maybe (Left InvalidHost) Right (URI.uriAuthority uri)
         if null (URI.uriUserInfo auth) then Right () else Left UserInfoNotAllowed
         let port = URI.uriPort auth
         if null port || dropWhile (== '0') (drop 1 port) == defaultPort
             then Right ()
             else Left NonstandardPort
+
         host <- normalizeHost (URI.uriRegName auth)
         let normalized =
                 uri
@@ -56,6 +67,7 @@ parseWebUrl input
                     , URI.uriAuthority = Just auth{URI.uriRegName = host, URI.uriPort = ""}
                     }
             rendered = Text.pack (URI.uriToString id normalized "")
+
         if Text.compareLength rendered 8192 == GT
             then Left UrlTooLong
             else Right (WebUrl rendered)
@@ -67,7 +79,7 @@ normalizeHost :: String -> Either WebUrlError String
 normalizeHost host
     | null host = Left InvalidHost
     | Text.isPrefixOf "[" (Text.pack host) =
-        if URI.isIPv6address (Text.unpack (Text.dropEnd 1 (Text.drop 1 (Text.pack host))))
+        if URI.isIPv6address . Text.unpack . Text.dropEnd 1 . Text.drop 1 $ Text.pack host
             then Right (map toLower host)
             else Left InvalidHost
     | otherwise = do
@@ -78,6 +90,7 @@ normalizeHost host
             either (const (Left InvalidHost)) Right $
                 IDNA.parseDomainOpts IDNA.idnLabelForms flags decoded
         if null (IDNA.toLabels domain) then Left InvalidHost else Right ()
+
         let ascii = IDNA.domainToAscii domain
             trailingDot = if Text.isSuffixOf "." decoded then "." else ""
         Right (Text.unpack (ascii <> trailingDot))
@@ -87,7 +100,7 @@ normalizeHost host
 decodeHost :: String -> Either WebUrlError Text
 decodeHost host = do
     bytes <- decode host
-    either (const (Left InvalidHost)) Right (Text.decodeUtf8' (ByteString.pack bytes))
+    either (const (Left InvalidHost)) Right . Text.decodeUtf8' $ ByteString.pack bytes
   where
     decode :: String -> Either WebUrlError [Word8]
     decode [] = Right []

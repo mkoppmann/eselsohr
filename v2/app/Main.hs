@@ -1,3 +1,10 @@
+{- |
+Module      : Main
+Description : Version command entry point
+
+The executable accepts @--version@ and prints the package name and version.
+Other arguments produce a usage message on standard error and a failing exit status.
+-}
 module Main (main) where
 
 import Eselsohr.Version (version)

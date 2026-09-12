@@ -1,3 +1,10 @@
+{- |
+Module      : Main
+Description : Domain and policy test suite entry point
+
+The Tasty suite combines the package version check with tests for validated values, article edits, grant inclusion, delegation, ancestry, and operation policy.
+Each test module contributes its own test group.
+-}
 module Main (main) where
 
 import Articles (articleTests)

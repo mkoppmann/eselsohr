@@ -1,3 +1,14 @@
+{- |
+Module      : Eselsohr.Authorization
+Description : Operation policy for grants and their targets
+
+An t'Operation' identifies a requested action and its target.
+'decide' revalidates the acting grant chain at the supplied time and checks the permissions and scope required by that operation.
+
+Issuing a child requires validation of the extended grant chain.
+Link inspection and revocation require the target's ancestry to agree with the acting grant and its ancestors, and permit management of structurally valid expired descendants.
+All decisions use the grants and time supplied by the caller.
+-}
 module Eselsohr.Authorization
     ( Operation (..)
     , PolicyError (..)
@@ -32,10 +43,11 @@ data PolicyError
     | OperationDenied
     deriving stock (Eq, Show)
 
--- | Decide at the supplied time using snapshots, without authenticating a bearer or reading current storage.
+-- | Revalidate the supplied grant chain at the given time and check permission for the requested operation.
 decide :: UTCTime -> ValidChain -> Operation -> Either PolicyError ()
 decide instant chain operation = do
-    _ <- first ActorChainRejected (validateChain instant collection (grantId actor) grants)
+    _ <- first ActorChainRejected $ validateChain instant collection (grantId actor) grants
+
     case operation of
         ReadArticlesIn scope -> require [ReadArticles] scope
         AddArticle target -> require [AddArticles] (WholeCollection target)
@@ -44,7 +56,7 @@ decide instant chain operation = do
         DeleteArticle target article -> require [DeleteArticles] (OneArticle target article)
         IssueChild child -> do
             allow (has Delegate)
-            void $ first ChildChainRejected (validateChain instant collection (grantId child) (child : grants))
+            void . first ChildChainRejected $ validateChain instant collection (grantId child) (child : grants)
         InspectLink target path -> manage InspectLinks True target path
         RevokeLink target path -> manage RevokeLinks False target path
         DeleteCollection target -> allow (owner && target == collection)
@@ -61,7 +73,7 @@ decide instant chain operation = do
     require permissions scope = allow (all has permissions && scopeSubsetOf scope (grantScope actor))
     manage permission inspectRoot target path = do
         allow (has permission)
-        checked <- first TargetChainRejected (validateGrantStructure collection target path)
+        checked <- first TargetChainRejected $ validateGrantStructure collection target path
         let (descendants, shared) = break ((== grantId actor) . grantId) (NonEmpty.toList checked)
         allow (shared == grants && (not (null descendants) || (inspectRoot && owner)))
 

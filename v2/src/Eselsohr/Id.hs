@@ -1,5 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
+{- |
+Module      : Eselsohr.Id
+Description : Distinct UUIDv4 identifiers for collections, articles, and grants
 
+t'CollectionId', t'ArticleId', and t'CapabilityId' distinguish identifiers that would otherwise share the same UUID representation.
+Their parsers accept canonical lowercase UUIDv4 text with hyphens and return 'InvalidId' for other input.
+The corresponding renderers reproduce that canonical text.
+-}
 module Eselsohr.Id
     ( CollectionId
     , ArticleId

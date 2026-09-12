@@ -1,5 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
+{- |
+Module      : Chains
+Description : Bounded grant ancestry tests
 
+'chainTests' covers complete paths from a grant to its root, including missing ancestors, repeated identifiers, cycles, expiration, and delegation limits.
+Generated trees provide valid paths and paths made invalid by removing or changing an ancestor.
+Oversized and undefined inputs check that traversal stops at the ancestry bound.
+-}
 module Chains (chainTests) where
 
 import Control.Exception (evaluate)
@@ -36,6 +42,10 @@ chainTests = localOption (QuickCheckTests 500) $ case fixtures of
     Left err -> testCase "chain fixtures" (assertFailure (show err))
     Right f -> testGroup "Chains" [examples f, properties f]
 
+------------------------------------------------------------------------
+-- Examples
+------------------------------------------------------------------------
+
 examples :: Fixtures -> TestTree
 examples f = case NonEmpty.reverse (leftPath (standardTree f)) of
     leaf :| [third, second, first, root] ->
@@ -46,7 +56,7 @@ examples f = case NonEmpty.reverse (leftPath (standardTree f)) of
             rights = Set.fromList [ReadArticles, Delegate]
             articleScope = OneArticle (collectionA f) (articleA f)
             bounded grants = do
-                outcome <- timeout 1000000 (evaluate (check grants))
+                outcome <- timeout 1000000 . evaluate $ check grants
                 outcome @?= Just (Left ChainTooLong)
          in testGroup
                 "Examples"
@@ -63,8 +73,8 @@ examples f = case NonEmpty.reverse (leftPath (standardTree f)) of
                 , testCase "oversized input is rejected before its contents" $ do
                     bounded (leaf : path)
                     bounded (repeat root)
-                    bounded (replicate 6 (error "snapshot forced") ++ error "tail forced")
-                    bounded (path ++ (error "sixth snapshot forced" : error "tail forced"))
+                    bounded (replicate 6 (error "grant evaluated") ++ error "tail forced")
+                    bounded (path ++ (error "sixth grant evaluated" : error "tail forced"))
                 , testCase "collection binding checks every entry and scope kind" $
                     forM_ [0 .. 4] $ \index ->
                         forM_ [WholeCollection (collectionB f), OneArticle (collectionB f) (articleA f)] $ \scope ->
@@ -114,6 +124,7 @@ examples f = case NonEmpty.reverse (leftPath (standardTree f)) of
                 , testCase "equal deadlines and the smallest future instant are valid" $ do
                     let deadline = addUTCTime picosecond now
                         sameDeadline = map (\grant -> if grantDepth grant == 0 then grant else grant{grantExpiresAt = Just deadline}) path
+
                     assertBool "equal future deadlines" (not (isLeft (check sameDeadline)))
                     validateChain deadline (collectionA f) (grantId leaf) sameDeadline @?= Left (InvalidEdge ChildExpired)
                     check [leaf{grantExpiresAt = Just (addUTCTime picosecond (at 70))}, third, second, first, root] @?= Left (InvalidEdge ChildOutlivesParent)
@@ -124,7 +135,7 @@ examples f = case NonEmpty.reverse (leftPath (standardTree f)) of
                             chainCheckedAt checked @?= now
                             validateChain (at 60) (collectionA f) (grantId leaf) path @?= Left (InvalidEdge ChildExpired)
                             assertBool "time participates in equality" (Right checked /= validateChain (at 1) (collectionA f) (grantId leaf) path)
-                            assertBool "snapshots participate in equality" (Right checked /= check [leaf{grantPermissions = Set.empty}, third, second, first, root])
+                            assertBool "grant fields participate in equality" (Right checked /= check [leaf{grantPermissions = Set.empty}, third, second, first, root])
                             assertBool "structural equality" (Right checked == check path)
                 , testCase "structural errors precede root and edge validation" $ do
                     check [leaf{grantId = grantId root, grantScope = WholeCollection (collectionB f)}] @?= Left RequestedGrantMismatch
@@ -137,6 +148,10 @@ examples f = case NonEmpty.reverse (leftPath (standardTree f)) of
                     check [leaf, third, second{grantDepth = 0, grantExpiresAt = Just now}, first, root] @?= Left (InvalidEdge InvalidChild)
                 ]
     _ -> testCase "five-level fixture" (assertFailure "fixture has the wrong depth")
+
+------------------------------------------------------------------------
+-- Properties
+------------------------------------------------------------------------
 
 properties :: Fixtures -> TestTree
 properties f =
@@ -165,6 +180,10 @@ properties f =
                             Left _ -> True
                             Right checked -> chainLaws instant f (chainGrants checked)
         ]
+
+------------------------------------------------------------------------
+-- Grant checks and fixtures
+------------------------------------------------------------------------
 
 result :: UTCTime -> Fixtures -> NonEmpty GrantSnapshot -> Either ChainError ValidChain
 result instant f path = validateChain instant (collectionA f) (grantId (NonEmpty.head path)) (NonEmpty.toList path)
@@ -226,6 +245,7 @@ genTree f = do
             scope <- case grantScope parent of
                 WholeCollection collection -> elements [WholeCollection collection, OneArticle collection (articleA f), OneArticle collection (articleB f)]
                 scope@(OneArticle _ _) -> pure scope
+
             let upper = maybe 1000000 (floor . (`diffUTCTime` instant)) (grantExpiresAt parent)
             seconds <- chooseInteger (1, upper)
             let child = GrantSnapshot identifier (Just (grantId parent)) scope rights (Just (addUTCTime (fromInteger seconds) instant)) (grantDepth parent + 1)
@@ -266,7 +286,7 @@ fixtures = do
   where
     idTree :: Int -> Either IdError (Tree CapabilityId)
     idTree number = do
-        identifier <- parseCapabilityId ("123e4567-e89b-42d3-a456-" <> Text.justifyRight 12 '0' (Text.pack (show number)))
+        identifier <- parseCapabilityId $ "123e4567-e89b-42d3-a456-" <> Text.justifyRight 12 '0' (Text.pack (show number))
         children <- if number >= 16 then pure [] else traverse idTree [2 * number, 2 * number + 1]
         pure (Node identifier children)
 

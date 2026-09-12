@@ -12,6 +12,10 @@ cradle:
                 component: "exe:eselsohr-v2"
               - path: "./v2/test"
                 component: "test:eselsohr-v2-test"
+              - path: "./v2/persistence"
+                component: "eselsohr-v2:lib:sqlite-internal"
+              - path: "./v2/test-sqlite"
+                component: "test:eselsohr-v2-sqlite-test"
     - path: "./"
       config:
         cradle:

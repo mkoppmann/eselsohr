@@ -1,5 +1,10 @@
-{-# LANGUAGE OverloadedStrings #-}
+{- |
+Module      : Values
+Description : Identifier, title, and URL validation tests
 
+'valueTests' covers accepted input, normalization, rejection, and rendering for identifiers, titles, and bookmark URLs.
+Examples exercise format and length boundaries; generated inputs check round trips and stable normalization.
+-}
 module Values (valueTests) where
 
 import Data.Char (chr)
@@ -27,6 +32,10 @@ import Test.Tasty.QuickCheck
 valueTests :: TestTree
 valueTests = localOption (QuickCheckTests 500) $ testGroup "Values" [idTests, titleTests, urlTests]
 
+------------------------------------------------------------------------
+-- IDs
+------------------------------------------------------------------------
+
 idTests :: TestTree
 idTests = testGroup "IDs" $ map checkKind kinds
   where
@@ -42,8 +51,8 @@ idTests = testGroup "IDs" $ map checkKind kinds
                 mapM_ (\v -> let input = "123e4567-e89b-42d3-" <> v <> "456-426614174000" in parseRender input @?= Right input) ["8", "9", "a", "b"]
             , testCase "reject malformed or noncanonical IDs" $
                 mapM_ (\input -> parseRender input @?= Left InvalidId) invalidIds
-            , testProperty "generated UUIDv4 round-trips" $ forAll genId $ \input -> parseRender input === Right input
-            , testProperty "arbitrary text is rejected or renders unchanged" $ forAll genInput $ \input ->
+            , testProperty "generated UUIDv4 round-trips" . forAll genId $ \input -> parseRender input === Right input
+            , testProperty "arbitrary text is rejected or renders unchanged" . forAll genInput $ \input ->
                 either (const True) (== input) (parseRender input)
             ]
     invalidIds =
@@ -62,6 +71,10 @@ idTests = testGroup "IDs" $ map checkKind kinds
         , "123e4567-e89b-42d3-a456-426614174000\n"
         , Text.replicate 9000 "a"
         ]
+
+------------------------------------------------------------------------
+-- Title
+------------------------------------------------------------------------
 
 titleTests :: TestTree
 titleTests =
@@ -82,17 +95,21 @@ titleTests =
         , testCase "raw input boundary" $
             (renderTitle <$> mkTitle (Text.replicate 3596 " " <> Text.replicate 500 "a")) @?= Right (Text.replicate 500 "a")
         , testCase "oversized raw input" $ mkTitle (Text.replicate 4097 " ") @?= Left TitleInputTooLong
-        , testProperty "generated titles round-trip" $ forAll genTitle $ \input ->
+        , testProperty "generated titles round-trip" . forAll genTitle $ \input ->
             case mkTitle input of
                 Left _ -> False
                 Right title -> mkTitle (renderTitle title) == Right title
-        , testProperty "arbitrary input is rejected or normalizes idempotently" $ forAll genInput $ \input ->
+        , testProperty "arbitrary input is rejected or normalizes idempotently" . forAll genInput $ \input ->
             case mkTitle input of
                 Left _ -> True
                 Right title -> mkTitle (renderTitle title) == Right title && Text.length (renderTitle title) <= 500
         ]
   where
     otherControls = filter (`notElem` unicodeWhitespace) $ map chr ([0 .. 31] ++ [127 .. 159])
+
+------------------------------------------------------------------------
+-- WebUrl
+------------------------------------------------------------------------
 
 urlTests :: TestTree
 urlTests =
@@ -105,7 +122,7 @@ urlTests =
         , testCase "reject malformed URLs" $
             mapM_ (\input -> assertBool ("accepted " ++ show input) (isLeft (parseWebUrl input))) invalidUrls
         , testCase "reject literal whitespace and controls"
-            $ mapM_ (\c -> assertBool ("accepted character " ++ show c) (isLeft (parseWebUrl ("https://example.com/a" <> Text.singleton c))))
+            . mapM_ (\c -> assertBool ("accepted character " ++ show c) (isLeft (parseWebUrl ("https://example.com/a" <> Text.singleton c))))
             $ unicodeWhitespace ++ map chr ([0 .. 31] ++ [127 .. 159])
         , testCase "input length boundary" $
             let input = "https://example.com/" <> Text.replicate (8192 - 20) "a"
@@ -118,15 +135,19 @@ urlTests =
              in (renderWebUrl <$> parseWebUrl input) @?= Right expected
         , testCase "oversized encoded output" $
             (renderWebUrl <$> parseWebUrl ("https://example.com/" <> Text.replicate 1363 "é")) @?= Left UrlTooLong
-        , testProperty "generated URLs round-trip" $ forAll genUrl $ \input ->
+        , testProperty "generated URLs round-trip" . forAll genUrl $ \input ->
             case parseWebUrl input of
                 Left _ -> False
                 Right url -> parseWebUrl (renderWebUrl url) == Right url
-        , testProperty "arbitrary input is rejected or round-trips" $ forAll genInput $ \input ->
+        , testProperty "arbitrary input is rejected or round-trips" . forAll genInput $ \input ->
             case parseWebUrl input of
                 Left _ -> True
                 Right url -> parseWebUrl (renderWebUrl url) == Right url
         ]
+
+------------------------------------------------------------------------
+-- Test inputs
+------------------------------------------------------------------------
 
 validUrls :: [(Text, Text)]
 validUrls =

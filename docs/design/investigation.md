@@ -190,30 +190,44 @@ The independent [replacement package](../../v2/eselsohr-v2.cabal) builds and tes
 Its version command prints `eselsohr-v2 0.1.0.0`; missing or unsupported arguments exit 1 with usage on stderr.
 Its Tasty suite retains the version assertion and tests the [validated values](eselsohr-2.md#validated-values) and [pure article transitions](eselsohr-2.md#article-transitions) with examples and bounded QuickCheck generators.
 The [permission/scope inclusion](eselsohr-2.md#permission-and-scope-inclusion) groups compare all permission-set pairs with pointwise membership, check nested subset chains, and test scopes with repeated article IDs across collections.
-The [local attenuation](eselsohr-2.md#local-child-attenuation) group checks snapshot shapes, parent binding, permission/scope/lifetime bounds, strict expiration, depth limits, and error precedence with examples and bounded properties.
+The [local attenuation](eselsohr-2.md#local-child-attenuation) group checks root and child fields, parent IDs, permission/scope/lifetime bounds, strict expiration, depth limits, and error precedence with examples and bounded properties.
 The [ancestry](eselsohr-2.md#bounded-ancestry-validation) group checks complete paths in generated trees, corruptions, missing/cyclic ancestors, target/collection binding, deadline boundaries, and bounded list traversal.
 The [operation policy](../security-model.md#operation-policy) group checks every permission combination and subset pair across collection/article scopes, plus generated tree relationships, expired management targets, actor expiration rechecks, and malformed paths.
 External consumer checks confirm that ID kinds cannot be substituted or coerced, ID/title/URL constructors are private, and `Read`/`IsString` cannot bypass validation.
-Article is a public snapshot of five domain fields with structural equality and no `Show` instance.
+Article is a public record of five domain fields, with equality comparing every field and no `Show` instance.
 Its tests check total transitions, field preservation, no-ops, idempotence, and restoration after toggling twice.
-Revision metadata and conflict handling belong to the future protected Store; the pure article model has no database limits.
+The private adapter owns revision metadata and checks conflicts in protected title changes; the pure article model has no database limits.
 ValidChain consumer checks reject constructor access, raw coercion, record updates, Read, and generic reconstruction, with a compiling positive control.
+The [private SQLite adapter](../../v2/persistence/Eselsohr/Store/SQLite/Open.hs) opens existing collection files, validates identity metadata and schema version 1, and brackets connection use.
+Its [initializer](../../v2/persistence/Eselsohr/Store/SQLite/Schema.hs) atomically installs the schema, identity, and version into an already-open empty database without creating a file or owner grant.
+Private [row DTOs](../../v2/persistence/Eselsohr/Store/SQLite/Codec.hs) have SQL instances and checked conversions, including exact Unix microseconds and separate revision metadata, without changing the domain model.
+The private [Bearer module](../../v2/persistence/Eselsohr/Store/SQLite/Bearer.hs) parses the approved canonical 69-character encoding and resolves its collection-bound digest in a caller-owned transaction after rechecking identity and version.
+The private [Articles module](../../v2/persistence/Eselsohr/Store/SQLite/Articles.hs) owns protected reads, title changes, their sealed requests, and article SQL.
+Its read uses a deferred transaction to load and validate the grant and its ancestors, check Read permission and the sole root, and select the requested articles with revision metadata.
+Its title change uses an immediate transaction to check Read plus ChangeTitles and compare the submitted revision with storage before applying the requested title.
+Matching no-ops retain the revision; real changes increment once, and exhaustion fails without writing.
+The hidden Internal.Transaction and Internal.Authority modules manage transactions and validate stored grants; Articles exposes neither connection access nor IO lifting.
+The [design](eselsohr-2.md#protected-read) explains how request and transaction types prevent replacing checked inputs or executing them in another transaction.
+The 163-test SQLite suite passes against bundled SQLite 3.45.0, including real FULL and COMMIT/BEGIN Busy rollback, cancellation, constraints/cascades, malformed metadata and row decoding, canonical bearers and digest goldens, protected reads and title changes, and MVar-coordinated read/edit/revocation ordering.
+Opening rejects invalid UTF-8 metadata with InvalidMetadata, releases the connection, and preserves callback exceptions.
+Source review covers private component visibility, constructor exports, exact payload signatures, and nominal mode and transaction roles.
 The solved package plan contains the replacement components and their pinned dependencies, with no legacy `eselsohr` package.
 See the [roadmap](roadmap.md#task-contract-and-verification-vocabulary) for the verified commands.
-Bearer authentication, protected persistent operations, and web behavior remain unimplemented; macOS verification remains pending.
+Other protected mutations, the application-facing Store API, runtime, and web behavior remain unimplemented; macOS verification remains pending.
 
-The root [HLS configuration](../../hie.yaml) selects `cabal-v2.project` and maps the v2 library, executable, and test directories to their Cabal components.
+The root [HLS configuration](../../hie.yaml) selects `cabal-v2.project` and maps both v2 libraries, the executable, and both test directories to their Cabal components.
 Source outside `v2/` uses a `none` cradle and receives no HLS project diagnostics.
 This follows the supported [explicit Cabal configuration](https://github.com/haskell/hie-bios#cabal).
 HLS 2.14.0.0 with GHC 9.10.3 typechecks every v2 source file on Linux.
+The batch check finishes with 28 files worked and zero failures.
 LSP initialization and clean shutdown also pass through the local editor launcher with `--lsp`.
 Interactive editor behavior and macOS project loading remain unverified.
 Editor launchers must pass `--lsp`; without it HLS runs its command-line setup tester.
 
 The [independent project](../../cabal-v2.project) pins the cached Hackage index state `2026-09-09T02:42:09Z`.
-Its [freeze file](../../cabal-v2.project.freeze) pins the complete value/test dependency solution, including `uuid-types`, `network-uri`, `idna2008`, and Tasty.
-Normal and offline build/test runs resolve the same components and dependency versions; repeated freezes are byte-identical.
-Offline compilation and testing also pass in a fresh project build directory, using the existing compiler and populated dependency caches.
+Its [freeze file](../../cabal-v2.project.freeze) pins the complete domain/SQLite/test dependency solution, including `direct-sqlite` 2.3.29 with `systemlib` disabled, `sqlite-simple` 0.4.19.0, `base64-bytestring` 1.2.1.0, and `cryptohash-sha256` 0.11.102.1 with `use-cbits` enabled.
+Normal and offline build/test runs resolve the same components and dependency versions using populated dependency caches.
+Verification of the current SQLite slice used the existing project build directory.
 This does not establish an empty-cache bootstrap.
 Cabal 3.16.1.0 reads `cabal-v2.project.freeze` and `cabal-v2.project.local`; local settings override project/freeze settings.
 Build/test results assume no local overrides.

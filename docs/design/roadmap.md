@@ -6,12 +6,12 @@ Each milestone ends with review; later findings may change the next task or the 
 The [investigation](investigation.md) describes existing behavior and the current build baseline.
 Keep these documents and the [security model](../security-model.md) current rather than appending a log of superseded plans or tool observations.
 
-Current state: M1 and tasks 2.1 and 3.1–3.6 are complete, covering formatting/linting, validated values, article transitions, grant validation, and operation policy.
+Current state: M1 and tasks 2.1, 3.1–3.6, and 4.2–4.6 are complete, covering local checks, the pure domain/policy model, restricted SQLite opening, schema/codecs, bearer parsing/digest lookup, and protected article reads and title changes.
 Local development is the current priority; GitHub CI tasks 2.2 and 2.3 are deferred.
-D1 and D2 are approved.
-Bearer authentication, persistence, protected transactions, runtime, and web behavior remain unimplemented.
-Article values and transitions are independent of persistence; revision metadata, conflict checks, and their DTO belong to M4.
-M3 is ready for exit review; M4 needs a bounded task plan and approval before work starts.
+D1, D2, D3, and D4 are approved.
+Other protected mutations, the application-facing Store API, runtime, and web behavior remain unimplemented.
+Article values and transitions are independent of persistence; the private adapter keeps revision metadata outside Article and checks revisions in protected title changes.
+M3 is ready for exit review; M4's protected-operation API strategy and SQLite distribution decision are settled.
 Completing one task does not authorize later tasks or resolve their approval gates.
 
 ## Approval gates
@@ -20,13 +20,13 @@ Completing one task does not authorize later tasks or resolve their approval gat
 | --- | --- | --- |
 | D1: replacement starting point | Approved: temporary independent `v2/` package, no old `Lib` imports or compatibility adapters, with a later root cutover. | Settled for 1.2. |
 | D2: first usable version | Approved: manual URL/title entry first. Automatic metadata fetching remains intended functionality but does not block first delivery; investigate the restricted fetcher separately. | Settled for the first usable version. |
-| D3: protected-operation API | Named transactional operations with private checks, or a closed action/opaque authorized-action mechanism. Compare one read and one title change; named operations are the simpler candidate. | Before fixing the store/runtime interfaces in M4/M5, not before pure domain work or a file-opening experiment. |
-| D4: SQLite distribution | System SQLite or a maintained pinned bundled engine. Prefer system SQLite if both native platforms and the selected bindings validate it. | Before the persistence dependency/packaging choice in M4. Check the linked library, not merely the CLI version. |
+| D3: protected-operation API | Approved: named operations create private requests containing their complete inputs after checking the bearer, collection, and target. Each request can execute only in that transaction. No generic authorized-action framework or dispatcher. | Tasks 4.5–4.6 implement private reads and title changes using the [sealed requests and transaction types](eselsohr-2.md#protected-read). The application-facing API remains deferred. |
+| D4: SQLite distribution | Approved: use the engine bundled with `direct-sqlite`, with `systemlib` disabled, to simplify deployment. | Settled for M4; restricted opening is implemented in 4.2. |
 | D5: deletion lifecycle | Transactional tombstone with later controlled cleanup, or drain handles and delete the file immediately. Prefer tombstone/cleanup, subject to retention and recovery expectations. | Before owner deletion in M7. Basic article storage does not depend on this choice. |
 
 The eight-permission vocabulary and collection-bound scopes are approved and implemented in task 3.3.
 The four-edge depth limit, non-expiring root with all eight permissions, and strict finite child deadlines are approved and implemented in task 3.4.
-Task 3.5 validates an explicit leaf-to-root chain bound to the requested grant and collection and returns an opaque snapshot of that check.
+Task 3.5 validates the supplied grant and its ancestors against the requested grant ID, collection, and time, returning the checked grants and check time in ValidChain.
 Task 3.6 implements the approved [operation table](../security-model.md#operation-policy), including deletion without Read, proper-descendant management of expired targets, and owner root inspection without root revocation.
 Size, timeout, and quota numbers in the design are proposals to settle in their consuming tasks.
 Do not reopen agreed single-set permissions, add-only access, bounded recursive delegation, hash-only bearer storage, operator creation, descendant management, owner deletion, offline migrations, or the choice to use effectful without new evidence.
@@ -59,14 +59,14 @@ The root [HLS configuration](../../hie.yaml) selects the replacement components 
 With HLS 2.14.0.0 and GHC 9.10.3, this command typechecks every v2 Haskell source on Linux:
 
 ```sh
-rg --files v2/app v2/src v2/test -g '*.hs' -0 | xargs -0 haskell-language-server-wrapper -j 2
+rg --files v2 -g '*.hs' -0 | xargs -0 haskell-language-server-wrapper -j 2
 ```
 
 Editors must launch HLS with `--lsp`.
 LSP initialization and clean shutdown are verified through the local editor launcher; interactive editor behavior and macOS remain unverified.
 
 **Diff checks** means `git status --short --untracked-files=all`, `git diff --check`, and inspection of every changed/new file.
-Ordinary diff does not show untracked contents; inspect those explicitly.
+`git diff` does not show untracked contents; inspect those explicitly.
 For staged work, also inspect `git diff --cached --check` and `git diff --cached --stat`.
 Documentation links and implementation-status claims are part of review.
 
@@ -174,15 +174,15 @@ The local build, test, formatting, linting, and HLS checks are sufficient to beg
 * Depends on: 1.2; can proceed alongside 1.3 if manifest changes are coordinated.
 * Done when: formatting and lint checks cover every new Haskell source, pass, and correctly fail on a temporary intentional violation before restoring it.
 * Verify: the quality commands below, Build, Test, Version, and Diff checks.
-* Security: no broad suppressions hiding partial/unsafe code; quality checks are not proof of correctness or confinement.
+* Security: no broad suppressions hiding partial/unsafe code; formatting and lint checks do not establish correct behavior or enforce access restrictions.
 * Mode: normal Code.
   Branch: independent quality branch; worktree useful during parallel domain work if shared formatter settings remain unchanged.
 
 Run the quality checks from the repository root:
 
 ```sh
-rg --files v2/app v2/src v2/test -g '*.hs' -0 | xargs -0 fourmolu-0.20.1.0 --mode check
-hlint-3.10 v2/app v2/src v2/test
+rg --files v2 -g '*.hs' -0 | xargs -0 fourmolu-0.20.1.0 --mode check
+hlint-3.10 v2
 ```
 
 The formatter loads the root `fourmolu.yaml`; HLint uses its default hints without additional settings or suppressions.
@@ -256,7 +256,7 @@ The Values, Article, Permission, Scope, Attenuation, Chains, and Authorization t
 * Non-goals: random ID/secret generation, public-address validation, persistence, policy records, a generic validation framework, or phantom-type tricks.
 * Files: `Id.hs`, `Article.hs`, `WebUrl.hs`, and the `Values` test group.
 * Depends on: 1.2; coordinate any dependency additions with 1.3 before merging.
-* Done when: invalid inputs cannot construct ordinary validated values; parsers are total; valid round-trips hold; ordinary signatures cannot mix ID kinds.
+* Done when: constructors reject invalid inputs; parsers are total; valid round-trips hold; signatures prevent mixing ID kinds.
 * Verify: Build, Test with a Values group covering empty/oversized/malformed inputs and rendering round-trips; inspect constructors, instances, and roles.
 * Security: an ID is not a capability and a WebUrl is not a safe network target.
   No partial parsing or constructor/Read/coercion escape defeats the stated invariant.
@@ -302,10 +302,10 @@ The Values, Article, Permission, Scope, Attenuation, Chains, and Authorization t
 ### 3.4 Local child attenuation
 
 * Status: implemented and verified on Linux.
-  The [attenuation contract](eselsohr-2.md#local-child-attenuation) defines snapshot shapes, the four-edge limit, strict deadlines, and ordered failures for a supplied parent-child pair.
+  The [attenuation contract](eselsohr-2.md#local-child-attenuation) defines root and child field requirements, the four-edge limit, strict deadlines, and ordered failures for a supplied parent-child pair.
   Build, Test, Version, formatting, linting, and HLS pass.
 * Goal and sequence: establish a single delegation edge before reasoning about a tree.
-* Scope: child rights/scope/deadline/depth checks, explicit root/non-root shape, immediate parent binding, and rejection of roots supplied as children.
+* Scope: child rights/scope/deadline/depth checks, root and child field requirements, matching parent IDs, and rejection of roots supplied as children.
 * Non-goals: SQL, stored-tree traversal, revocation execution, random tokens, issuing links, or spreading depth/expiry constants through unrelated modules.
 * Files: `Capability.hs` and attenuation tests.
 * Depends on: 3.3 and the approved deadline/depth rules in the linked contract.
@@ -313,25 +313,25 @@ The Values, Article, Permission, Scope, Attenuation, Chains, and Authorization t
 * Verify: Build, Test; properties for generated parent/child pairs and boundary examples at expiry equality, scope narrowing, and maximum depth.
 * Security: `Delegate` controls issuance, not copying an existing bearer URL.
   A complete permission set cannot manufacture owner-only deletion authority.
-  Snapshots remain unvalidated policy inputs; local checks do not establish ancestry or bearer possession, and persisted parent immutability belongs to the store.
+  Callers can construct grant records without validation; checking one parent-child pair does not validate all ancestors or authenticate a bearer, and the store must prevent changing persisted parent IDs.
 * Mode: normal Code after policy choices.
   Branch: stacked on 3.3; separate worktree only useful for a competing policy experiment, not duplicate implementation.
 
 ### 3.5 Bounded ancestry validation
 
 * Status: implemented and verified on Linux.
-  The [ancestry contract](eselsohr-2.md#bounded-ancestry-validation) defines the bounded input, requested grant and collection binding, complete path checks, ordered failures, and opaque result.
+  The [ancestry contract](eselsohr-2.md#bounded-ancestry-validation) defines the list bound, requested grant and collection checks, complete parent path, error order, and ValidChain result with a private constructor.
   Build, Test, Version, formatting, linting, and HLS pass.
   External consumer compilation checks confirm private construction and the absence of unchecked reconstruction or record updates, with a compiling positive control.
-* Goal and sequence: lift local attenuation to a full grant chain without introducing persistence or trusting arbitrary snapshots.
-* Scope: bounded pure validation of root shape, missing parents, cycles, collection mismatches, every delegation edge, and ancestor expiry.
+* Goal and sequence: extend the parent-child delegation checks to the full grant chain supplied by the caller.
+* Scope: bounded pure validation of root fields, missing parents, cycles, collection mismatches, every delegation edge, and ancestor expiry.
 * Non-goals: database queries, long-lived authorization caches, cleanup workers, token possession checks, or repairing an invalid chain automatically.
 * Files: `Capability.hs` and `Chains.hs` tests.
 * Depends on: 3.4.
 * Done when: validation terminates within the bound and fails closed for every invalid ancestor/edge; a valid descendant cannot outlive its chain.
 * Verify: Build, Test; generated valid trees then single-invariant corruptions, missing/cyclic parents, wrong collection, and exact deadline cases.
-* Security: a validated snapshot is policy input, not bearer authenticity or proof that authority remains valid in a later transaction.
-  The supplied check time is retained as metadata, and the result does not decide D3.
+* Security: ValidChain records checks on the supplied grants and time; it does not authenticate a bearer or detect later storage changes.
+  Protected operations must reload and validate the grants inside their transactions before creating sealed requests.
 * Mode: normal Code.
   Branch: close to 3.4; no separate worktree needed unless comparing interfaces before the implementation is selected.
 
@@ -340,7 +340,7 @@ The Values, Article, Permission, Scope, Attenuation, Chains, and Authorization t
 * Status: implemented and verified on Linux; M3 is ready for exit review.
   The [security model](../security-model.md) defines the approved operation table, actor revalidation, target ancestry, and the boundary between policy data and authentic authority.
   Authorization tests exhaust all 256 permission sets and 6,561 subset pairs across three actor scopes, with generated trees and explicit rejection cases.
-  Structural validation shares the bounded chain checks while allowing expired management targets; it returns ordinary snapshots.
+  Structural validation shares the bounded chain checks while allowing expired management targets; it returns the grants in their supplied order.
 * Goal and sequence: centralize the complete decision table before persistent mutation or web routes depend on scattered permission checks.
 * Scope: pure decisions for read, add, edit, delete, issue, inspect, revoke, and owner deletion; durable laws extracted from the old tests; current security specification consistent with the approved policy.
 * Non-goals: Authorized wrappers, effect declarations, SQL, UI, crypto, or a large characterization suite coupled to the old App/TestApp architecture.
@@ -359,25 +359,233 @@ These are bounded outlines, not execution prompts.
 Before each milestone, specify the next small tasks using the contract above and settle only the decisions those tasks consume.
 Do not begin implementing a whole outline from its title.
 
-### M4: collection-bound SQLite kernel
+### M4: SQLite storage and protected article operations
 
 Purpose: establish trustworthy file selection and one protected read/write path.
-Depends on M1, the relevant M3 policy, and D3/D4 before freezing their interfaces.
-An opening-only prototype can run earlier without those false dependencies.
+Depends on M1 and the relevant M3 policy.
+D3 selects exact-payload sealing behind named operations; tasks 4.5–4.6 implement the private read and title change together in Articles, with hidden helpers for transactions and stored grant validation.
+D4 selects bundled SQLite; no further distribution comparison is required.
 
-Separate slices: restricted existing-only opening and linked-engine checks; schema/constraints and validated decoders; token parser/hash lookup; one protected read; one title mutation with revision and revoke-race tests.
-Introduce revision metadata alongside Article through the Store's DTO, with storage representation and bounds owned by the adapter.
-Test revision zero on insertion, rejection of older and newer expected revisions even for no-ops, unchanged revisions for matching no-ops, and one increment per committed change.
-Check malformed and out-of-range metadata before narrowing, exhaustion without wrapping or partial writes, and authorization before a revision comparison in the same protected transaction.
+Task 4.2 completes restricted existing-only opening and linked-engine checks.
+Task 4.3 completes the schema, atomic initialization/version checks, and validated codecs with private article revision metadata.
+Task 4.4 completes canonical bearer parsing and collection-bound digest lookup inside caller-owned transactions.
+Task 4.5 completes one protected read with transactional ancestry and current-authority checks, an exact sealed scope, and revision metadata in its results.
+Task 4.6 completes one protected title change with revision checks and edit/revoke race tests.
+M4's exit review findings are addressed.
+The protected Store API must supply revision metadata alongside Article, with storage representation and bounds owned by the adapter.
+Revision zero on insertion and malformed or out-of-range metadata are tested in 4.3.
+Test rejection of older and newer expected revisions even for no-ops, unchanged revisions for matching no-ops, and one increment per committed change.
+Check exhaustion without wrapping or partial writes, and authorization before a revision comparison in the same protected transaction.
+The protected read and title mutation must require private operation-specific sealed requests in their persistence helpers, with targets and payloads taken from the seal.
+Review private component visibility, constructor exports, exact payload signatures, quantified runners, and nominal mode and transaction roles in the source.
+Runtime tests must verify the selected collection and bearer, grants reloaded in each transaction, and use of the exact request inputs; the submitted revision still needs to be compared with storage.
 Keep raw SQL and directory authority inside the adapter.
 No full CRUD API, web, pool, effects framework, or elaborate migration history.
 Review with two real temporary databases, repeated object IDs, missing/wrong files, malformed rows, rollback, and concurrent requests.
-Use Plan for D3/D4, then normal Code per slice.
+Use Plan for the bounded M4 implementation plan, then normal Code per approved slice.
 An independent SQLite worktree is useful.
+
+#### 4.1 SQLite distribution
+
+D4 is settled: use the SQLite engine bundled with `direct-sqlite`, with `systemlib` disabled.
+Task 4.2 pins `direct-sqlite` 2.3.29 and `sqlite-simple` 0.4.19.0 with bundled SQLite 3.45.0.
+Deployment requires no separate SQLite shared library.
+SQLite fixes are delivered through dependency updates and application rebuilds.
+The opening adapter is implemented in task 4.2, the schema/codecs in 4.3, and protected read and title-change transactions in 4.5–4.6.
+
+#### 4.2 Bundled SQLite integration and restricted collection opening
+
+* Status: implemented and verified on Linux with the pinned bundled engine.
+  Build, Test, Version, offline build/test, formatting, linting, and HLS pass.
+  Opening tests cover file selection, identity metadata, and connection lifetime; task 4.3 extends the SQLite suite.
+* Goal and sequence: establish the production opening primitive before adding storage and protected operations.
+* Scope: private Cabal library `sqlite-internal`, [opening adapter](../../v2/persistence/Eselsohr/Store/SQLite/Open.hs), and a dedicated [integration suite](../../v2/test-sqlite/Main.hs).
+  Cabal specification 3.0 enables private component visibility; the public library remains SQLite-independent.
+  The existing dependency pins and Hackage index state are preserved while adding the SQLite solution.
+  `mkCollectionDirectory` resolves an existing canonical absolute directory; `withExistingCollection` derives the filename from a validated collection ID.
+  Non-regular files and symlinks are rejected; the underlying helper opens without CREATE or URI interpretation, using ReadWrite, PrivateCache, and NoFollow.
+  A real identity table must contain exactly one integer singleton 1 and the matching UUIDv4 as a 16-byte BLOB in network byte order.
+  Metadata query conversion failures return InvalidMetadata, including invalid UTF-8 in either column; regression tests check rejection without file changes, connection cleanup, and callback exception propagation.
+  Foreign keys ON, trusted schema OFF, and busy_timeout 0 are set and read back before metadata validation.
+  Contention fails immediately; callback exceptions and cancellation propagate after cleanup.
+* Non-goals: schema initialization/versioning, article/grant storage, bearer authentication, sealed requests, protected transactions, migrations, CLI, runtime, web, or further SQLite distribution experiments.
+* Files: the package/project/freeze, `hie.yaml`, `v2/persistence/`, `v2/test-sqlite/`, and current-state documentation.
+* Depends on: D4 and the existing validated collection ID type.
+  D3 enforcement and D5 deletion metadata are deferred to their consuming slices.
+* Verify: Build, Test, Version, offline build/test, formatting, linting, HLS, and Diff checks.
+  The integration suite reports SQLite version, source ID, and compile options and requires SQLite 3.45.0.
+  The solved plan has `direct-sqlite` 2.3.29 with `systemlib: false`; Linux `ldd` of the SQLite test executable lists no SQLite shared library.
+
+```sh
+cabal build --project-file=cabal-v2.project --offline all
+cabal test --project-file=cabal-v2.project --offline all --test-show-details=direct
+eselsohr_sqlite_test_binary=$(cabal list-bin --project-file=cabal-v2.project test:eselsohr-v2-sqlite-test)
+ldd "$eselsohr_sqlite_test_binary"
+```
+
+* Security: stored identity is not bearer authentication.
+  The collections directory and its writers are trusted; private packaging and opening flags do not sandbox hostile filesystem replacement or arbitrary IO.
+  ReadWrite may fall back to read-only; success does not guarantee later writes.
+  Callback code must finalize statements and must not close or retain the connection.
+  Closed rejected fixture bytes and directory entries remain unchanged; hot-journal recovery is outside that claim.
+* Limits: verification uses Linux and populated dependency caches, not an empty-cache bootstrap, macOS, legacy root builds, or GitHub CI.
+* Mode: normal Code for this approved slice.
+  Commit locally and stop; the next M4 task needs its own bounded plan and approval.
+
+#### 4.3 Initial schema and validated storage codecs
+
+* Status: implemented and verified on Linux with bundled SQLite 3.45.0.
+  Schema and codec tests cover the storage contract; task 4.4 extends the SQLite suite.
+  Build, Test, Version, offline build/test, formatting, linting, HLS, and Diff checks pass.
+* Goal and sequence: establish the storage format and checked conversions before bearer lookup and protected operations consume persisted state.
+* Scope: private [Schema](../../v2/persistence/Eselsohr/Store/SQLite/Schema.hs) and [Codec](../../v2/persistence/Eselsohr/Store/SQLite/Codec.hs) modules in `sqlite-internal`.
+  The initializer requires an already-open empty database at version zero with no active transaction, enabled foreign keys, and supported journaling with OFF rejected.
+  It atomically installs the four STRICT tables, root uniqueness index, supplied collection identity, and schema version 1, without creating a file or root grant.
+  Its transaction boundary handles body and commit failures, including SQLite automatic rollback, and propagates unexpected exceptions after cleanup.
+  `withExistingCollection` checks identity before version and accepts only version 1 without initializing or migrating the file.
+  Private ArticleRow, GrantRow, and PermissionRow DTOs have mechanical FromRow/ToRow instances and separate checked conversions to domain values and private metadata DTOs.
+  IDs use UUIDv4 network bytes; titles and URLs must already be canonical; state and permission strings are explicit.
+  Timestamps use exact signed 64-bit Unix microseconds, rejecting finer precision, leap seconds, and overflow.
+  Article revisions are Integer metadata bounded to zero through the signed 64-bit maximum before narrowing; the schema defaults new revisions to zero.
+  Grant codecs check digest length, root and child fields, and at most eight distinct permission rows while allowing expired grants and preserving optional petnames unchanged.
+  The adapter replaces row conversion errors with CodecError values containing no submitted or stored values; unexpected and SQL exceptions remain distinct.
+* Non-goals: bearer parsing/hashing, authentication, protected operations or seals, a public metadata DTO, revision conflict/increment logic, CLI/file creation, migrations, runtime, web, or dependency upgrades.
+* Files: the private adapter, its test modules, component dependencies, and current-state documentation.
+  Domain sources, dependency versions, and the Hackage index state are unchanged.
+* Depends on: 4.2 and the validated domain values; the approved D3 API contract is consumed by later protected-operation slices.
+* Verify: Build, Test, Version, formatting, linting, HLS, and Diff checks, plus:
+
+```sh
+cabal build --project-file=cabal-v2.project --offline all
+cabal test --project-file=cabal-v2.project --offline all --test-show-details=direct
+```
+
+  [Schema tests](../../v2/test-sqlite/SchemaTests.hs) cover initialization, version refusal without callbacks, nonempty and active-transaction refusal, constraints, cascades, and rollback after controlled failures, SQL exceptions, unexpected exceptions, and MVar-coordinated cancellation.
+  Real SQLite FULL, BEGIN Busy, and COMMIT Busy failures leave no partial schema/version or retained transaction; retry succeeds after removing the cause.
+  [Codec tests](../../v2/test-sqlite/CodecTests.hs) cover golden representations, bounded generated round trips, timestamp/revision extrema, malformed values and SQL types, invalid UTF-8, all 256 child permission subsets, bounded oversized lists, and independent files with repeated article IDs.
+* Security: grant decoding validates stored fields but does not authenticate a bearer or load ancestors.
+  Scope uses the collection ID checked by the caller; protected operations must check the full grant chain, target existence where required, and permission for the operation inside their transaction.
+  A version match does not attest every schema object or make SQLite a malicious-file sandbox.
+  The initializer's caller must leave the opening callback on failure so the handle closes.
+* Limits: Linux and populated dependency caches are verified; macOS, empty-cache bootstrap, legacy root builds, GitHub CI, interactive editor behavior, and crash/power-loss durability are not verified by this slice.
+* Mode: normal Code for this approved slice.
+  Commit locally and stop; the next M4 task needs its own bounded plan and approval.
+
+#### 4.4 Canonical bearer parsing and digest lookup
+
+* Status: implemented and verified on Linux with bundled SQLite 3.45.0.
+  Bearer parser and digest tests cover this slice; task 4.5 extends the SQLite suite.
+  Build, Test, Version, offline build/test, formatting, linting, HLS, and Diff checks pass.
+* Goal and sequence: establish bearer representation and stored digest resolution before protected operations validate current authority.
+* Scope: private [Bearer](../../v2/persistence/Eselsohr/Store/SQLite/Bearer.hs) module with `parseBearer`, `renderBearer`, `bearerCollection`, and `lookupBearer`.
+  The approved [format and hash preimage](eselsohr-2.md#bearer-format) use separate canonical base64url fields for the UUID and 32-byte secret, totaling 69 characters.
+  Bearer has a private constructor, explicit accessors, and no Show, Read, Generic, record-update fields, or SQL instances.
+  Parsing checks the length, encoding, and UUID, accepts every secret byte pattern, and returns `InvalidBearer` without including the submitted text.
+  Lookup requires an active caller-owned transaction and shares the opener's identity-before-version checks.
+  Bound BLOB digest lookup limits grant matches to two and permission rows to nine, using the existing private row DTOs and checked conversions.
+  Unknown digests return absence; matches return StoredGrant with validated fields and permissions, including expired grants.
+  Malformed metadata/rows and duplicate matches are corruption; Busy/Locked are contention, unsupported versions and other SQL failures are faults, and unexpected exceptions propagate.
+* Non-goals: transaction lifecycle management, ancestry or current-authority checks, clocks, operation policy, seals, protected reads/writes, issuance/random generation, file creation, migrations, runtime, HTTP, or public API additions.
+* Files: the private adapter and tests, package/project/freeze, and current-state documentation.
+  Pin `base64-bytestring` 1.2.1.0 and `cryptohash-sha256` 0.11.102.1 with its bundled C implementation enabled, preserving every existing version, the Hackage index state, and bundled SQLite flags.
+  These dependencies remain within the private component and tests that consume them directly; domain sources remain unchanged.
+* Depends on: 4.2 opening, 4.3 schema/codecs, and the approved encoding and dependency choices.
+* Verify: Build, Test, Version, formatting, linting, HLS, and Diff checks, plus:
+
+```sh
+cabal freeze --project-file=cabal-v2.project
+cabal build --project-file=cabal-v2.project --offline all
+cabal test --project-file=cabal-v2.project --offline all --test-show-details=direct
+```
+
+  [Bearer tests](../../v2/test-sqlite/BearerTests.hs) cover canonical encoding, malformed versions/fields/UUIDs, unused bits, oversized input, all secret byte values, 500 generated round trips, and independent SHA-256 goldens.
+  Real temporary databases cover separate collection identities with repeated grant IDs and secrets, copied digests, expired grants, missing and duplicate matches, malformed rows/permissions, transaction ownership, identity/version rechecks, rollback, contention, and committed deletion seen by a new transaction.
+* Security: hash lookup does not check ancestors, expiration, or permission for an operation; reusing its result would miss later revocation or storage changes.
+  Secret entropy belongs to future issuance; parser tests cannot establish it.
+  Lookup starts no transaction and makes no commit or rollback decision for its trusted caller.
+* Limits: Linux and populated dependency caches are verified; macOS, empty-cache bootstrap, legacy root builds, GitHub CI, interactive editor behavior, and crash/power-loss durability are not verified by this slice.
+* Mode: normal Code for this approved slice.
+  Commit locally and stop; the next M4 task needs its own bounded plan and approval.
+
+#### 4.5 Private protected article read
+
+* Status: implemented and verified on Linux with bundled SQLite 3.45.0.
+  Its 26 read cases pass within the complete SQLite suite; task 4.6 records the current totals.
+  Build, Test, Version, offline build/test, formatting, linting, HLS, and Diff checks pass.
+* Goal and sequence: complete one protected read before adding title mutation or the application-facing Store interface.
+* Scope: the named readArticles operation in [Articles](../../v2/persistence/Eselsohr/Store/SQLite/Articles.hs), supported by the hidden Internal.Transaction and Internal.Authority modules inside `sqlite-internal`.
+  ReadTx and ReadRequest have private constructors and nominal transaction parameters; as explained in the [protected read contract](eselsohr-2.md#protected-read), these types prevent executing a request in a different transaction, even through `coerce`.
+  The runner fixes the connection, bearer, and clock for the transaction.
+  The named operation supplies `getCurrentTime` and immediately checks and selects the exact requested scope.
+  Articles exposes no IO lifting, context replacement, individual action runner, or replacement payload for selection.
+  It rejects active transactions without changing them, verifies required connection settings and supported journaling, and uses BEGIN DEFERRED without configuration changes or retries.
+  Bearer lookup rechecks identity/version; bounded parent lookup loads at most five grants with two-match and nine-permission limits, detects cycles, and checks the terminal root is the sole root.
+  A fresh time sample after ancestry loading feeds both `validateChain` and `decide` before the request is sealed.
+  Selection restricts OneArticle reads in SQL and validates every returned row and revision, rejecting duplicate article IDs before commit.
+  Results use the existing private StoredArticle DTO, with empty lists for authorized absence, no pagination, and unspecified ordering.
+  StoreError distinguishes denial, contention, corruption, storage faults, and existing transactions without including submitted or stored values.
+  Failures roll back when needed, and unexpected exceptions or cancellation propagate after cleanup.
+* Non-goals: mutations, revision conflict/increment logic, issuance, migrations, application-facing APIs, effects/runtime, web, dependency changes, or adopting new journal settings.
+* Files: private adapter and codecs, SQLite tests, package module declarations, and current-state documentation.
+  Domain sources, dependency versions, Hackage index state, and bundled SQLite flags remain unchanged.
+* Depends on: 4.2–4.4, pure chain/policy validation, D3, and the approved scoped-transaction and private-read choices.
+* Verify: Build, Test, Version, formatting, linting, HLS, and Diff checks, plus:
+
+```sh
+cabal build --project-file=cabal-v2.project --offline all
+cabal test --project-file=cabal-v2.project --offline all --test-show-details=direct
+```
+
+  [Read tests](../../v2/test-sqlite/ReadTests.hs) cover root/delegated/add-only authority, exact scopes, two collections with repeated IDs, strict expiry, maximum ancestry and traversal bounds, malformed storage, and absence.
+  Lifetime tests cover unchanged caller transactions, rejected settings, contention, exceptions, cancellation, controlled COMMIT Busy and automatic rollback, and MVar-coordinated read/update/revocation ordering.
+* Security: authorization and article selection read the same database state in one transaction; a new read after revocation commits denies access.
+  Wrapping a request or action to hide its transaction type does not allow the API to execute it in another transaction.
+  Trusted clocks and exclusive connection use remain interpreter responsibilities; callers must leave the opening callback on failure.
+* Limits: Linux and populated dependency caches are verified; macOS, empty-cache bootstrap, legacy root builds, GitHub CI, interactive editor behavior, and crash/power-loss durability are not verified by this slice.
+* Mode: normal Code for this approved slice.
+  Title mutation and the shared transaction modes are implemented in task 4.6.
+
+#### 4.6 Private protected title change
+
+* Status: implemented and verified on Linux with bundled SQLite 3.45.0.
+  All 132 domain/policy tests and 163 SQLite tests pass, including 32 title-change cases.
+  Build, Test, Version, offline build/test, formatting, linting, HLS (28 files), and Diff checks pass.
+* Goal: complete M4's one protected write path with exact-payload sealing, revision checks, and edit/revoke ordering.
+* Scope: the named changeTitle operation, its sealed request, and persistence helper alongside reads in [Articles](../../v2/persistence/Eselsohr/Store/SQLite/Articles.hs), using the same hidden Internal.Transaction and Internal.Authority modules.
+  ReadTx and WriteTx share transaction cleanup and bounded grant loading, with their types preventing writes through the read runner or execution in another transaction.
+  Request constructors remain private to Articles; transaction constructors remain private to Internal.Transaction, whose context access and IO lifting are available only within the adapter library.
+  Both operations return StoreError without including submitted or stored values; writes add NotFound, InvalidRevision, Conflict, and RevisionExhausted categories.
+  The write runner rejects an existing transaction without changing it, requires existing DELETE journaling, sets and verifies synchronous EXTRA and secure_delete ON, and uses BEGIN IMMEDIATE without retries or mode conversion.
+  Inside the transaction, it rechecks the journal mode and opener settings, reloads identity/version, bearer and ancestry, checks the sole root, samples fresh time, and requires ReadArticles plus ChangeTitles for the sealed target.
+  The operation-specific request seals the exact article ID, validated title, and Integer expected revision.
+  After authorization, the helper validates revision bounds, loads at most two matching article rows, compares the expected and stored revisions, and applies pure rename.
+  Older/newer revisions conflict even for apparent no-ops; matching no-ops issue no UPDATE, including at the maximum revision.
+  Real changes increment once, and exhaustion fails without writing.
+  A private ToRow update DTO binds only the title, new revision, article ID, and current revision; an unexpected affected-row count is corruption and rolls back.
+  Success returns the private StoredArticle only after commit; later failures and cancellation roll back earlier writes.
+* Non-goals: other mutations, issuance or revocation APIs, schema/dependency changes, public Store interfaces, effects/runtime, HTTP, file creation, migrations, pooling, and M4 exit review.
+  Revocation fixtures use trusted SQL to exercise ordering without implementing a revocation API.
+* Depends on: 4.2–4.5, pure rename and operation policy, D3, D4, and the approved shared typed modes and write settings.
+* Verify: Build, Test, Version, formatting, linting, HLS, and Diff checks, plus:
+
+```sh
+cabal build --project-file=cabal-v2.project --offline all
+cabal test --project-file=cabal-v2.project --offline all --test-show-details=direct
+```
+
+  [Title tests](../../v2/test-sqlite/TitleTests.hs) cover owner/delegated authority, permission combinations and no-ops, exact payloads, two files with repeated IDs, fresh expiration and ancestor checks, malformed storage, and revision extrema.
+  Lifetime tests cover required settings, rejected journal modes, caller transactions, exceptions and cancellation after an UPDATE, affected-row checks, automatic rollback, COMMIT Busy, competing edits, and ancestor revocation in both transaction orderings.
+* Security: authorization, revision checks, and mutation share one immediate transaction.
+  A sealed request records the expected revision but does not establish that it matches storage or prevent reuse; repeating a request that changed the article conflicts and rolls back the transaction.
+  An edit ordered before revocation may finish; new edits after committed revocation deny access.
+  Trusted clocks and exclusive connection use remain interpreter responsibilities; callers must leave the opening callback on failure.
+* Limits: Linux and populated dependency caches are verified; macOS, empty-cache bootstrap, legacy root builds, GitHub CI, interactive editor behavior, secure erasure, and crash/power-loss durability remain unverified.
+* Mode: normal Code for this approved slice.
+  Commit locally and stop before the separately approved M4 exit review or M5.
 
 ### M5: scoped effects and runtime
 
-Purpose: run the same small application function with production and test handlers, without global Store authority or `IOE` in ordinary logic.
+Purpose: run the same small application function with production and test handlers, without global Store authority or `IOE` in application logic.
 Depends on the selected protected-store API, not the whole web application.
 
 Separate slices: smallest semantic effect/interface; SQLite handler and runtime binding; deterministic test handler; one common application function and its authority/export tests.
@@ -433,12 +641,12 @@ Maintenance tests can use a separate worktree after schema interfaces settle.
 
 ### M10: root cutover and removal
 
-Purpose: leave one comprehensible application and ordinary root Cabal commands.
+Purpose: leave one comprehensible application that builds and tests with the root Cabal project.
 Depends on acceptance of the intended replacement feature/security baseline, not merely on a seed that builds.
 
 Separate changes: move the replacement to the root without behavior changes; remove now-unused legacy code; prune dependencies, scripts, and workflows; update or remove documentation that no longer describes the code.
 Do not mix feature work or opportunistic upgrades into cutover.
-Verify ordinary `cabal test` and `cabal run eselsohr` (subject to the accepted executable name), quality checks, and the accepted end-to-end flows.
+Verify `cabal test` and `cabal run eselsohr` from the repository root (subject to the accepted executable name), quality checks, and the accepted end-to-end flows.
 Normal Code on a dedicated cutover branch.
 A mechanically large deletion is acceptable if ownership and lack of consumers are clear.
 Avoid parallel branches changing paths during cutover.
@@ -465,7 +673,7 @@ Expand these tasks only when needed.
 Documentation -> seed + dependency solution
                     |-> native CI / quality / macOS
                     |-> pure domain and policy ---------+
-                    |-> SQLite opening experiment ------+-> Store -> Effects -> Web
+                    |-> SQLite opening -----------------+-> Store -> Effects -> Web
                     |-> PublicWeb experiment -------------------------------> Fetch integration
 
 Web + policy -> sharing/lifecycle -> maintenance -> accepted root cutover
@@ -475,13 +683,8 @@ Runnable application + maintenance contract -> deployment checks
 The arrows show interface dependencies, not a requirement to finish every task on the left before doing any useful work on the right.
 For example, maintenance design can begin once the schema/locking contract is stable, and deployment configuration can be drafted before root cutover.
 
-For D3, use `experiment/named-operations` and `experiment/sealed-actions` only if comparing implementations will resolve a real uncertainty.
-Give both the same protected read/title-change requirements, wrong-target cases, and revocation race semantics.
-Compare exposed authority, omission opportunities, target/payload binding, freshness, trusted-code size, and readability.
-Keep one implementation and useful tests, not two application frameworks.
-
-Other sensible independent worktrees are SQLite opening, PublicWeb, CI/DX, and pure-domain work.
-Agree shared ID/interface shapes and coordinate manifest changes.
+Sensible independent worktrees include SQLite opening, PublicWeb, CI/DX, and pure-domain work.
+Agree shared ID types and interfaces, and coordinate manifest changes.
 Multiple writing sessions in one checkout are not independent branches.
 Do not delegate agent work or create competing implementations without an explicit task requesting it.
 
@@ -497,8 +700,9 @@ Commit only when asked, and never push.
 The author reviews and pushes.
 
 M3 is ready for exit review of policy inputs, attenuation laws, and the distinction between policy data and authentic capability possession.
-D1/D2 are settled, M1 and tasks 2.1 and 3.1–3.6 are complete, and CI tasks 2.2 and 2.3 are deferred.
-After review, M4 needs a bounded task plan and approval before work starts; D3–D5 remain pending.
+D1/D2/D3/D4 are settled, M1 and tasks 2.1, 3.1–3.6, and 4.2–4.6 are complete, and CI tasks 2.2 and 2.3 are deferred.
+M4's exit review findings are addressed; M5 needs its own bounded task plan and approval.
+D5 remains pending.
 
 The machine-specific execution environment belongs in the session's task input, not contributor instructions.
 A fresh local session should be told to use the existing Haskell toolchain environment, verify its path/versions, and avoid host installations or global changes.
