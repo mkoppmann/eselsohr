@@ -589,6 +589,7 @@ Purpose: run the same small application function with production and test handle
 Depends on the selected protected-store API, not the whole web application.
 
 Separate slices: smallest semantic effect/interface; SQLite handler and runtime binding; deterministic test handler; one common application function and its authority/export tests.
+Start from one named operation, give it only the effects it uses, and keep authorization inside the Store handler's transaction, following the [preferred direction](eselsohr-2.md#preferred-direction).
 Do not recreate App/TestApp, a universal environment, or effects for every helper, clock read, random value, and log message.
 Review signatures, handler scope, and exception/cancellation behavior.
 Use a focused Plan comparison, then normal Code.

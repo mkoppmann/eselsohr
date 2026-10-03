@@ -81,6 +81,15 @@ Retain separation where it protects an invariant, not merely to reproduce the ol
 Servant, Lucid, and server-rendered HTML without JavaScript remain the preferred web stack.
 Dependencies and abstractions must earn their complexity.
 
+Organize the application around named operations: the meaningful things a holder can do, such as adding an article, changing its title or read state, deleting it, delegating, and revoking a link.
+Create, update, and delete on stored records are not the organizing unit.
+Frameworks such as Elixir's Ash declare such operations and derive interfaces from those declarations; Eselsohr expresses them as ordinary Haskell types and functions instead of a resource/action language.
+Validated values and meaningful states belong in types, decisions in pure functions, and each operation in a typed function whose effects name only the authority it uses.
+Handlers own SQLite, network, and clock access; Web and the CLI translate inputs and results.
+Derive mechanical representations, such as row DTOs, typed routes and links, and decoding of raw form input.
+Do not derive domain behavior or bypass validated constructors.
+Introduce a shared abstraction only after repeated operations show that it removes real duplication.
+
 Expose metadata retrieval through a restricted `PublicWeb` interface.
 Its handler must enforce destination restrictions at the actual connection, including redirects and DNS behavior, and bound time and response size.
 Parsing a URL does not establish that fetching it is safe.
@@ -451,6 +460,19 @@ Only the runtime can turn a parsed locator into a connection.
 Application code must not receive a global `openCollection`, `Connection`, raw SQL, or data path.
 A Store effect with every operation on every collection would mostly rename dependency injection; it would not establish least authority.
 
+An application operation's constraints should show which Store facet it uses.
+An illustrative title change, not a committed effect declaration:
+
+```haskell
+changeArticleTitle :: ArticleEditor :> es
+                   => ArticleId -> Title -> Integer
+                   -> Eff es (Either TitleChangeFailure ())
+```
+
+The constraint does not grant authority: the handler's bound bearer determines what the operation may do.
+Authorization is not a separate effect called before storage.
+The Store handler checks it inside the transaction that executes the sealed request, as D3 requires.
+
 The private protected read supplies articles with revision metadata kept outside Article so an edit can carry the expected stored version.
 A protected title change accepts an article ID, a validated title, and an expected revision.
 Both operations return the private `StoredArticle` metadata DTO; the application-facing Store interfaces remain deferred.
@@ -485,6 +507,7 @@ The sealing interface must prevent unchecked reconstruction, payload replacement
 Seals remain private to the protected operation; they are not reusable bearer tokens or a proof of single use.
 The private read and title change enforce these restrictions through the request types and transaction runners described under [protected read](#protected-read).
 The selected design adds no generic authorized-action framework or dispatcher.
+It also adds no type-level registry mapping operations to required effects or permissions; plain constraints state the same fact readably.
 Purpose-specific Store facets and fetch permits remain separate candidates.
 Narrow operation families are useful when they remove real authority; proliferating effects per CRUD operation is not.
 
@@ -743,6 +766,7 @@ These comparisons preserve the reasoning; they are not invitations to reopen agr
 | Choice | Alternatives | Recommendation and cost |
 | --- | --- | --- |
 | Effects | Existing MTL classes; ReaderT/records or direct function arguments; effectful | effectful is agreed for teaching. Records could suffice for this scope and remain the simplicity benchmark. Broad handlers remain broad authority in either design. |
+| Application model | CRUD repositories; a declarative resource/action framework such as Ash; named operations as typed functions | Prefer named operations with plain effect constraints. Declarative frameworks derive interfaces from operation descriptions, but add machinery each reader must learn; derive only mechanical representations. |
 | Authorization gate | Named operations with private checks; generic sealed actions; operation-specific sealed requests behind named operations | D3 selects the last: store the complete inputs in a private request that executes only in the transaction that checked it. Keeping constructors private and preventing execution in another transaction add implementation and verification work. |
 | Storage boundary | One file per collection; one shared SQLite database | Prefer per-collection files to limit each connection to one collection and allow independent export. Accept extra open/migration/backup coordination; not OS isolation. |
 | Central index | No index; non-secret catalogue; global grant/secret store | No index now. Operator enumeration suffices; no cross-collection product query earns a central authority. |
