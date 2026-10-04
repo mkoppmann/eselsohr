@@ -6,26 +6,34 @@ Eselsohr 2 should stay small enough for one developer to understand the complete
 ## Project map
 
 Read [README.md](README.md) for the existing application and the author's prose.
-Read [the Eselsohr 2 design](docs/design/eselsohr-2.md) for agreed decisions, proposals, approval gates, and security requirements.
-Read [the security model](docs/security-model.md) for the approved operation policy and its enforcement limits.
-Use [the investigation](docs/design/investigation.md) for existing behavior and evidence, and [the roadmap](docs/design/roadmap.md) for bounded tasks and acceptance checks.
-The design distinguishes the replacement's implemented pure model and policy from its intended application behavior.
-It does not describe the legacy application's behavior.
+Eselsohr 2 is specified with [OpenSpec](https://openspec.dev/):
 
+* [openspec/specs/](openspec/specs/) holds the current requirements of the replacement: implemented, verified behavior and its limits.
+* [openspec/changes/](openspec/changes/) holds one change per milestone, with its proposal, design decisions, delta specs, and tasks.
+  Active changes describe in-progress or planned work; [openspec/changes/archive/](openspec/changes/archive/) keeps the completed ones and the reasoning behind their decisions.
+* [openspec/config.yaml](openspec/config.yaml) holds the project context, approved decisions, verification commands, and the rules for writing each artifact.
+
+The specs and changes describe Eselsohr 2, not the legacy application.
+Legacy behavior appears as evidence in the design of the change it motivates.
 The existing code is evidence of requirements and experiments, not an architecture that must be preserved.
 There is no legacy data or URL compatibility requirement for the redesign.
 
+Use `openspec list` and `openspec list --specs` to see changes and capabilities, and `openspec show <name>` to read one.
+In Claude Code, the `/opsx:explore`, `/opsx:propose`, `/opsx:apply`, `/opsx:update`, `/opsx:sync`, and `/opsx:archive` commands drive the workflow; in Codex, the matching `$openspec-*` skills do.
+The generated files in `.claude/skills/`, `.claude/commands/opsx/`, and `.agents/skills/` come from `openspec init`; regenerate them with `openspec update` after upgrading OpenSpec instead of editing them.
+
 ## Working scope
 
-Implement the requested task, not the whole roadmap.
+Implement the requested change, not the whole sequence of milestones.
+Before applying an outlined change, expand its next slice into bounded tasks and settle the decisions that slice consumes.
 Keep changes reviewable.
 Stop at unresolved architectural decisions that affect the task.
 Preserve unrelated changes.
 Do not add speculative documentation or abstractions.
 Preserve persistence ignorance: domain values and transitions must not depend on revision metadata, storage formats, or database limits.
-Keep docs current: distinguish implemented behavior from current proposals.
-Replace or remove obsolete information; Git history records past states.
-Update the design and roadmap when decisions or implementation status change.
+Keep specs current: they state implemented behavior, and active changes state proposals.
+Replace or remove obsolete information; Git history and archived changes record past states.
+Update the specs, change artifacts, and this file when decisions or implementation status change.
 Use concise, concrete prose in the style of the README and existing comments.
 Name the data and checks directly, and explain technical terms where first needed.
 Begin each Haskell module with a Haddock block after any language pragmas and before the module declaration, using `Module` and `Description` fields followed by an API overview.
@@ -39,10 +47,27 @@ Prefer short function composition such as `f . g $ argument` over nested parenth
 Keep parentheses and named arguments where they clarify grouping, precedence, or data flow; do not force point-free definitions.
 Separate logical phases within larger functions with a single blank line, keeping related bindings and checks together.
 Use the same grouping in larger tests to distinguish setup, execution, and assertions without separating every statement.
-Write one sentence per line in documentation, source code comments, and other prose to keep Git diffs focused.
+Write one sentence per line in documentation, specs, source code comments, and other prose to keep Git diffs focused.
 Do not hard-wrap sentences to a fixed column width.
 Commit only when requested.
 Never push; the author reviews and pushes changes.
+
+## Sessions and parallel work
+
+Completing one task does not authorize later tasks or resolve their approval gates.
+Use normal Code mode for a settled task and a Plan-mode pass for an unresolved interface or security or operational contract.
+Use `/goal` only for a substantial fixed task whose allowed changes and completion tests are explicit; never for a whole change or an open-ended security claim.
+Use one session per coherent change, keep its debugging and review fixes in that session, and start fresh for a different change or an independent review.
+A session needs the project map, the change and its next tasks, the relevant decisions, and the completion checks, not the full earlier conversation.
+Report the diff scope, commands and actual results, unverified cases, and any remaining approval gate.
+
+The machine-specific execution environment belongs in the session's task input, not in these instructions.
+Use the existing Haskell toolchain, verify its paths and versions, and do not install host tools or change global configuration merely to get a check past a blocker.
+
+Independent worktrees suit separate concerns such as storage, PublicWeb, CI and developer experience, and pure-domain work.
+Agree shared identifier types and interfaces first, and serialize manifest and freeze-file changes at merge time.
+Multiple writing sessions in one checkout are not independent branches.
+Do not delegate agent work or create competing implementations without a task that explicitly requests it.
 
 ## Security intent
 
@@ -57,18 +82,16 @@ Public-web fetching must not grant arbitrary network access to application code.
 Effects and private constructors are not a sandbox for a compromised process.
 Separate collection files are not operating-system isolation.
 These are redesign requirements, not guarantees of the old implementation.
+The [security-boundaries spec](openspec/specs/security-boundaries/spec.md) states the threat model and the limits of each enforcement mechanism.
 
 ## Commands and current status
 
 The legacy package is `eselsohr`; its executable is `eselsohr-exe`.
-Its root `cabal build` and `cabal test` commands are not a passing baseline; see the investigation for the compiler mismatch.
+Its root `cabal build` and `cabal test` commands are not a passing baseline; GHC 9.10.3 does not satisfy its `base` bound.
 
 The independent `v2/` package is `eselsohr-v2`.
 Its library, executable, and tests use GHC2024.
 The shared Cabal `language` stanza enables OverloadedStrings for all v2 components; keep extensions used only by particular modules in their source pragmas.
-It contains a version command, validated values, pure article transitions, grant validation, operation policy, and a private SQLite adapter with opening, initial schema installation, validated row codecs, bearer parsing/digest lookup, and protected article reads and title changes.
-Other protected mutations, the application-facing Store API, and the web application remain unimplemented.
-The private adapter keeps article revision metadata outside the domain model; the public protected Store API remains deferred.
 These commands pass on x86-64 Linux and Apple Silicon macOS with GHC 9.10.3 and Cabal 3.16.1.0:
 
 ```sh
@@ -77,40 +100,14 @@ cabal test --project-file=cabal-v2.project all --test-show-details=direct
 cabal run --project-file=cabal-v2.project eselsohr-v2 -- --version
 ```
 
-The root `hie.yaml` selects `cabal-v2.project` for HLS and excludes source outside `v2/`.
-HLS 2.14.0.0 loads all five v2 components with GHC 9.10.3 on both platforms; see the roadmap for the check command.
-
-Fourmolu 0.20.1.0 and HLint 3.10 check every v2 Haskell source and pass on both platforms.
-See roadmap task 2.1 for the commands; use the existing formatter style and HLint defaults.
-See roadmap task 2.4 for macOS setup notes.
-
-D1 (independent package), D2 (manual bookmarking first), D3 (exact-payload sealing behind named operations), and D4 (bundled SQLite) are approved.
-M1 and tasks 2.1, 3.1–3.6, and 4.2–4.6 are complete, and task 2.4's local macOS check passes; M3 is ready for exit review.
-Local development is the current priority; GitHub CI tasks 2.2 and 2.3 and the macOS workflow of task 2.4 are deferred.
-The eight-permission vocabulary and collection-bound scopes are approved.
-Delegation is limited to four edges; the root has all eight permissions and no expiry, and children have finite deadlines no later than their parent's.
-Ancestry validation checks the supplied grant and its ancestors against the requested grant ID, collection, and time.
-The operation policy rechecks expiration and target permissions; it allows management of expired descendants whose parent links and delegation limits remain valid.
-Protected reads and title changes use sealed requests: values with private constructors that store the exact operation inputs and can execute only in the transaction that checked them.
-Pure transformations require no sealed request; revision comparisons happen in the persistence helper after authorization.
-Use the SQLite engine bundled with `direct-sqlite`, with `systemlib` disabled, to simplify deployment.
-The private `sqlite-internal` component opens existing collection files and validates their stored identity and schema version 1.
-Its source root is `v2/persistence`; `SQLite.Internal` names the hidden helper modules, while the component's exposed modules form its interface for sibling components.
-Bearer has a private constructor, parses the canonical 69-character `v2.<base64url-uuid>.<base64url-secret>` format, and derives a SHA-256 hash from the collection ID and secret.
-Lookup requires an active transaction, checks collection identity and version, and finds the grant and permissions by that hash; ancestor, expiration, and operation checks belong to the protected operations.
-Articles owns `readArticles`, `changeTitle`, their sealed requests, and article SQL; the hidden helpers manage transactions and load and validate stored grants.
-`readArticles` requires Read permission, and `changeTitle` requires Read plus ChangeTitles for the requested article, using grants loaded inside each transaction.
-Title changes check that the submitted revision is in range and matches storage; matching no-ops perform no UPDATE, changed titles increment once, and exhaustion fails without writing.
-See the [protected read](docs/design/eselsohr-2.md#protected-read) and [title change](docs/design/eselsohr-2.md#protected-title-change) for transaction types, constructor restrictions, and failure handling.
-Writes require DELETE journaling and set and verify synchronous EXTRA and secure_delete ON without converting journal modes.
-Initialization installs the schema and identity atomically into an already-open empty database, without creating a file or root grant.
-Private row DTOs have SQL instances and separate checked conversions; timestamps use exact signed 64-bit Unix microseconds, and revisions range from zero through the signed 64-bit maximum.
-Task 4.2 pins `direct-sqlite` 2.3.29 and `sqlite-simple` 0.4.19.0 with bundled SQLite 3.45.0.
-M4's exit review findings are addressed; the application-facing Store API remains deferred to M5 and D5 remains pending.
-Dependency versions and the Hackage index state are pinned.
-See roadmap task 1.3 for deliberate freeze updates and verified offline commands; machine-local overrides stay untracked.
+The [development-workflow spec](openspec/specs/development-workflow/spec.md) and `openspec/config.yaml` list the offline, formatting, linting, and HLS checks, and the archived `add-local-quality-checks` change explains the macOS setup.
+Dependency versions and the Hackage index state are pinned; machine-local overrides stay untracked.
 The contributor workflow should support Linux and macOS without requiring Nix or a particular developer's container setup.
 
-For documentation-only changes, inspect new files and relative links, run `git status --short` and `git diff --check`, and check untracked files explicitly.
+M1, the local checks of M2, and M3 and M4 are implemented: validated values, article transitions, grant validation, operation policy, and a private SQLite adapter with protected article reads and title changes.
+`add-scoped-store-effects` (M5) is the next milestone; the GitHub CI work in `add-native-ci` is deferred while local development is the priority.
+D1–D4 are approved; D5 (deletion lifecycle) remains open in `add-link-sharing-and-owner-lifecycle`.
+
+For documentation-only changes, run `openspec validate --all --strict`, inspect new files and relative links, run `git status --short` and `git diff --check`, and check untracked files explicitly.
 `git diff` does not show their contents.
 Do not change dependencies or install tooling to verify documentation.

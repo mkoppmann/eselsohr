@@ -4,6 +4,7 @@ Description : Operation permissions and target relationship tests
 
 'authorizationTests' compares operation decisions with an independent permission table across every permission set and representative scopes.
 Examples and generated grant trees cover child issuance, owner operations, descendant management, and expiration at the supplied decision time.
+Generated trees also check that every ancestor may perform the article, collection, and management operations allowed to its descendants.
 -}
 module Authorization (authorizationTests) where
 
@@ -11,9 +12,10 @@ import Control.Exception (evaluate)
 import Control.Monad (forM, forM_)
 import Data.Bifunctor (first)
 import Data.Either (isLeft)
-import Data.List (subsequences)
+import Data.List (subsequences, tails)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.List.NonEmpty qualified as NonEmpty
+import Data.Maybe (mapMaybe)
 import Data.Set qualified as Set
 import Data.Text qualified as Text
 import Data.Time (Day (..), NominalDiffTime, UTCTime (..), addUTCTime, diffUTCTime)
@@ -296,6 +298,19 @@ properties f =
                             | (operation, expected) <- [(InspectLink, mayInspect), (RevokeLink, mayRevoke)]
                             , target <- [targetGrants, expiredPath]
                             ]
+        , testProperty "ancestors may perform every operation their descendants may" $
+            forAll (genTree f) $ \(instant, tree) -> forAll (elements (treePaths tree)) $ \path ->
+                forAll (chooseInteger (0, 1000001)) $ \offset ->
+                    let decisionTime = addUTCTime (fromInteger offset) instant
+                        allowed actorPath' operation = policy decisionTime actorPath' operation == Right ()
+                        -- Issuance is excluded because a proposed child names its acting parent.
+                        operations = fixtureOperations f ++ concatMap management (treePaths tree)
+                     in conjoin
+                            [ counterexample (show (ancestor, operation)) (allowed ancestor operation)
+                            | ancestor <- mapMaybe NonEmpty.nonEmpty . drop 1 . tails $ NonEmpty.toList path
+                            , operation <- operations
+                            , allowed path operation
+                            ]
         , testProperty "corrupting any generated target ancestor is rejected" $
             forAll (genTree f) $ \(instant, tree) ->
                 conjoin
@@ -327,6 +342,18 @@ checked instant path = first ActorChainRejected $ validateChain instant collecti
 
 policy :: UTCTime -> NonEmpty GrantSnapshot -> Operation -> Either PolicyError ()
 policy instant path operation = checked instant path >>= \chain -> decide instant chain operation
+
+-- Article and collection operations on both fixture collections and articles.
+fixtureOperations :: Fixtures -> [Operation]
+fixtureOperations f =
+    concat
+        [ [ReadArticlesIn (WholeCollection collection), AddArticle collection, DeleteCollection collection]
+            ++ concat
+                [ [ReadArticlesIn (OneArticle collection article), RenameArticle collection article, ChangeArticleReadState collection article, DeleteArticle collection article]
+                | article <- [articleA f, articleB f]
+                ]
+        | collection <- [collectionA f, collectionB f]
+        ]
 
 management :: NonEmpty GrantSnapshot -> [Operation]
 management path = [operation (grantId (NonEmpty.head path)) (NonEmpty.toList path) | operation <- [InspectLink, RevokeLink]]

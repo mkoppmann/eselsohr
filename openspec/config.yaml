@@ -1,0 +1,84 @@
+schema: spec-driven
+
+context: |
+  Eselsohr stores web articles to read later or share with others, without user accounts.
+  Eselsohr 2 is a rewrite that should stay small enough for one developer to understand the complete application.
+  It is also a reference for domain-driven design, secure functional software, and object-capability ideas.
+  It remains a bookmark manager, not an archiving service or account platform.
+
+  The legacy package `eselsohr` in the repository root is evidence of requirements and experiments, not an architecture to preserve.
+  Its root `cabal build` and `cabal test` are not a passing baseline.
+  The replacement is the independent `eselsohr-v2` package in `v2/`, selected by `cabal-v2.project`; it imports nothing from the legacy `Lib` tree.
+  There is no legacy data or URL compatibility requirement.
+
+  Approved decisions:
+  D1: build the replacement as the independent `v2/` package and cut over to the root later.
+  D2: the first usable version supports manually entered URLs and titles; automatic metadata fetching does not block it.
+  D3: protected operations seal their exact inputs in private, operation-specific requests that execute only in the transaction that checked them; no generic authorized-action framework or dispatcher.
+  D4: use the SQLite engine bundled with `direct-sqlite`, with `systemlib` disabled.
+  D5 (deletion lifecycle) is open and gates owner deletion.
+  Do not reopen these without new evidence: single-set permissions, add-only access, bounded recursive delegation, hash-only bearer storage, operator collection creation, descendant management, owner deletion, offline migrations, and the use of `effectful`.
+
+  Constraints:
+  Persistence ignorance: domain values and transitions do not depend on revision metadata, storage formats, or database limits.
+  Delegation must not increase permissions, target scope, or lifetime; an invalid, expired, or revoked ancestor denies descendant access.
+  Bind authorization to the collection, object, operation, and current state inside the transaction that uses it.
+  Add-only access must not reveal other articles or mint read authority.
+  Whole-collection deletion is owner-only and cannot be delegated.
+  Do not log bearer tokens or make stored hashes recoverable sharing links.
+  Public-web fetching must not grant arbitrary network access to application code.
+  Effects, private constructors, and separate collection files are not a sandbox or operating-system isolation.
+  Parse untrusted input totally, and bound input, query results, and database work.
+  Protected operations use short transactions, read back important connection settings, and make no network requests while holding a transaction.
+  Dependencies and abstractions must earn their complexity.
+  Do not record unresolved alternatives as decisions or treat examples as approval.
+  Native GHCup and Cabal on Linux and macOS are the contributor path; Nix and containers stay optional.
+
+  Writing:
+  Write one sentence per line in every artifact, without hard wrapping to a fixed column.
+  Use concise, concrete prose in the style of the README and existing comments, and explain technical terms where first needed.
+  Replace obsolete statements instead of appending history; Git and archived changes record past states.
+
+  Verification vocabulary, run from the repository root:
+  Build: `cabal build --project-file=cabal-v2.project all`
+  Test: `cabal test --project-file=cabal-v2.project all --test-show-details=direct`
+  Version: `cabal run --project-file=cabal-v2.project eselsohr-v2 -- --version`
+  Offline: Build and Test with `--offline` after dependency caches are populated.
+  Quality: `rg --files v2 -g '*.hs' -0 | xargs -0 fourmolu-0.20.1.0 --mode check` and `hlint-3.10 v2`; unversioned `fourmolu` and `hlint` are fine when their `--version` matches.
+  HLS: `rg --files v2 -g '*.hs' -0 | xargs -0 haskell-language-server-wrapper -j 2`
+  Diff checks: `git status --short --untracked-files=all`, `git diff --check`, and inspection of every changed and untracked file; for staged work also `git diff --cached --check` and `git diff --cached --stat`.
+  A focused test filter must actually select tests; an empty suite is not evidence.
+  Environment version checks and offline solver diagnostics are separate evidence from executed builds and tests.
+  Specs: `openspec validate --all --strict`
+
+rules:
+  proposal:
+    - State the purpose, non-goals, dependencies on other changes, and every approval gate the change consumes or leaves open.
+    - A change corresponds to one milestone; keep its tasks reviewable and split the milestone rather than inflating a task.
+  specs:
+    - Specs contain only behavior that is implemented and verified, or that an active change will implement; mark nothing as a guarantee that tests do not establish.
+    - Name the data and checks directly; keep library choices, module layout, and type signatures in design.md unless an identifier is the observable contract, such as an error value.
+    - State the limits of each property honestly, including what a check does not establish.
+    - Cite the test module that verifies an implemented requirement where that helps a reviewer.
+  design:
+    - Record the alternatives considered and why the chosen one earns its complexity.
+    - Put evidence from the legacy application here, citing the legacy source files it concerns.
+    - Keep open decisions visibly open; do not treat examples or proposals as approval.
+  tasks:
+    - Before applying an outlined change, expand its next slice into tasks of roughly an hour of focused work or a few hundred meaningful lines, and settle the decisions that slice consumes.
+    - Each task names its goal and sequence reason, scope, non-goals, likely files, dependencies, completion checks with the verification commands from the context, security constraints, execution mode, and whether a separate branch or worktree helps.
+    - Use a fresh planning pass for an unresolved interface or security contract; never use an open-ended goal such as "make SSRF safe".
+    - Mark a task done only with the commands actually run and their results; record unverified platforms and cases.
+
+operations:
+  apply:
+    guidance:
+      - Work on one change at a time and keep unrelated changes intact.
+      - Keep substantive decisions in pure functions and sequence effects in short, named steps.
+      - Report the diff scope, commands and actual results, unverified cases, and remaining approval gates.
+      - Commit only when asked, and never push; the author reviews and pushes.
+  archive:
+    guidance:
+      - Archive a change only after its exit review.
+      - Archiving moves the change one directory deeper; fix its relative links afterwards.
+      - Update the status in AGENTS.md when it names the archived change.
