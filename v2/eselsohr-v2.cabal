@@ -81,14 +81,39 @@ library store-runtime
         eselsohr-v2:sqlite-internal,
         time ^>=1.12.2
 
+library web
+    import:           language
+    visibility:       private
+    exposed-modules:
+        Eselsohr.Config
+        Eselsohr.Web.Html
+        Eselsohr.Web.Route
+        Eselsohr.Web.Server
+    hs-source-dirs:   web
+    ghc-options:      -Wall
+    build-depends:
+        base ^>=4.20.2.0,
+        bytestring ^>=0.12.2.0,
+        directory ^>=1.3.8.5,
+        eselsohr-v2,
+        filepath ^>=1.5.4.0,
+        http-types ^>=0.12.6,
+        lucid ^>=2.11.20260427,
+        network-uri ^>=2.6.4.2,
+        text ^>=2.1.3,
+        wai ^>=3.2.5,
+        warp ^>=3.4.15
+
 executable eselsohr-v2
     import:           language
     main-is:          Main.hs
     hs-source-dirs:   app
-    ghc-options:      -Wall
+    ghc-options:      -Wall -threaded
     build-depends:
         base ^>=4.20.2.0,
-        eselsohr-v2
+        eselsohr-v2,
+        eselsohr-v2:web,
+        text ^>=2.1.3
 
 test-suite eselsohr-v2-test
     import:           language
@@ -149,3 +174,31 @@ test-suite eselsohr-v2-sqlite-test
         text ^>=2.1.3,
         time ^>=1.12.2,
         unix ^>=2.8.7.0
+
+test-suite eselsohr-v2-web-test
+    import:           language
+    type:             exitcode-stdio-1.0
+    main-is:          Main.hs
+    hs-source-dirs:   test-web
+    ghc-options:      -Wall -threaded
+    other-modules:
+        ConfigTests
+        RawHttp
+        RouteTests
+        ServerTests
+    build-depends:
+        base ^>=4.20.2.0,
+        bytestring ^>=0.12.2.0,
+        case-insensitive ^>=1.2.1.0,
+        directory ^>=1.3.8.5,
+        eselsohr-v2:web,
+        filepath ^>=1.5.4.0,
+        http-types ^>=0.12.6,
+        network ^>=3.2.9.0,
+        tasty ^>=1.5.4,
+        tasty-hunit ^>=0.10.2,
+        tasty-quickcheck ^>=0.11.1,
+        temporary ^>=1.3,
+        text ^>=2.1.3,
+        wai ^>=3.2.5,
+        warp ^>=3.4.15

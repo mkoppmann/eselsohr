@@ -18,6 +18,10 @@ cradle:
                 component: "eselsohr-v2:lib:store-runtime"
               - path: "./v2/test-sqlite"
                 component: "test:eselsohr-v2-sqlite-test"
+              - path: "./v2/web"
+                component: "eselsohr-v2:lib:web"
+              - path: "./v2/test-web"
+                component: "test:eselsohr-v2-web-test"
     - path: "./"
       config:
         cradle:

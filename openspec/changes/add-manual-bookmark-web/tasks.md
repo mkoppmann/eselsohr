@@ -9,7 +9,7 @@ Each task ends with Diff checks and a report of the commands run, their results,
 
 Until task 3.2 connects the Store, every bearer route answers with the invalid-link page, so this slice serves only fixed pages.
 
-- [ ] 1.1 Add the web dependencies and the component skeleton.
+- [x] 1.1 Add the web dependencies and the component skeleton.
   - Goal: pin `wai`, `warp`, `http-types`, and `lucid` and create the private library `web` and the test suite `eselsohr-v2-web-test`; it comes first because every later task builds on them, and freeze changes must be serialized.
   - Scope: `build-depends` and components in `v2/eselsohr-v2.cabal`, a regenerated `cabal-v2.project.freeze`, a `web/` module with its Haddock header, and a `test-web/Main.hs` with one smoke test; the executable depends on `web`.
   - Non-goals: `crypton`, which task 2.1 adds; any route, page, or configuration code.
@@ -17,7 +17,9 @@ Until task 3.2 connects the Store, every bearer route answers with the invalid-l
   - Dependencies: Hackage access for the solver and downloads at the pinned index state; no host tool installation.
   - Completion checks: Build; Test, with the smoke test selected and passing; Offline; the freeze diff adds about the 40 packages of the earlier solve and changes no existing pin, with any difference recorded; `web` lists neither `sqlite-internal`, `direct-sqlite`, nor `sqlite-simple`; Quality; HLS.
   - Security constraints: no change to the index state or to existing pins, and no network access beyond Hackage.
-- [ ] 1.2 Parse configuration values purely.
+  - Verified on Apple Silicon macOS with GHC 9.10.3 and Cabal 3.16.1.0: the freeze diff adds exactly the 40 packages of the earlier solve and removes or changes no pin; Build passed; Test passed 1, 184, and 135 tests, including the selected smoke test; Build and Test with `--offline` passed, and a repeated offline `cabal freeze` was byte-identical; fourmolu 0.20.1.0 check and HLint 3.10 reported no changes or hints; HLS loaded all 34 files after `hie.yaml` mapped `v2/web` and `v2/test-web` to their components; `git diff --check` passed.
+  - Unverified: x86-64 Linux; the skeleton module holds the fixed security header list that task 1.5 applies.
+- [x] 1.2 Parse configuration values purely.
   - Goal: `Eselsohr.Config` turns the three variable values into a validated configuration or an error naming the variable; it precedes loading because loading only supplies the values.
   - Scope: the listener's `host:port` with a name, dotted IPv4, or bracketed IPv6 host and a port from 1 through 65535; the exact public origin with its loopback rule for `http`; required values and the listener default; error values that name the variable and the problem.
   - Non-goals: reading the environment, checking directories, or resolving names.
@@ -25,7 +27,9 @@ Until task 3.2 connects the Store, every bearer route answers with the invalid-l
   - Dependencies: 1.1.
   - Completion checks: Build; Test with a pattern selecting the configuration tests, covering missing and malformed values, IPv6 brackets, ports 0 and 65536, uppercase letters, a trailing slash, a path, user information, query and fragment, and loopback and non-loopback hosts with each scheme; Quality; HLS.
   - Security constraints: parse totally without exceptions; error messages may repeat configuration text, because configuration holds no bearer.
-- [ ] 1.3 Load configuration from the environment and the filesystem.
+  - Verified on Apple Silicon macOS with GHC 9.10.3 and Cabal 3.16.1.0: Build passed; Test with `-p Configuration` selected and passed 13 tests, and the full Test passed 135, 14, and 184 tests; fourmolu 0.20.1.0 check and HLint 3.10 reported no changes or hints; HLS loaded all 36 files; `git diff --check` passed.
+  - Unverified: x86-64 Linux; error messages repeat no configured text, which the design allowed but did not require; loopback detection accepts only the spellings `localhost`, `127.` addresses, and `[::1]`, so other spellings of the IPv6 loopback count as non-loopback.
+- [x] 1.3 Load configuration from the environment and the filesystem.
   - Goal: a loading step reads the variables through a supplied lookup function and checks that the data directory and its `collections` directory exist; it gives the server and `create-collection` one entry point.
   - Scope: the lookup function, production use of `lookupEnv`, and directory checks that create nothing and reject regular files.
   - Non-goals: opening collections, which `mkCollectionDirectory` does in later slices, and resolving the listener name, which task 1.6 leaves to Warp.
@@ -33,7 +37,9 @@ Until task 3.2 connects the Store, every bearer route answers with the invalid-l
   - Dependencies: 1.2.
   - Completion checks: Build; Test with temporary directories for a missing data directory, a regular file, and a missing `collections` directory, checking that no directory appears, and with the real environment compared before and after loading to show unrelated variables unchanged; Quality; HLS.
   - Security constraints: never unset or set environment variables; never rewrite a path between file and directory forms.
-- [ ] 1.4 Add the route function and the fixed pages.
+  - Verified on Apple Silicon macOS with GHC 9.10.3 and Cabal 3.16.1.0: Build passed; Test with `-p Loading` selected and passed 7 tests, and the full Test passed 135, 21, and 184 tests; fourmolu 0.20.1.0 check and HLint 3.10 reported no changes or hints; HLS loaded all 36 files; `git diff --check` passed.
+  - Unverified: x86-64 Linux; symlinked data and collections directories are accepted because `doesDirectoryExist` follows links, and `mkCollectionDirectory` resolves them later; a directory removed after loading is detected only when a collection is opened.
+- [x] 1.4 Add the route function and the fixed pages.
   - Goal: `Eselsohr.Web.Route` maps a method and path segments to the routes of the design, and `Eselsohr.Web.Html` renders the invalid-link page, the deletion notice, and the error pages; the server in 1.5 needs both.
   - Scope: a pure, total route function in which HEAD matches like GET, a trailing slash or extra segment matches nothing, and the bearer stays raw text; Lucid pages with fixed text and no request data.
   - Non-goals: parsing bearers, which needs `store-runtime` in task 2.2; the bearer page; reading query parameters.
@@ -41,7 +47,9 @@ Until task 3.2 connects the Store, every bearer route answers with the invalid-l
   - Dependencies: 1.1.
   - Completion checks: Build; Test with a pattern selecting the route and page tests, including a property that generated paths outside the route table match nothing and that every route accepts only its listed methods, and checks that no page contains a script element; Quality; HLS.
   - Security constraints: no page renders request data; the route table admits only bearer routes and the deletion notice.
-- [ ] 1.5 Serve the fixed pages with the response headers and Warp settings.
+  - Verified on Apple Silicon macOS with GHC 9.10.3 and Cabal 3.16.1.0: Build passed; Test with `-p Routes` selected and passed 8 tests, including the table property with at least 5% matching requests checked by `checkCoverage`, and the full Test passed 135, 29, and 184 tests; fourmolu 0.20.1.0 check and HLint 3.10 reported no changes or hints; HLS loaded all 39 files; `git diff --check` passed.
+  - Unverified: x86-64 Linux; the pages are checked for scripts, styles, a doctype, and a charset, not rendered in a browser.
+- [x] 1.5 Serve the fixed pages with the response headers and Warp settings.
   - Goal: `Eselsohr.Web.Server` builds the WAI application and the Warp settings, so that every response carries the headers of the design; the `serve` command in 1.6 only starts it.
   - Scope: a middleware adding no-store, no-referrer, nosniff, `X-Robots-Tag: noindex, nofollow`, and the CSP; HEAD answers without a body; a POST whose `Content-Length` exceeds 160 KiB answers 413 before routing; a limited body reader for later routes; Warp settings for the listener, an exception-response hook rendering the error pages with the same headers, and an exception logger writing a fixed category per exception to a supplied sink.
   - Non-goals: bearer pages, form decoding, and the Store.
@@ -49,7 +57,10 @@ Until task 3.2 connects the Store, every bearer route answers with the invalid-l
   - Dependencies: 1.4.
   - Completion checks: Build; Test with a pattern selecting the server tests, running under `testWithApplicationSettings` with the raw-socket helper and checking every header on the deletion notice, the invalid-link page, a 413 response, a 400 response to a malformed request line, and a 500 response from an application that throws, HEAD without a body, the limited reader on chunked bodies below, at, and above the limit, and that captured operator messages never contain a bearer-shaped path sent in a malformed request line; Quality; HLS.
   - Security constraints: no response sets a cookie; no log line contains a request line, path, or header; nothing trusts Host or forwarded headers.
-- [ ] 1.6 Add the `serve` command.
+  - Verified on Apple Silicon macOS with GHC 9.10.3 and Cabal 3.16.1.0, with local binding allowed in the sandbox: Build passed; Test with `-p Server` selected and passed 10 tests, and the full Test passed 135, 38, and 184 tests; fourmolu 0.20.1.0 check and HLint 3.10 reported no changes or hints; HLS loaded all 41 files; `git diff --check` passed.
+  - Deviation from the listed checks: `warp-3.4.15` closes the connection without any reply when it cannot split the request line (`BadFirstLine`), so no 400 exists for that case; the test checks that such a line with a bearer-shaped path gets no reply and no log, and a 400 with every header is checked for an oversized header block (`OverLargeHeader`), which Warp answers through the exception-response hook.
+  - Unverified: x86-64 Linux; the declared-length check at exactly the limit is tested by calling the application directly, because Warp drops a connection whose large body the application leaves unread; Warp's own 413 and 431 cases (`PayloadTooLarge`, `RequestHeaderFieldsTooLarge`) are mapped but not triggered by any test.
+- [x] 1.6 Add the `serve` command.
   - Goal: the executable accepts `serve` and `--version`, loads the configuration, and starts the listener; this completes slice 1 as a running server.
   - Scope: argument matching in `Main`; configuration errors on standard error with a failing exit status; one startup message naming the listener and the public origin.
   - Non-goals: `create-collection`, which task 2.1 adds; signal handling or graceful shutdown beyond Warp's defaults.
@@ -57,6 +68,9 @@ Until task 3.2 connects the Store, every bearer route answers with the invalid-l
   - Dependencies: 1.3 and 1.5.
   - Completion checks: Build; Test; Version; a manual run with a temporary data directory and `curl -sI` against the deletion notice and an invalid link, recording the headers, or recording that the sandbox forbids local binding; a manual run with an unresolvable listener name and with a malformed origin, recording the failure messages; Quality; HLS.
   - Security constraints: the startup message contains no bearer, and a configuration error exits before the listener binds.
+  - Verified on Apple Silicon macOS with GHC 9.10.3 and Cabal 3.16.1.0, with local binding allowed in the sandbox: Build passed; Test passed 135, 184, and 38 tests; Version printed `eselsohr-v2 0.1.0.0`; a manual `serve` with a temporary data directory answered `curl -sI` with 200 for `/deleted` and 404 for a bearer-shaped `/b/` path, both with every security header, wrote only the startup message to standard error, and created no collection file; manual runs with an unresolvable listener name, a trailing-slash origin, a plain-HTTP public origin, and a data directory without `collections` each printed one message naming the problem and exited with status 1; fourmolu 0.20.1.0 check and HLint 3.10 reported no changes or hints; HLS loaded all 41 files; `git diff --check` passed.
+  - The executable is built with `-threaded`, because Warp's timeout manager raises an `ErrorCall` on every request under the non-threaded runtime; the HTTP tests did not catch this, because the test suites already used `-threaded`. Adding the flag did not relink the existing binary, so the executable's build directory under `dist-newstyle` had to be removed once.
+  - Unverified: x86-64 Linux; an IPv6 listener and a listener name that resolves to several addresses; behaviour on SIGTERM beyond Warp's defaults.
 
 ## 2. Operator collection creation and the web boundary
 
