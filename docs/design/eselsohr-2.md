@@ -121,7 +121,7 @@ Approval of this design is not authorization to run that whole sequence autonomo
 The legacy code uses MTL-style interfaces and compressed JSON collection files, not SQLite.
 See the [build baseline](investigation.md#build-ci-and-nix-baseline) for its compiler constraint and the replacement's verification results.
 
-The independent `eselsohr-v2` package builds and tests on Linux with GHC 9.10.3 and Cabal 3.16.1.0.
+The independent `eselsohr-v2` package builds and tests on x86-64 Linux and Apple Silicon macOS with GHC 9.10.3 and Cabal 3.16.1.0.
 It provides `--version`, the values, transitions, grant validation, and operation policy below, and a Tasty suite with examples, exhaustive permission checks, and QuickCheck properties.
 Dependency versions and the Hackage index state are pinned; offline build/test checks pass with populated dependency caches.
 The [roadmap](roadmap.md#task-contract-and-verification-vocabulary) lists the verified commands.
@@ -675,7 +675,8 @@ The opening adapter and read runner leave journal mode, synchronous, and secure_
 The write runner requires existing DELETE journaling, sets and reads back synchronous EXTRA and secure_delete ON, and rejects other modes without converting the file.
 It checks required settings before BEGIN and rechecks the journal mode and opener settings inside the transaction.
 An existing transaction is rejected before any configuration changes.
-These settings and transaction behavior are verified on Linux with bundled SQLite 3.45.0; macOS, crash/power-loss durability, and secure erasure remain unverified.
+These settings and transaction behavior are verified on Linux and macOS with bundled SQLite 3.45.0; crash/power-loss durability and secure erasure remain unverified.
+On macOS, `fsync` does not ask the drive to flush its write cache, and the adapter leaves SQLite's `fullfsync` setting at its default of OFF.
 Future protected operations should use short transactions and read back important connection settings.
 See [SQLite pragmas](https://www.sqlite.org/pragma.html).
 Use WAL or a connection pool only after measuring a need and reviewing their backup, cleanup, and lifetime costs.
@@ -836,12 +837,12 @@ Backups include grant hashes/metadata; article-only exports deliberately exclude
 CLI root reset should revoke the old tree and issue a new one-time owner URL.
 
 Use native Cabal on Linux and macOS.
-GHC 9.10.3 and Cabal 3.16.1.0 build and test the replacement package on Linux.
-HLS 2.14.0.0 loads its two libraries, executable, and two test suites through the root `hie.yaml`; macOS remains unverified.
+GHC 9.10.3 and Cabal 3.16.1.0 build and test the replacement package on x86-64 Linux and Apple Silicon macOS.
+HLS 2.14.0.0 loads its two libraries, executable, and two test suites through the root `hie.yaml` on both platforms.
 This is not yet a wider support matrix.
 The independent project and its freeze file pin dependency versions and the index state.
 Update those pins deliberately rather than selecting new dependency versions on each CI run.
-Fourmolu 0.20.1.0 and HLint 3.10 check every v2 Haskell source and pass on Linux with the existing formatter style and HLint defaults.
+Fourmolu 0.20.1.0 and HLint 3.10 check every v2 Haskell source and pass on both platforms with the existing formatter style and HLint defaults.
 The [roadmap](roadmap.md#21-formatting-and-linting-for-the-new-package) lists the verified commands.
 Keep these explicit versions and limit quality checks to the replacement source.
 A wrapper/Makefile/Justfile is unnecessary until it shortens a real workflow.

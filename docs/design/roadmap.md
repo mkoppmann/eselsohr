@@ -41,7 +41,7 @@ Use normal Code mode for a settled task.
 Use another Plan-mode pass for an unresolved interface or security/operational contract.
 Use `/goal` only for a substantial fixed task whose allowed changes and completion tests are explicit; never use it for the whole roadmap or an open-ended security claim.
 
-The independent package is verified on Linux with GHC 9.10.3 and Cabal 3.16.1.0.
+The independent package is verified on x86-64 Linux and Apple Silicon macOS with GHC 9.10.3 and Cabal 3.16.1.0.
 Run these commands from the repository root:
 
 ```sh
@@ -56,14 +56,14 @@ Do not report an empty suite as evidence.
 The old root package's failing solver is not a new task regression, but do not claim the whole repository is green while only the independent project builds.
 
 The root [HLS configuration](../../hie.yaml) selects the replacement components and excludes source outside `v2/`.
-With HLS 2.14.0.0 and GHC 9.10.3, this command typechecks every v2 Haskell source on Linux:
+With HLS 2.14.0.0 and GHC 9.10.3, this command typechecks every v2 Haskell source on both platforms:
 
 ```sh
 rg --files v2 -g '*.hs' -0 | xargs -0 haskell-language-server-wrapper -j 2
 ```
 
 Editors must launch HLS with `--lsp`.
-LSP initialization and clean shutdown are verified through the local editor launcher; interactive editor behavior and macOS remain unverified.
+LSP initialization and clean shutdown are verified through the local editor launcher on Linux; interactive editor behavior remains unverified.
 
 **Diff checks** means `git status --short --untracked-files=all`, `git diff --check`, and inspection of every changed/new file.
 `git diff` does not show untracked contents; inspect those explicitly.
@@ -164,7 +164,7 @@ The local build, test, formatting, linting, and HLS checks are sufficient to beg
 
 ### 2.1 Formatting and linting for the new package
 
-* Status: implemented and verified on Linux with Fourmolu 0.20.1.0 and HLint 3.10.
+* Status: implemented and verified on Linux and macOS with Fourmolu 0.20.1.0 and HLint 3.10.
   Both checks cover every v2 Haskell source and use the existing formatter style and HLint defaults.
 * Goal and sequence: establish small, consistent diffs before many new modules.
 * Scope: use the existing Fourmolu style and HLint defaults with these tested versions against only the new source.
@@ -221,7 +221,10 @@ These commands cover the replacement source, not generated files or legacy code.
 
 ### 2.4 Verify the native macOS path
 
-* Status: verification remains pending; GitHub workflow work is deferred with the other CI work.
+* Status: verified locally on an Apple Silicon Mac with macOS 27.0.1 and Xcode Command Line Tools; the workflow is deferred with the other CI work.
+  Build, Test, Version, offline build/test, formatting, linting, and HLS (28 files) pass with native GHCup tools, starting from empty Cabal caches.
+  The solved plan matches the freeze file, and `otool -L` of the SQLite test executable lists no SQLite library.
+  Apple's linker warns that `-U` is redundant with `-undefined dynamic_lookup` when linking executables; the warning comes from GHC's link flags and does not affect the result.
 * Goal and sequence: prove the promised second platform before native assumptions become embedded in the architecture.
 * Scope: a manual/scheduled macOS seed check and minimal verified setup guidance.
 * Non-goals: Nix, signed releases, broad matrices, or claiming that future SQLite and fetcher dependencies have already been validated on macOS.
@@ -233,6 +236,17 @@ These commands cover the replacement source, not generated files or legacy code.
 * Security: platform-specific path/library behavior stays an explicit test concern; a seed build does not establish storage or TLS security.
 * Mode: normal Code.
   Branch/worktree: independent platform branch is useful.
+
+On macOS, install the Xcode Command Line Tools for the C compiler, then GHC 9.10.3, Cabal 3.16.1.0, and optionally HLS 2.14.0.0 with GHCup.
+Put GHCup's `bin` directory on `PATH` and run `cabal update` once before Build.
+Fourmolu and HLint need incompatible `ghc-lib-parser` versions, so install them with separate commands outside the project:
+
+```sh
+cabal install --ignore-project fourmolu-0.20.1.0
+cabal install --ignore-project hlint-3.10
+```
+
+Cabal installs the executables under its configured `installdir`, `~/.local/bin` by default.
 
 ## M3: pure domain and authorization laws
 
@@ -414,7 +428,7 @@ The opening adapter is implemented in task 4.2, the schema/codecs in 4.3, and pr
   D3 enforcement and D5 deletion metadata are deferred to their consuming slices.
 * Verify: Build, Test, Version, offline build/test, formatting, linting, HLS, and Diff checks.
   The integration suite reports SQLite version, source ID, and compile options and requires SQLite 3.45.0.
-  The solved plan has `direct-sqlite` 2.3.29 with `systemlib: false`; Linux `ldd` of the SQLite test executable lists no SQLite shared library.
+  The solved plan has `direct-sqlite` 2.3.29 with `systemlib: false`; neither Linux `ldd` nor macOS `otool -L` of the SQLite test executable lists a SQLite shared library.
 
 ```sh
 cabal build --project-file=cabal-v2.project --offline all
@@ -547,8 +561,8 @@ cabal test --project-file=cabal-v2.project --offline all --test-show-details=dir
 
 #### 4.6 Private protected title change
 
-* Status: implemented and verified on Linux with bundled SQLite 3.45.0.
-  All 132 domain/policy tests and 163 SQLite tests pass, including 32 title-change cases.
+* Status: implemented and verified on Linux and macOS with bundled SQLite 3.45.0.
+  All 132 domain/policy tests and 166 SQLite tests pass, including 32 title-change cases.
   Build, Test, Version, offline build/test, formatting, linting, HLS (28 files), and Diff checks pass.
 * Goal: complete M4's one protected write path with exact-payload sealing, revision checks, and edit/revoke ordering.
 * Scope: the named changeTitle operation, its sealed request, and persistence helper alongside reads in [Articles](../../v2/persistence/Eselsohr/Store/SQLite/Articles.hs), using the same hidden Internal.Transaction and Internal.Authority modules.
@@ -579,7 +593,7 @@ cabal test --project-file=cabal-v2.project --offline all --test-show-details=dir
   A sealed request records the expected revision but does not establish that it matches storage or prevent reuse; repeating a request that changed the article conflicts and rolls back the transaction.
   An edit ordered before revocation may finish; new edits after committed revocation deny access.
   Trusted clocks and exclusive connection use remain interpreter responsibilities; callers must leave the opening callback on failure.
-* Limits: Linux and populated dependency caches are verified; macOS, empty-cache bootstrap, legacy root builds, GitHub CI, interactive editor behavior, secure erasure, and crash/power-loss durability remain unverified.
+* Limits: Linux and macOS are verified, the latter also from empty dependency caches; legacy root builds, GitHub CI, interactive editor behavior, secure erasure, and crash/power-loss durability remain unverified.
 * Mode: normal Code for this approved slice.
   Commit locally and stop before the separately approved M4 exit review or M5.
 

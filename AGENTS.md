@@ -69,7 +69,7 @@ The shared Cabal `language` stanza enables OverloadedStrings for all v2 componen
 It contains a version command, validated values, pure article transitions, grant validation, operation policy, and a private SQLite adapter with opening, initial schema installation, validated row codecs, bearer parsing/digest lookup, and protected article reads and title changes.
 Other protected mutations, the application-facing Store API, and the web application remain unimplemented.
 The private adapter keeps article revision metadata outside the domain model; the public protected Store API remains deferred.
-These commands pass on Linux with GHC 9.10.3 and Cabal 3.16.1.0:
+These commands pass on x86-64 Linux and Apple Silicon macOS with GHC 9.10.3 and Cabal 3.16.1.0:
 
 ```sh
 cabal build --project-file=cabal-v2.project all
@@ -78,14 +78,15 @@ cabal run --project-file=cabal-v2.project eselsohr-v2 -- --version
 ```
 
 The root `hie.yaml` selects `cabal-v2.project` for HLS and excludes source outside `v2/`.
-HLS 2.14.0.0 loads all five v2 components with GHC 9.10.3 on Linux; see the roadmap for the check command.
+HLS 2.14.0.0 loads all five v2 components with GHC 9.10.3 on both platforms; see the roadmap for the check command.
 
-Fourmolu 0.20.1.0 and HLint 3.10 check every v2 Haskell source and pass on Linux.
+Fourmolu 0.20.1.0 and HLint 3.10 check every v2 Haskell source and pass on both platforms.
 See roadmap task 2.1 for the commands; use the existing formatter style and HLint defaults.
+See roadmap task 2.4 for macOS setup notes.
 
 D1 (independent package), D2 (manual bookmarking first), D3 (exact-payload sealing behind named operations), and D4 (bundled SQLite) are approved.
-M1 and tasks 2.1, 3.1–3.6, and 4.2–4.6 are complete; M3 is ready for exit review.
-Local development is the current priority; GitHub CI tasks 2.2 and 2.3 are deferred.
+M1 and tasks 2.1, 3.1–3.6, and 4.2–4.6 are complete, and task 2.4's local macOS check passes; M3 is ready for exit review.
+Local development is the current priority; GitHub CI tasks 2.2 and 2.3 and the macOS workflow of task 2.4 are deferred.
 The eight-permission vocabulary and collection-bound scopes are approved.
 Delegation is limited to four edges; the root has all eight permissions and no expiry, and children have finite deadlines no later than their parent's.
 Ancestry validation checks the supplied grant and its ancestors against the requested grant ID, collection, and time.

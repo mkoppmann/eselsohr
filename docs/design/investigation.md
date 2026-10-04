@@ -177,8 +177,9 @@ Replacement integration tests need scoped lifetimes, ephemeral ports where a rea
 [eselsohr.cabal](../../eselsohr.cabal) targets GHC 9.8 with `base ^>=4.19.1.0`.
 [cabal.project](../../cabal.project) is an ordinary Cabal project; native Cabal does not intrinsically require Nix.
 The available verified toolchain is GHC 9.10.3 (`base` 4.20.2.0), Cabal 3.16.1.0, Fourmolu 0.20.1.0, HLint 3.10, and HLS 2.14.0.0, including its GHC 9.10.3 executable.
-Fourmolu and HLint are callable as `fourmolu-0.20.1.0` and `hlint-3.10`; their unversioned aliases are not currently set.
-Verification covers the Linux replacement package, not a wider platform support matrix.
+On x86-64 Linux, Fourmolu and HLint are callable as `fourmolu-0.20.1.0` and `hlint-3.10`; their unversioned aliases are not set there.
+On Apple Silicon macOS, GHCup provides GHC, Cabal, and HLS, and separate `cabal install` commands provide unversioned `fourmolu` and `hlint` executables.
+Verification covers the replacement package on these two platforms, not a wider platform support matrix.
 
 `cabal build --offline --dry-run --builddir=<temporary-build-dir> all` and `cabal test --offline --dry-run --builddir=<temporary-test-dir> all` both exit 1 with Cabal-7107: the package's base constraint excludes the installed 4.20.2.0.
 Neither reaches compilation or test execution.
@@ -186,7 +187,7 @@ The intended GHC 9.8 build is unverified.
 Legacy bounds, legacy dependencies, and global tool configuration were left unchanged.
 The temporary-directory placeholders are deliberately not reusable machine paths.
 
-The independent [replacement package](../../v2/eselsohr-v2.cabal) builds and tests on Linux with GHC 9.10.3, `base` 4.20.2.0, and Cabal 3.16.1.0.
+The independent [replacement package](../../v2/eselsohr-v2.cabal) builds and tests on x86-64 Linux and Apple Silicon macOS with GHC 9.10.3, `base` 4.20.2.0, and Cabal 3.16.1.0.
 Its version command prints `eselsohr-v2 0.1.0.0`; missing or unsupported arguments exit 1 with usage on stderr.
 Its Tasty suite retains the version assertion and tests the [validated values](eselsohr-2.md#validated-values) and [pure article transitions](eselsohr-2.md#article-transitions) with examples and bounded QuickCheck generators.
 The [permission/scope inclusion](eselsohr-2.md#permission-and-scope-inclusion) groups compare all permission-set pairs with pointwise membership, check nested subset chains, and test scopes with repeated article IDs across collections.
@@ -208,20 +209,21 @@ Its title change uses an immediate transaction to check Read plus ChangeTitles a
 Matching no-ops retain the revision; real changes increment once, and exhaustion fails without writing.
 The hidden Internal.Transaction and Internal.Authority modules manage transactions and validate stored grants; Articles exposes neither connection access nor IO lifting.
 The [design](eselsohr-2.md#protected-read) explains how request and transaction types prevent replacing checked inputs or executing them in another transaction.
-The 163-test SQLite suite passes against bundled SQLite 3.45.0, including real FULL and COMMIT/BEGIN Busy rollback, cancellation, constraints/cascades, malformed metadata and row decoding, canonical bearers and digest goldens, protected reads and title changes, and MVar-coordinated read/edit/revocation ordering.
+The 166-test SQLite suite passes against bundled SQLite 3.45.0, including real FULL and COMMIT/BEGIN Busy rollback, cancellation, constraints/cascades, malformed metadata and row decoding, canonical bearers and digest goldens, protected reads and title changes, and MVar-coordinated read/edit/revocation ordering.
 Opening rejects invalid UTF-8 metadata with InvalidMetadata, releases the connection, and preserves callback exceptions.
 Source review covers private component visibility, constructor exports, exact payload signatures, and nominal mode and transaction roles.
 The solved package plan contains the replacement components and their pinned dependencies, with no legacy `eselsohr` package.
 See the [roadmap](roadmap.md#task-contract-and-verification-vocabulary) for the verified commands.
-Other protected mutations, the application-facing Store API, runtime, and web behavior remain unimplemented; macOS verification remains pending.
+On macOS, the complete build and both suites also pass from empty Cabal caches, the solved plan matches the freeze file, and the SQLite test executable links no SQLite library.
+Other protected mutations, the application-facing Store API, runtime, and web behavior remain unimplemented.
 
 The root [HLS configuration](../../hie.yaml) selects `cabal-v2.project` and maps both v2 libraries, the executable, and both test directories to their Cabal components.
 Source outside `v2/` uses a `none` cradle and receives no HLS project diagnostics.
 This follows the supported [explicit Cabal configuration](https://github.com/haskell/hie-bios#cabal).
-HLS 2.14.0.0 with GHC 9.10.3 typechecks every v2 source file on Linux.
+HLS 2.14.0.0 with GHC 9.10.3 typechecks every v2 source file on Linux and macOS.
 The batch check finishes with 28 files worked and zero failures.
-LSP initialization and clean shutdown also pass through the local editor launcher with `--lsp`.
-Interactive editor behavior and macOS project loading remain unverified.
+LSP initialization and clean shutdown also pass through the local Linux editor launcher with `--lsp`.
+Interactive editor behavior remains unverified.
 Editor launchers must pass `--lsp`; without it HLS runs its command-line setup tester.
 
 The [independent project](../../cabal-v2.project) pins the cached Hackage index state `2026-09-09T02:42:09Z`.
