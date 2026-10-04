@@ -1,27 +1,27 @@
 ## Purpose
 
-Defines the protected article operations a holder performs through Eselsohr: listing articles, adding them manually, changing their titles and read state, and deleting them, each checked against current authority in its own transaction.
+Defines what holders see and can do with articles on their bearer page: listing articles, adding them manually, changing their titles and read state, and deleting them.
 
 ## ADDED Requirements
 
-### Requirement: Protected article list
-Listing SHALL require ReadArticles and return only the articles within the requested scope, which must lie within the holder's scope.
-An authorized request for an empty collection or a missing article returns an empty list.
+### Requirement: Articles on the bearer page
+A holder whose grant has ReadArticles SHALL see the articles of the grant's scope on its page: every article of the collection for a whole-collection grant, and only the scoped article for a one-article grant.
+A holder without ReadArticles MUST see no article title, URL, read state, or count.
 
 #### Scenario: Whole-collection reader
-- **WHEN** a holder with ReadArticles on the whole collection opens the article list
+- **WHEN** a holder with ReadArticles on the whole collection opens its page
 - **THEN** the page shows every article in that collection and none from another collection
 
 #### Scenario: Single-article reader
-- **WHEN** a holder with ReadArticles on one article requests the whole collection
-- **THEN** the request is denied
+- **WHEN** a holder with ReadArticles on one article opens its page
+- **THEN** the page shows that article and no other
 
 #### Scenario: Holder without Read
-- **WHEN** a holder without ReadArticles requests the article list
-- **THEN** the request is denied and no article is shown
+- **WHEN** a holder without ReadArticles opens its page
+- **THEN** the page shows no article contents
 
 ### Requirement: Manual article addition
-Adding SHALL accept a manually entered URL and title, validate them, and check collection-wide AddArticles inside the write transaction that inserts the article.
+A holder with AddArticles on the whole collection SHALL be able to submit a manually entered URL and title, which are validated before the addition.
 A new article starts unread at revision zero.
 Adding requires no Read permission and never fetches the URL.
 
@@ -44,22 +44,23 @@ The response MUST NOT differ according to whether such an article exists.
 
 #### Scenario: Add a URL twice
 - **WHEN** a holder adds the same URL twice
-- **THEN** the collection contains one article with that URL and both responses have the same form
+- **THEN** the collection contains one article with that URL and both responses are the same
 
 #### Scenario: Add-only holder submits a stored URL
 - **WHEN** a holder with only AddArticles submits a URL that the collection already contains, with a different title
 - **THEN** the receipt matches the receipt for a new article, and the stored article's title, read state, and revision are unchanged
 
 ### Requirement: Add-only receipt
-The response to an addition SHALL NOT disclose existing titles, article counts, other article details, or reusable read authority.
-Submitting an article MUST NOT issue read authority to the submitter.
+After an addition, the holder SHALL return to its page with a fixed notice that the submission was received.
+The receipt MUST NOT disclose existing titles, article counts, other article details, or reusable read authority, and submitting an article MUST NOT issue read authority to the submitter.
 
 #### Scenario: Add-only contributor
 - **WHEN** a holder with only AddArticles submits an article
-- **THEN** the receipt confirms the submission without showing any stored article, count, or bearer URL with Read
+- **THEN** the page shows the notice and the add form, without any stored article, count, or bearer URL with Read
 
 ### Requirement: Title edit
-Changing a title SHALL require ReadArticles and ChangeTitles for the target article, checked inside the write transaction that applies the change.
+The page SHALL offer a title form for each listed article when the grant has ReadArticles and ChangeTitles.
+A title change MUST be denied without ReadArticles, and a successful change redirects to the holder's page.
 
 #### Scenario: Title change without Read
 - **WHEN** a holder with ChangeTitles but without ReadArticles submits a title change
@@ -67,10 +68,11 @@ Changing a title SHALL require ReadArticles and ChangeTitles for the target arti
 
 #### Scenario: Authorized title change
 - **WHEN** a holder with both permissions submits a new valid title with the current revision
-- **THEN** the title changes, the revision increments once, and the response redirects to a server-generated page
+- **THEN** the title changes, the revision increments once, and the response redirects to the holder's page
 
 ### Requirement: Read-state edit
-Changing an article's read state SHALL require ReadArticles and ChangeReadState for the target article, checked inside the write transaction that applies the change.
+The page SHALL offer a read-state form for each listed article when the grant has ReadArticles and ChangeReadState.
+A read-state change MUST be denied without ReadArticles, and a successful change redirects to the holder's page.
 
 #### Scenario: Mark an article read
 - **WHEN** a holder with both permissions marks an unread article read with the current revision
@@ -93,13 +95,13 @@ A matching no-op MUST keep the revision unchanged.
 - **THEN** the article and its revision are unchanged
 
 ### Requirement: Article deletion
-Deleting an article SHALL require DeleteArticles on the target article, checked inside the write transaction that removes it; ReadArticles MUST NOT be required.
-The deletion request SHALL use an explicit POST route and end with a server-generated redirect.
+The page SHALL offer a deletion form for each listed article when the grant has ReadArticles and DeleteArticles, and one form without article contents when the grant has DeleteArticles without ReadArticles on one article.
+Deleting requires DeleteArticles on the target article but not ReadArticles, takes no revision, and answers the deletion of an already missing article like any other deletion.
 The response MUST NOT disclose the article's title, URL, or read state.
 
 #### Scenario: Delete without Read
-- **WHEN** a holder with only DeleteArticles on one article deletes it
-- **THEN** the article is removed and the response shows none of its contents
+- **WHEN** a holder with only DeleteArticles on one article opens its page and submits the deletion
+- **THEN** the page shows no article contents, the article is removed, and the response redirects to the deletion notice
 
 #### Scenario: Holder without Delete
 - **WHEN** a holder without DeleteArticles submits a deletion
@@ -109,9 +111,10 @@ The response MUST NOT disclose the article's title, URL, or read state.
 - **WHEN** a holder with DeleteArticles on one article submits the deletion of another article
 - **THEN** the request is denied and the other article remains
 
-### Requirement: No partial state on failure
-A failed addition, edit, or deletion MUST leave the collection unchanged, including after storage faults, contention, exceptions, and cancellation.
+#### Scenario: Article already deleted
+- **WHEN** a holder with DeleteArticles on the whole collection submits the deletion of an article that no longer exists
+- **THEN** the response is the same as for a deletion that removed an article
 
-#### Scenario: Failure after the write
-- **WHEN** an edit fails or is cancelled after its update and before commit
-- **THEN** neither the article nor its revision changes
+#### Scenario: Owner deletes an article
+- **WHEN** the owner deletes an article from its page
+- **THEN** the article is removed and the response redirects to the owner's page
