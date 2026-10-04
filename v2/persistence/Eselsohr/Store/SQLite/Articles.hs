@@ -2,8 +2,9 @@
 Module      : Eselsohr.Store.SQLite.Articles
 Description : Protected article reads and title changes
 
-'readArticles' and 'changeTitle' operate on an existing collection connection and a presented bearer.
-Each operation loads current grants and checks permissions inside its transaction.
+'readArticles' and 'changeTitle' operate on an existing collection connection, a presented bearer, and a trusted clock.
+Each operation loads current grants, samples the clock once, and checks permissions inside its transaction.
+The caller supplies the clock: the runtime passes the host clock, and tests pass fixed or controlled ones.
 
 The checks produce t'ReadRequest' and t'TitleChangeRequest' values whose private constructors retain the exact checked inputs.
 Their transaction parameter prevents a request from being used in a different transaction.
@@ -37,7 +38,7 @@ import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Set qualified as Set
 import Data.Text (Text)
-import Data.Time (getCurrentTime)
+import Data.Time (UTCTime)
 import Database.SQLite.Simple (Connection, Only (..))
 import Database.SQLite.Simple qualified as SQL
 import Eselsohr.Article (Title, articleId, rename)
@@ -56,9 +57,9 @@ import Eselsohr.Store.SQLite.Internal.Transaction
 type role ReadRequest nominal
 newtype ReadRequest tx = ReadRequest Scope
 
-readArticles :: Connection -> Bearer -> Scope -> IO (Either StoreError [StoredArticle])
-readArticles connection bearer scope =
-    runReadTransaction connection bearer getCurrentTime $ checkRead scope >>= selectArticles
+readArticles :: Connection -> Bearer -> IO UTCTime -> Scope -> IO (Either StoreError [StoredArticle])
+readArticles connection bearer clock scope =
+    runReadTransaction connection bearer clock $ checkRead scope >>= selectArticles
 
 checkRead :: Scope -> ReadTx tx (ReadRequest tx)
 checkRead scope = do
@@ -89,9 +90,9 @@ decodeArticles rows = do
 type role TitleChangeRequest nominal
 data TitleChangeRequest tx = TitleChangeRequest ArticleId Title Integer
 
-changeTitle :: Connection -> Bearer -> ArticleId -> Title -> Integer -> IO (Either StoreError StoredArticle)
-changeTitle connection bearer identifier title revision =
-    runWriteTransaction connection bearer getCurrentTime $ checkTitleChange identifier title revision >>= writeTitle
+changeTitle :: Connection -> Bearer -> IO UTCTime -> ArticleId -> Title -> Integer -> IO (Either StoreError StoredArticle)
+changeTitle connection bearer clock identifier title revision =
+    runWriteTransaction connection bearer clock $ checkTitleChange identifier title revision >>= writeTitle
 
 checkTitleChange :: ArticleId -> Title -> Integer -> WriteTx tx (TitleChangeRequest tx)
 checkTitleChange identifier title revision = do

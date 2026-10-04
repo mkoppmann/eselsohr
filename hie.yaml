@@ -14,6 +14,8 @@ cradle:
                 component: "test:eselsohr-v2-test"
               - path: "./v2/persistence"
                 component: "eselsohr-v2:lib:sqlite-internal"
+              - path: "./v2/runtime"
+                component: "eselsohr-v2:lib:store-runtime"
               - path: "./v2/test-sqlite"
                 component: "test:eselsohr-v2-sqlite-test"
     - path: "./"

@@ -50,7 +50,7 @@ authorityTests =
             title <- requireRight (mkTitle "quotes ' \" ; -- ? & # é 😀")
             let expected = renamed title 1 articleFixture
 
-            changeTitle connection bearer articleIdentifier title 0 >>= assertSame (Right expected)
+            changeTitle connection bearer (pure instant) articleIdentifier title 0 >>= assertSame (Right expected)
             assertStored connection expected
             assertStored connection secondArticle
             requireRight =<< withExistingFile path (`assertStored` expected)
@@ -523,7 +523,7 @@ writeAt :: Connection -> Bearer -> ArticleId -> Title -> Integer -> IO (Either S
 writeAt = writeWithClock (pure instant)
 
 writeWithClock :: IO UTCTime -> Connection -> Bearer -> ArticleId -> Title -> Integer -> IO (Either StoreError StoredArticle)
-writeWithClock clock connection bearer identifier title revision = runWriteTransaction connection bearer clock $ checkTitleChange identifier title revision >>= writeTitle
+writeWithClock clock connection bearer = changeTitle connection bearer clock
 
 assertStored :: Connection -> StoredArticle -> IO ()
 assertStored connection expected = do

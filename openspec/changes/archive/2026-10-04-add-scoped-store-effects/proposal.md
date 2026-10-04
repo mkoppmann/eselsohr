@@ -25,6 +25,7 @@ This change covers milestone M5: application functions read and change articles 
 ### Modified Capabilities
 
 - `collection-storage`: opening distinguishes a missing collection file (Missing) from other failures (Unavailable).
+- `development-workflow`: `hie.yaml` maps every v2 library, including the new private runtime library.
 
 ## Non-goals
 
@@ -36,14 +37,14 @@ This change covers milestone M5: application functions read and change articles 
 
 ## Dependencies and approval gates
 
-Depends on the protected article operations of `add-protected-sqlite-storage` (M4), specified in [protected-article-operations](../../specs/protected-article-operations/spec.md), [bearer-credentials](../../specs/bearer-credentials/spec.md), and [collection-storage](../../specs/collection-storage/spec.md), not on the whole web application.
+Depends on the protected article operations of `add-protected-sqlite-storage` (M4), specified in [protected-article-operations](../../../specs/protected-article-operations/spec.md), [bearer-credentials](../../../specs/bearer-credentials/spec.md), and [collection-storage](../../../specs/collection-storage/spec.md), not on the whole web application.
 Consumes D3 by calling its existing private sealed requests from the handler, and the agreed use of `effectful`.
-The effect interfaces, binding, and result types are settled in [design.md](design.md); where the runtime module lives remains open until its slice is expanded.
+The effect interfaces, binding, and result types are settled in [design.md](design.md).
 D5 is not consumed.
 
 ## Impact
 
 - Small changes to the private `sqlite-internal` component: a clock argument for the named operations and the Missing opening result.
-- A new application-facing module in the public `v2/` library with the read and write effects and their result types, and a runtime module with the binding and its SQLite handlers.
+- A new application-facing module in the public `v2/` library with the read and write effects and their result types, and a private `store-runtime` library with the binding and its SQLite handlers.
 - Tests for the common application function, binding scope, exports, and cleanup, using real temporary databases.
 - A new dependency on `effectful-core`, pinned through a deliberate freeze update.

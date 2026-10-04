@@ -2,7 +2,7 @@
 Module      : Main
 Description : SQLite adapter test suite entry point and opening tests
 
-The SQLite suite reports the engine version and compile options, verifies the expected bundled engine, and runs all adapter test groups.
+The SQLite suite reports the engine version and compile options, verifies the expected bundled engine, and runs all adapter and Store runtime test groups.
 This module also contains the collection opening, metadata validation, and connection lifetime tests, including callback failures and cancellation.
 -}
 module Main (main) where
@@ -26,6 +26,7 @@ import Eselsohr.Id (CollectionId, parseCollectionId, renderCollectionId)
 import Eselsohr.Store.SQLite.Open
 import Eselsohr.Store.SQLite.Schema qualified as Schema
 import ReadTests (readTests)
+import RuntimeTests (runtimeTests)
 import SchemaTests (schemaTests)
 import System.Directory (createDirectory, doesPathExist, listDirectory, removeFile)
 import System.FilePath ((</>))
@@ -48,7 +49,7 @@ main = do
             map fst version @?= ["3.45.0"]
         report @?= Right ()
 
-    defaultMain . localOption (mkTimeout 5000000) $ testGroup "SQLite" [openingTests, metadataTests, lifetimeTests, schemaTests, codecTests, bearerTests, readTests, titleTests]
+    defaultMain . localOption (mkTimeout 5000000) $ testGroup "SQLite" [openingTests, metadataTests, lifetimeTests, schemaTests, codecTests, bearerTests, readTests, titleTests, runtimeTests]
 
 ------------------------------------------------------------------------
 -- Restricted opening
@@ -85,9 +86,9 @@ openingTests =
             createFixture (collectionPath directory collection)
 
             withExistingCollection root collection readTitle >>= (@?= Right "original")
-        , testCase "missing file stays missing at both layers" . withRoot $ \directory root -> do
+        , testCase "missing file is Missing for collections and Unavailable for raw paths" . withRoot $ \directory root -> do
             let path = collectionPath directory collection
-            assertRejected Unavailable (withExistingCollection root collection) directory []
+            assertRejected Missing (withExistingCollection root collection) directory []
             assertRejected Unavailable (withExistingFile path) directory []
         , testCase "absolute paths preserve spaces, Unicode, and URI characters" . withSystemTempDirectory "eselsohr" $ \parent -> do
             let directory = parent </> "file:collections é ?mode=ro&cache=shared#%20"

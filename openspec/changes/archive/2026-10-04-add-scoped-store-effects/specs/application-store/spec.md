@@ -112,10 +112,15 @@ A storage fault MUST NOT be reported as a denial, and an unexpected exception MU
 ### Requirement: Cleanup on exceptions and cancellation
 When an operation fails with an unexpected exception or is cancelled, the handler SHALL roll back its transaction and close the connection before the exception propagates.
 It MUST NOT catch all exceptions and report success or a fallback value.
+Through the handler, the last reachable interruption point is the clock sample inside the transaction; the protected-article-operations tests cover cancellation after an update in the same transaction runner.
+
+#### Scenario: Exception from the clock
+- **WHEN** the bound clock throws during a title change
+- **THEN** the title and revision are unchanged, the write lock is released, and the same exception propagates
 
 #### Scenario: Cancellation during a write
-- **WHEN** a title change is cancelled after its update and before commit
-- **THEN** the title and revision are unchanged, the connection is closed, and the cancellation propagates
+- **WHEN** a title change is cancelled inside its write transaction, while it holds the collection's write lock
+- **THEN** the title and revision are unchanged, the write lock is released, and the cancellation propagates
 
 ### Requirement: Tests through the production handler
 Tests SHALL run application functions through the production SQLite handler with a test clock and a temporary collections directory.

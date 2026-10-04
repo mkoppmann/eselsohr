@@ -104,8 +104,8 @@ The [development-workflow spec](openspec/specs/development-workflow/spec.md) and
 Dependency versions and the Hackage index state are pinned; machine-local overrides stay untracked.
 The contributor workflow should support Linux and macOS without requiring Nix or a particular developer's container setup.
 
-M1, the local checks of M2, and M3 and M4 are implemented: validated values, article transitions, grant validation, operation policy, and a private SQLite adapter with protected article reads and title changes.
-`add-scoped-store-effects` (M5) is the next milestone; the GitHub CI work in `add-native-ci` is deferred while local development is the priority.
+M1, the local checks of M2, and M3 to M5 are implemented: validated values, article transitions, grant validation, operation policy, a private SQLite adapter with protected article reads and title changes, and read and write Store effects whose runners are bound to one presented bearer.
+`add-manual-bookmark-web` (M6) is the next milestone; the GitHub CI work in `add-native-ci` is deferred while local development is the priority.
 D1–D4 are approved; D5 (deletion lifecycle) remains open in `add-link-sharing-and-owner-lifecycle`.
 
 For documentation-only changes, run `openspec validate --all --strict`, inspect new files and relative links, run `git status --short` and `git diff --check`, and check untracked files explicitly.

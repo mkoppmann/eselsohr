@@ -62,7 +62,7 @@ The checks MUST NOT rely on broad suppressions, and they cover neither generated
 - **THEN** the corresponding check fails
 
 ### Requirement: Editor integration
-The root `hie.yaml` SHALL select `cabal-v2.project` and map both v2 libraries, the executable, and both test directories to their Cabal components.
+The root `hie.yaml` SHALL select `cabal-v2.project` and map every v2 library, the executable, and both test directories to their Cabal components.
 Source outside `v2/` MUST receive no HLS project diagnostics.
 HLS 2.14.0.0 with GHC 9.10.3 typechecks every v2 source on Linux and macOS; interactive editor behavior is unverified.
 

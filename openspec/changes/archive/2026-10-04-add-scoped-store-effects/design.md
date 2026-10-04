@@ -12,15 +12,15 @@ No application-facing interface, runtime, or web layer exists yet.
 
 ### Legacy evidence
 
-[App](../../../src/Lib/Infra/Monad.hs) wraps `ReaderT AppEnv IO`, implements the port and repository classes, and derives `MonadIO` and `MonadUnliftIO`.
-[TestApp](../../../test/Test/Infra/Monad.hs) duplicates much of this structure.
-The classes in [Port.hs](../../../src/Lib/App/Port.hs) express useful intent, but the actual constraints matter more than the class names.
+[App](../../../../src/Lib/Infra/Monad.hs) wraps `ReaderT AppEnv IO`, implements the port and repository classes, and derives `MonadIO` and `MonadUnliftIO`.
+[TestApp](../../../../test/Test/Infra/Monad.hs) duplicates much of this structure.
+The classes in [Port.hs](../../../../src/Lib/App/Port.hs) express useful intent, but the actual constraints matter more than the class names.
 For example, `Page.Shared.WithQuery` includes `WithFile`, which includes the data-directory environment and `MonadUnliftIO`.
 Ordinary page queries therefore have much broader storage and IO authority than their semantic operation requires.
 Renaming these classes to effects without narrowing their handlers would not correct that boundary.
 
-[Domain.Error](../../../src/Lib/Domain/Error.hs) mixes expected validation and authorization failures, storage and internal failures, and redirects.
-[Infra.Error](../../../src/Lib/Infra/Error.hs) and `App` add exception-based transport, and the comments acknowledge redirects as a workaround rather than domain failures.
+[Domain.Error](../../../../src/Lib/Domain/Error.hs) mixes expected validation and authorization failures, storage and internal failures, and redirects.
+[Infra.Error](../../../../src/Lib/Infra/Error.hs) and `App` add exception-based transport, and the comments acknowledge redirects as a workaround rather than domain failures.
 The replacement separates these concerns without introducing dozens of trivial errors.
 
 | Existing mechanism | Classification | Reason |
@@ -140,7 +140,12 @@ M6 places adding, read-state changes, and article deletion in `ArticleWriter` un
 No type-level registry maps operations to required effects or permissions; plain constraints state the same fact readably.
 
 The effects, `ArticleSelection`, `Revision`, `Revised`, and the result types live in a module of the public library that does not import `sqlite-internal`; it is the subject of the export tests.
-`Binding` and the runners live in a runtime module that imports `sqlite-internal`.
+`Binding` and the runners live in the private `store-runtime` library, in `Eselsohr.Store.Runtime`, which depends on the public library and `sqlite-internal`.
+The public library, where application functions live, cannot depend on it without a dependency cycle, so application code cannot construct a binding or reach a connection; the executable and the test suites compose bindings.
+
+| Choice | Alternatives | Recommendation and cost |
+| --- | --- | --- |
+| Runtime location | Modules of the executable; the public library | Private library. Test suites cannot import executable modules, and the public library would expose `Binding` and SQLite to application code. |
 
 ### Exposing D3's sealed requests
 
@@ -213,8 +218,8 @@ Start logging at boundaries, and add an application logging effect only for a co
 
 1. Adapter prerequisites: the clock argument of the named operations and the `Missing` opening result.
 2. The application-facing module with its effects and result types, after the `effectful-core` dependency is pinned.
-3. The binding, runners, and result translation, tested with real temporary databases.
-4. One application function using both effects, with authority and export tests.
+3. The binding, runners, and result translation in the private runtime library, tested with real temporary databases.
+4. One application-shaped function in the SQLite test suite using both effects, with authority and export tests; M6 adds the application functions its routes need.
 
 ## Risks / Trade-offs
 
@@ -229,4 +234,4 @@ Start logging at boundaries, and add an application logging effect only for a co
 
 ## Open Questions
 
-- The runtime module holding `Binding` and the runners lives either in a new private library or in the executable; the binding slice settles this when its tasks are expanded.
+None.

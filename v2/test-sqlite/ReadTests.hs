@@ -47,16 +47,16 @@ authorityTests =
     testGroup
         "Authority and sealed scope"
         [ testCase "named owner operation returns articles with unchanged revisions" . withReadDatabase $ \_ connection bearer -> do
-            result <- requireRight =<< readArticles connection bearer (WholeCollection collection)
+            result <- requireRight =<< readArticles connection bearer (pure instant) (WholeCollection collection)
             sameArticles [articleFixture, secondArticle] result
-            readArticles connection bearer (OneArticle collection articleIdentifier) >>= assertSame (Right [articleFixture])
+            readArticles connection bearer (pure instant) (OneArticle collection articleIdentifier) >>= assertSame (Right [articleFixture])
             assertAutocommit connection
         , testCase "authorized missing articles and empty collections return empty lists" . withReadDatabase $ \_ connection bearer -> do
             missing <- requireRight (parseArticleId "123e4567-e89b-42d3-a456-426614174099")
-            readArticles connection bearer (OneArticle collection missing) >>= assertSame (Right [])
+            readArticles connection bearer (pure instant) (OneArticle collection missing) >>= assertSame (Right [])
 
             SQL.execute_ connection "DELETE FROM article"
-            readArticles connection bearer (WholeCollection collection) >>= assertSame (Right [])
+            readArticles connection bearer (pure instant) (WholeCollection collection) >>= assertSame (Right [])
         , testCase "a child reads exactly its article and cannot widen or change collection" . withReadDatabase $ \_ connection _ -> do
             insertGrant connection collection readChild
             bearer <- requireRight (parseBearer zeroToken)
@@ -349,7 +349,7 @@ readAt :: Connection -> Bearer -> Scope -> IO (Either StoreError [StoredArticle]
 readAt = readWithClock (pure instant)
 
 readWithClock :: IO UTCTime -> Connection -> Bearer -> Scope -> IO (Either StoreError [StoredArticle])
-readWithClock clock connection bearer scope = runReadTransaction connection bearer clock $ checkRead scope >>= selectArticles
+readWithClock clock connection bearer = readArticles connection bearer clock
 
 assertAutocommit :: Connection -> IO ()
 assertAutocommit connection = Direct.getAutoCommit (connectionHandle connection) >>= (@?= True)

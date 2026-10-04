@@ -4,7 +4,7 @@ Description : Opening existing collection databases
 
 A t'CollectionDirectory' identifies an existing directory resolved by 'mkCollectionDirectory'.
 'withExistingCollection' opens the file named by a collection identifier, configures its connection, and checks its stored identity and schema version before invoking the callback.
-Opening does not create or initialize missing databases.
+Opening does not create or initialize missing databases; a missing collection file is reported as 'Missing', while links, other file types, and other filesystem failures are 'Unavailable'.
 
 'withExistingFile' provides the same connection setup and cleanup for a literal absolute path, without the collection identity check.
 Callbacks must finish their statements and leave connection closure to the opening function.
@@ -34,6 +34,7 @@ import Eselsohr.Store.SQLite.Codec (catchConversionErrors, fromCollectionBytes)
 import Eselsohr.Store.SQLite.Schema qualified as Schema
 import System.Directory (canonicalizePath, makeAbsolute)
 import System.FilePath (isAbsolute, (</>))
+import System.IO.Error (isDoesNotExistError)
 import System.Posix.Files (getSymbolicLinkStatus, isDirectory, isRegularFile)
 
 ------------------------------------------------------------------------
@@ -42,7 +43,7 @@ import System.Posix.Files (getSymbolicLinkStatus, isDirectory, isRegularFile)
 
 newtype CollectionDirectory = CollectionDirectory FilePath
 
-data OpenError = Unavailable | InvalidMetadata | UnsupportedSchema | Busy | DatabaseFault
+data OpenError = Missing | Unavailable | InvalidMetadata | UnsupportedSchema | Busy | DatabaseFault
     deriving stock (Eq, Show)
 
 -- | Resolve an existing collections directory once; opening never creates it.
@@ -57,12 +58,19 @@ mkCollectionDirectory input
 withExistingCollection :: CollectionDirectory -> CollectionId -> (Connection -> IO a) -> IO (Either OpenError a)
 withExistingCollection (CollectionDirectory root) collection use = do
     let path = root </> Text.unpack (renderCollectionId collection) <> ".sqlite"
-    regular <- filesystemCheck $ do
-        status <- getSymbolicLinkStatus path
-        pure $ if isRegularFile status then Right () else Left Unavailable
+    regular <- checkCollectionFile path
     case regular of
         Left err -> pure (Left err)
         Right () -> join <$> withExistingFile path (\connection -> useCollection connection collection use)
+
+-- | Require a regular file at the collection path, distinguishing a missing file from other failures.
+checkCollectionFile :: FilePath -> IO (Either OpenError ())
+checkCollectionFile path = check `catch` (pure . Left . classify)
+  where
+    check = do
+        status <- getSymbolicLinkStatus path
+        pure $ if isRegularFile status then Right () else Left Unavailable
+    classify exception = if isDoesNotExistError exception then Missing else Unavailable
 
 useCollection :: Connection -> CollectionId -> (Connection -> IO a) -> IO (Either OpenError a)
 useCollection connection collection use = do
