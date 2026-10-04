@@ -4,6 +4,8 @@ Description : Bearer token parsing and stored grant lookup
 
 A t'Bearer' represents a canonical token containing a collection identifier and a secret in the @v2.\<collection\>.\<secret\>@ format.
 'parseBearer' validates the encoded fields and derives the hash used for lookup; 'renderBearer' reproduces the original token.
+'newBearer' builds the token for a collection identifier and a 32-byte secret, as collection creation does, and 'bearerHash' gives the hash that storage keeps in place of the secret.
+Both constructors derive the hash in the same way, so a built token parses to the same hash.
 
 'lookupBearer' requires an active transaction, verifies the collection identity and schema version, and retrieves the matching grant and its permissions by hash.
 It returns 'Nothing' when the hash has no match.
@@ -14,8 +16,10 @@ module Eselsohr.Store.SQLite.Bearer
       Bearer
     , BearerError (..)
     , parseBearer
+    , newBearer
     , renderBearer
     , bearerCollection
+    , bearerHash
 
       -- * Grant lookup
     , LookupError (..)
@@ -31,7 +35,7 @@ import Data.ByteString qualified as ByteString
 import Data.ByteString.Base64.URL qualified as Base64
 import Data.Text (Text)
 import Data.Text qualified as Text
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Database.SQLite.Simple (Connection (..), Only (..))
 import Database.SQLite.Simple qualified as SQL
 import Database.SQLite3 qualified as SQLite
@@ -57,8 +61,7 @@ parseBearer input
             collectionBytes <- decodeField 22 16 collectionText
             collection <- first (const InvalidBearer) $ fromCollectionBytes collectionBytes
             secret <- decodeField 43 32 secretText
-            let digest = SHA256.hash ("eselsohr:bearer:v2\0" <> collectionBytes <> secret)
-            pure (Bearer input collection digest)
+            pure (Bearer input collection (tokenHash collectionBytes secret))
         _ -> Left InvalidBearer
   where
     decodeField encodedLength decodedLength encoded = do
@@ -68,11 +71,28 @@ parseBearer input
         unless (ByteString.length decoded == decodedLength && Base64.encodeUnpadded decoded == bytes) (Left InvalidBearer)
         pure decoded
 
+-- | Build the token for a collection and a secret, which must be exactly 32 bytes.
+newBearer :: CollectionId -> ByteString -> Either BearerError Bearer
+newBearer collection secret = do
+    unless (ByteString.length secret == 32) (Left InvalidBearer)
+    collectionBytes <- first (const InvalidBearer) (toCollectionBytes collection)
+    let token = "v2." <> encode collectionBytes <> "." <> encode secret
+    pure (Bearer token collection (tokenHash collectionBytes secret))
+  where
+    encode = decodeUtf8 . Base64.encodeUnpadded
+
 renderBearer :: Bearer -> Text
 renderBearer (Bearer original _ _) = original
 
 bearerCollection :: Bearer -> CollectionId
 bearerCollection (Bearer _ collection _) = collection
+
+-- | The SHA-256 hash that storage keeps in place of the secret.
+bearerHash :: Bearer -> ByteString
+bearerHash (Bearer _ _ digest) = digest
+
+tokenHash :: ByteString -> ByteString -> ByteString
+tokenHash collectionBytes secret = SHA256.hash ("eselsohr:bearer:v2\0" <> collectionBytes <> secret)
 
 ------------------------------------------------------------------------
 -- Grant lookup

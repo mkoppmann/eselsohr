@@ -2,7 +2,7 @@
 Module      : Eselsohr.Store.SQLite.Open
 Description : Opening existing collection databases
 
-A t'CollectionDirectory' identifies an existing directory resolved by 'mkCollectionDirectory'.
+A t'CollectionDirectory' identifies an existing directory resolved by 'mkCollectionDirectory', and 'collectionPath' names the file of a collection inside it.
 'withExistingCollection' opens the file named by a collection identifier, configures its connection, and checks its stored identity and schema version before invoking the callback.
 Opening does not create or initialize missing databases; a missing collection file is reported as 'Missing', while links, other file types, and other filesystem failures are 'Unavailable'.
 
@@ -14,6 +14,7 @@ module Eselsohr.Store.SQLite.Open
       CollectionDirectory
     , OpenError (..)
     , mkCollectionDirectory
+    , collectionPath
     , withExistingCollection
     , checkCollection
 
@@ -55,9 +56,13 @@ mkCollectionDirectory input
         status <- getSymbolicLinkStatus root
         pure $ if isDirectory status then Right (CollectionDirectory root) else Left Unavailable
 
+-- | The absolute path @\<collection\>.sqlite@ inside the directory.
+collectionPath :: CollectionDirectory -> CollectionId -> FilePath
+collectionPath (CollectionDirectory root) collection = root </> Text.unpack (renderCollectionId collection) <> ".sqlite"
+
 withExistingCollection :: CollectionDirectory -> CollectionId -> (Connection -> IO a) -> IO (Either OpenError a)
-withExistingCollection (CollectionDirectory root) collection use = do
-    let path = root </> Text.unpack (renderCollectionId collection) <> ".sqlite"
+withExistingCollection directory collection use = do
+    let path = collectionPath directory collection
     regular <- checkCollectionFile path
     case regular of
         Left err -> pure (Left err)

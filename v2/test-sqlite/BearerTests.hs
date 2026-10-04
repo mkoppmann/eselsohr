@@ -2,7 +2,7 @@
 Module      : BearerTests
 Description : Bearer parsing and digest lookup tests
 
-'bearerTests' checks canonical token encoding and grant lookup in real SQLite transactions.
+'bearerTests' checks canonical token encoding, bearers built from their parts, and grant lookup in real SQLite transactions.
 The lookup cases cover collection binding, missing and malformed grants, lock contention, and the caller's transaction lifetime.
 
 The exported token and digest fixtures provide shared inputs for the protected article tests.
@@ -93,6 +93,23 @@ parserTests =
                 assertLeft InvalidBearer (parseBearer (encodeToken identifier (ByteString.replicate 32 1)))
         , testCase "oversized input is rejected before decoding" $
             await (evaluate (parseBearer (Text.replicate 1000000 "A"))) >>= assertLeft InvalidBearer
+        , testCase "a bearer built from its parts renders the golden token and hash" $ do
+            bearer <- requireRight (newBearer collection (ByteString.pack [0 .. 31]))
+            renderBearer bearer @?= goldenToken
+            bearerHash bearer @?= goldenDigest
+            bearerCollection bearer @?= collection
+        , testCase "a built bearer needs a 32-byte secret" $
+            forM_ [0, 1, 31, 33, 64] $ \size ->
+                assertLeft InvalidBearer (newBearer collection (ByteString.replicate size 7))
+        , localOption (QuickCheckTests 500) . testProperty "built bearers parse to the same token and hash" . forAll genParts $ \(identifier, secret) ->
+            case fromCollectionBytes identifier of
+                Left _ -> False
+                Right owner -> case newBearer owner secret >>= \built -> (built,) <$> parseBearer (renderBearer built) of
+                    Right (built, parsed) ->
+                        renderBearer built == encodeToken identifier secret
+                            && bearerHash parsed == bearerHash built
+                            && bearerCollection parsed == owner
+                    Left _ -> False
         , localOption (QuickCheckTests 500) . testProperty "generated UUIDv4 and secret bytes round trip" . forAll genParts $ \(identifier, secret) ->
             let token = encodeToken identifier secret
              in case (fromCollectionBytes identifier, parseBearer token) of

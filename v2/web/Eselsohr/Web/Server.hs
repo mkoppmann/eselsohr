@@ -2,8 +2,9 @@
 Module      : Eselsohr.Web.Server
 Description : The WAI application, response headers, body limit, and Warp settings
 
-'application' answers the routes of "Eselsohr.Web.Route" with the fixed pages of "Eselsohr.Web.Html".
-It serves the deletion notice; bearer pages and actions are not served yet, so they answer like invalid links, with the same page as a request that matches no route.
+'application' answers the routes of "Eselsohr.Web.Route" with the fixed pages of "Eselsohr.Web.Html" for a resolved collections directory.
+It serves the deletion notice.
+Bearer routes pass the presented text to 'bindPresented', which rejects text that is not a well-formed bearer before any file is opened; bearer pages and actions are not served yet, so every bearer route answers like an invalid link, with the same page as a request that matches no route.
 HEAD requests route like GET, and Warp sends their headers without a body.
 
 Every response carries 'securityHeaders'.
@@ -14,12 +15,12 @@ It also forbids a base URL, allows form submissions only to the same origin, and
 A request that declares a body longer than 'bodyLimit' receives the too-large page before routing.
 'readLimitedBody' reads a body of undeclared length and gives up beyond the limit, for routes that read forms.
 
-'serve' runs 'application' with 'serverSettings' for a configuration and reports the listener and public origin to the operator once Warp has bound the listener.
+'serve' runs 'application' with 'serverSettings' for a configuration and a resolved collections directory, and reports the listener and public origin to the operator once Warp has bound the listener.
 'serverSettings' configures Warp for a t'Listener' and an operator-message sink.
 Warp answers malformed requests and uncaught exceptions itself, outside the application, so its exception-response hook renders the error pages with the same headers.
 Its exception hook writes only a fixed message with the exception's type, never the exception's text or the request, and skips the exceptions that Warp's default hook skips, such as malformed requests and closed connections.
 
-> serve config (Text.hPutStrLn stderr)
+> serve config directory (Text.hPutStrLn stderr)
 -}
 module Eselsohr.Web.Server
     ( -- * Application
@@ -50,6 +51,7 @@ import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Typeable (typeOf)
 import Eselsohr.Config (Config (..), Listener (..), renderPublicOrigin)
+import Eselsohr.Store.Runtime (CollectionDirectory, bindPresented)
 import Eselsohr.Web.Html (Page (..), renderPage)
 import Eselsohr.Web.Route (Route (..), route)
 import Network.HTTP.Types
@@ -60,18 +62,21 @@ import Network.Wai.Handler.Warp
 -- Application
 ------------------------------------------------------------------------
 
-application :: Application
-application = withSecurityHeaders $ \request respond ->
+application :: CollectionDirectory -> Application
+application directory = withSecurityHeaders $ \request respond ->
     respond $
         if declaredLength request > Just bodyLimit
             then pageResponse status413 BodyTooLargePage
             else case route (requestMethod request) (pathInfo request) of
                 Just DeletionNotice -> pageResponse status200 DeletionNoticePage
-                Just (BearerPage _) -> invalidLink
-                Just (BearerAction _ _) -> invalidLink
+                Just (BearerPage presented) -> bearerRoute presented
+                Just (BearerAction presented _) -> bearerRoute presented
                 Nothing -> invalidLink
   where
     invalidLink = pageResponse status404 InvalidLinkPage
+    bearerRoute presented = case bindPresented directory presented of
+        Nothing -> invalidLink
+        Just _ -> invalidLink
     declaredLength request = case requestBodyLength request of
         KnownLength size -> Just (fromIntegral size)
         ChunkedBody -> Nothing
@@ -132,8 +137,8 @@ readLimitedBody request = go 0 []
 ------------------------------------------------------------------------
 
 -- | Serve until the process ends; failing to resolve or bind the listener throws an 'IOError'.
-serve :: Config -> (Text -> IO ()) -> IO ()
-serve config logMessage = runSettings (setBeforeMainLoop (logMessage started) settings) application
+serve :: Config -> CollectionDirectory -> (Text -> IO ()) -> IO ()
+serve config directory logMessage = runSettings (setBeforeMainLoop (logMessage started) settings) (application directory)
   where
     listener = configListener config
     settings = serverSettings listener logMessage

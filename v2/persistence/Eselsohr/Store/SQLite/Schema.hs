@@ -4,6 +4,7 @@ Description : Initial collection schema and initialization transactions
 
 'initializeSchema' installs schema version 1 and the collection identity into an already-open empty database.
 The tables, constraints, identity row, and version are installed in one transaction; no owner grant is created.
+'installSchema' performs the same installation inside a transaction that the caller already began, so collection creation can add the owner grant to the same transaction.
 'checkSchemaVersion' checks whether a database has the supported version.
 
 'withSchemaTransaction' provides the initialization transaction, committing a successful result and rolling back a failure.
@@ -13,6 +14,7 @@ module Eselsohr.Store.SQLite.Schema
     ( -- * Schema installation
       SchemaError (..)
     , initializeSchema
+    , installSchema
     , checkSchemaVersion
 
       -- * Initialization transaction
@@ -36,22 +38,32 @@ import Eselsohr.Store.SQLite.Codec (catchConversionErrors, toCollectionBytes)
 -- Schema installation
 ------------------------------------------------------------------------
 
-data SchemaError = TransactionActive | NonEmptyDatabase | UnsupportedVersion | SchemaBusy | SchemaFault
+data SchemaError = TransactionActive | NoTransaction | NonEmptyDatabase | UnsupportedVersion | SchemaBusy | SchemaFault
     deriving stock (Eq, Show)
 
 -- | Install version 1 into an existing empty database without creating an owner grant.
 initializeSchema :: Connection -> CollectionId -> IO (Either SchemaError ())
-initializeSchema connection collection = withSchemaTransaction connection $ do
-    version <- SQL.query_ connection "PRAGMA main.user_version" :: IO [Only Int64]
-    objects <- SQL.query_ connection "SELECT name FROM main.sqlite_schema WHERE name NOT GLOB 'sqlite_*' LIMIT 1" :: IO [Only Text]
-    case prepareInitialization collection version objects of
-        Left err -> pure (Left err)
-        Right identifier -> do
-            mapM_ (SQL.execute_ connection) schema
-            SQL.execute connection "INSERT INTO collection_meta (singleton, collection_id) VALUES (1, ?)" (Only identifier)
-            SQL.execute_ connection "PRAGMA main.user_version = 1"
+initializeSchema connection = withSchemaTransaction connection . installSchema connection
 
-            checkSchemaVersion connection
+{- | Install version 1 and the collection identity inside the caller's transaction, returning 'NoTransaction' without changes outside one.
+SQL exceptions propagate, so the caller's transaction decides how they end it.
+-}
+installSchema :: Connection -> CollectionId -> IO (Either SchemaError ())
+installSchema connection collection = do
+    autocommit <- Direct.getAutoCommit (connectionHandle connection)
+    if autocommit
+        then pure (Left NoTransaction)
+        else do
+            version <- SQL.query_ connection "PRAGMA main.user_version" :: IO [Only Int64]
+            objects <- SQL.query_ connection "SELECT name FROM main.sqlite_schema WHERE name NOT GLOB 'sqlite_*' LIMIT 1" :: IO [Only Text]
+            case prepareInitialization collection version objects of
+                Left err -> pure (Left err)
+                Right identifier -> do
+                    mapM_ (SQL.execute_ connection) schema
+                    SQL.execute connection "INSERT INTO collection_meta (singleton, collection_id) VALUES (1, ?)" (Only identifier)
+                    SQL.execute_ connection "PRAGMA main.user_version = 1"
+
+                    checkSchemaVersion connection
 
 prepareInitialization :: CollectionId -> [Only Int64] -> [Only Text] -> Either SchemaError ByteString
 prepareInitialization collection versions objects = do

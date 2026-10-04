@@ -17,6 +17,22 @@ The command MUST NOT create the data or collections directory.
 - **WHEN** the operator runs the command with a data directory that has no `collections` directory
 - **THEN** the command fails and creates no directory or file
 
+### Requirement: Collection files are created exclusively
+The creation command SHALL create the collection file only if no file exists at its path, readable and writable by its owner alone.
+A creation that fails at any step MUST leave no collection file behind, and it MUST NOT open, change, or replace an existing file.
+
+#### Scenario: File permissions
+- **WHEN** the operator creates a collection
+- **THEN** the new file grants read and write access to its owner and no access to anyone else
+
+#### Scenario: Existing file at the path
+- **WHEN** a file already exists at the path of the collection being created
+- **THEN** creation fails and the existing file is unchanged
+
+#### Scenario: Failure after the file exists
+- **WHEN** creation fails after creating the file and before committing its transaction
+- **THEN** no file remains at the collection's path
+
 ### Requirement: Fresh owner secret
 The owner bearer's secret SHALL consist of 256 bits from the operating system's cryptographically secure random generator, generated in trusted creation code.
 The collection identifier SHALL come from the same generator.
@@ -27,7 +43,7 @@ Parsing or round-trip tests cannot establish this entropy.
 - **THEN** their owner bearers have independently generated secrets
 
 ### Requirement: One-time owner URL
-The creation command SHALL show the owner URL once, formed as the configured public origin, `/b/`, and the owner bearer.
+The creation command SHALL show the owner URL once on standard output, formed as the configured public origin, `/b/`, and the owner bearer, with text saying that it grants full access and cannot be shown again.
 Storage MUST keep only the secret's hash, and no later command or page can recover the URL.
 
 #### Scenario: Owner URL shown at creation

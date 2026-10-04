@@ -110,7 +110,8 @@ Handlers carry no `IOE`, so for cooperating code they can reach articles and gra
 The entry step authorizes nothing: each Store call remains a named protected operation with its own sealed request, so this is not the generic authorized-action framework that D3 rules out.
 The web component is the private library `web` in `web/`, holding `Eselsohr.Config` and the `Eselsohr.Web` modules; the executable depends on it, and the test suite `eselsohr-v2-web-test` in `test-web/` covers it.
 Its `build-depends` exclude `sqlite-internal`, `direct-sqlite`, and `sqlite-simple`, so no web module can open a file or a connection, and collection creation stays in code the web component cannot import.
-`store-runtime` re-exports the opaque bearer and directory types and their parsers that the entry step needs.
+`Eselsohr.Store.Runtime` gives the entry step an opaque collections directory, a function that resolves it once when the server starts, and `bindPresented`, which turns the presented bearer text into a binding with the host clock or into nothing when the text is not a well-formed bearer.
+The web component never sees the bearer type, the bearer parser, or a function that opens files.
 A property test checks that every path without a well-formed bearer segment, other than the deletion notice, receives the invalid-link response.
 These boundaries prevent honest mistakes such as a route that forgets authorization; handlers run in a process with IO, so they are not a sandbox.
 
@@ -193,7 +194,8 @@ Under `Referrer-Policy: no-referrer`, browsers send `Origin: null` with form POS
 ### Headers, assets, and leakage
 
 Apply no-store, no-referrer, nosniff, `X-Robots-Tag: noindex, nofollow`, and a CSP with no scripts, no base URL override, no framing, and same-origin form actions.
-Warp answers malformed requests, oversized headers, and uncaught exceptions itself, outside WAI middleware, so its exception-response hook renders the same error page with the same headers.
+Warp answers malformed headers, oversized header blocks, and uncaught exceptions itself, outside WAI middleware, so its exception-response hook renders the same error page with the same headers.
+A request line that Warp cannot split into method, path, and version gets no response at all: Warp closes the connection.
 In `warp-3.4.15`, the default exception logger hides `InvalidRequest`, whose `BadFirstLine` case carries the raw request line; the replacement logger writes only a fixed category for every exception and never the request.
 Minimize assets; embedding small CSS may remove the runtime static directory, with a matching CSP.
 Do not put bearer URLs in logs, analytics, or exception messages; proxy access logs need the same redaction contract.
@@ -244,9 +246,22 @@ ID generation stays within the trusted add operation rather than becoming a glob
 
 Collection creation is an operator CLI action, not a web route.
 The executable parses `serve`, `create-collection`, and `--version` by pattern matching on its arguments; three commands without options need no parsing library.
-`create-collection` creates `<collection-id>.sqlite` under `<data>/collections/`, installs the schema and identity, and inserts a root grant with all eight permissions and no expiration.
-It generates the collection identifier and the 256-bit secret from `getRandomBytes` of `crypton`, which reads the operating system's generator; `warp` already brings `crypton` into the plan, so the direct dependency adds no package.
-It stores only the secret's hash and prints the owner URL, `<public origin>/b/<bearer>`, once.
+
+| Choice | Alternatives | Recommendation and cost |
+| --- | --- | --- |
+| Location | a module in `sqlite-internal`; a private administration library; `store-runtime` | `Eselsohr.Store.SQLite.Create` in `sqlite-internal`. The web component does not depend on `sqlite-internal`, so it cannot import creation; a separate library would hold one function, and `store-runtime` is a dependency of the web component. |
+| Randomness | inside the creation module; in the executable | Inside the module, so the trusted creation code owns it and the test suite can check that two collections differ; a variant taking explicit identifiers and secret serves tests. |
+| Atomicity | one transaction; `initializeSchema` followed by a second transaction | One transaction, so a collection never exists without its owner grant. |
+
+`createCollection` takes the resolved collections directory and generates the collection identifier, the root grant identifier, and the 256-bit secret from `getRandomBytes` of `crypton`, which reads the operating system's generator; UUIDv4 identifiers come from 16 random bytes with the version and variant bits set.
+`warp` already brings `crypton` into the plan, so the direct dependency of `sqlite-internal` adds no package.
+It creates `<collection-id>.sqlite` exclusively with mode 0600, so it never opens or overwrites an existing file, and other local users cannot read titles and URLs.
+In one immediate transaction it installs the schema and identity and inserts a root grant with all eight permissions, whole-collection scope, no expiration, depth zero, and no petname.
+The schema module therefore provides its installation as a step without its own transaction, which both `initializeSchema` and creation use.
+Any failure after the file exists deletes the file, so a failed creation leaves nothing behind.
+The bearer module builds the owner bearer from the collection identifier and secret with the same hashing as `parseBearer`, and only the hash is stored.
+
+The command prints the owner URL, `<public origin>/b/<bearer>`, once on standard output, together with text saying that the URL grants full access and cannot be shown again.
 The owner link is long-lived and bookmarkable; later management can display metadata or issue replacements but cannot recover the original URL.
 
 ### Configuration

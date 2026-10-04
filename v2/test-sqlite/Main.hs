@@ -12,6 +12,7 @@ import CodecTests (codecTests)
 import Control.Concurrent (forkFinally, killThread, newEmptyMVar, putMVar, takeMVar)
 import Control.Exception (AsyncException (..), Exception, bracket, fromException, throwIO, try)
 import Control.Monad (forM_, (>=>))
+import CreateTests (createTests)
 import Data.ByteString (ByteString)
 import Data.ByteString qualified as ByteString
 import Data.IORef (readIORef)
@@ -23,7 +24,7 @@ import Database.SQLite.Simple (Connection (..), Only (..), SQLData (..), SQLErro
 import Database.SQLite.Simple qualified as SQL
 import Database.SQLite3 qualified as SQLite
 import Eselsohr.Id (CollectionId, parseCollectionId, renderCollectionId)
-import Eselsohr.Store.SQLite.Open
+import Eselsohr.Store.SQLite.Open hiding (collectionPath)
 import Eselsohr.Store.SQLite.Schema qualified as Schema
 import ReadTests (readTests)
 import RuntimeTests (runtimeTests)
@@ -49,7 +50,7 @@ main = do
             map fst version @?= ["3.45.0"]
         report @?= Right ()
 
-    defaultMain . localOption (mkTimeout 5000000) $ testGroup "SQLite" [openingTests, metadataTests, lifetimeTests, schemaTests, codecTests, bearerTests, readTests, titleTests, runtimeTests]
+    defaultMain . localOption (mkTimeout 5000000) $ testGroup "SQLite" [openingTests, metadataTests, lifetimeTests, schemaTests, codecTests, bearerTests, createTests, readTests, titleTests, runtimeTests]
 
 ------------------------------------------------------------------------
 -- Restricted opening

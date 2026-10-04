@@ -42,6 +42,11 @@ schemaTests =
 
             initializeSchema connection otherCollection >>= (@?= Left NonEmptyDatabase)
             withExistingCollection root collection (\_ -> pure ()) >>= (@?= Right ())
+        , testCase "installation outside a transaction changes nothing" . withEmptyDatabase $ \_ _ connection -> do
+            installSchema connection collection >>= (@?= Left NoTransaction)
+            SQL.query_ connection "SELECT count(*) FROM sqlite_schema" >>= (@?= [Only (0 :: Int)])
+            SQL.query_ connection "PRAGMA user_version" >>= (@?= [Only (0 :: Int64)])
+            assertAutocommit connection
         , testCase "an existing object is preserved" . withEmptyDatabase $ \_ _ connection -> do
             SQL.execute_ connection "CREATE TABLE sqliteXexisting (value TEXT)"
             SQL.execute_ connection "INSERT INTO sqliteXexisting VALUES ('keep')"

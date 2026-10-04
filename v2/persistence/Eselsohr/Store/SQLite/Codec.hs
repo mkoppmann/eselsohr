@@ -31,6 +31,7 @@ module Eselsohr.Store.SQLite.Codec
     , toArticleBytes
     , toCapabilityBytes
     , fromCollectionBytes
+    , fromCapabilityBytes
 
       -- * Timestamp encoding
     , toTimestamp
@@ -220,6 +221,9 @@ toCapabilityBytes = toUuidBytes . renderCapabilityId
 
 fromCollectionBytes :: ByteString -> Either CodecError CollectionId
 fromCollectionBytes = fromUuidBytes parseCollectionId
+
+fromCapabilityBytes :: ByteString -> Either CodecError CapabilityId
+fromCapabilityBytes = fromUuidBytes parseCapabilityId
 
 toUuidBytes :: Text -> Either CodecError ByteString
 toUuidBytes = maybe (Left InvalidValue) (Right . Lazy.toStrict . UUID.toByteString) . UUID.fromText

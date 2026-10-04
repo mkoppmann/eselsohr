@@ -7,6 +7,7 @@ Missing collections and denied bearers must become denials, and every other stor
 
 Runner tests use real collection files in a temporary directory and bindings with controlled clocks.
 They check that each operation acts only on the bearer's collection, reloads authority on every call, samples the clock inside its transaction, and opens the collection anew each time.
+Presented-bearer tests check that 'bindPresented' binds a created owner bearer and rejects malformed and oversized text, and that 'resolveDirectory' rejects paths that are not directories.
 'retitleArticle' is shaped like an application function: its type names only the read and write effects, and the tests run it through the production runners with a test binding.
 
 Cleanup tests throw from and cancel at the bound clock, while the write transaction holds the collection's write lock, and check that nothing changes, the lock is released, and the exception propagates.
@@ -20,6 +21,7 @@ import Control.Monad (forM_)
 import Data.Bifunctor (first)
 import Data.ByteString qualified as ByteString
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef, writeIORef)
+import Data.Maybe (isNothing)
 import Data.Set qualified as Set
 import Data.Text qualified as Text
 import Data.Time (UTCTime)
@@ -33,8 +35,9 @@ import Eselsohr.Id
 import Eselsohr.Store
 import Eselsohr.Store.Runtime
 import Eselsohr.Store.SQLite.Articles (StoreError (..))
-import Eselsohr.Store.SQLite.Bearer (parseBearer)
+import Eselsohr.Store.SQLite.Bearer (parseBearer, renderBearer)
 import Eselsohr.Store.SQLite.Codec (StoredArticle (..), StoredGrant (..), fromTimestamp, toCapabilityBytes)
+import Eselsohr.Store.SQLite.Create qualified as Create
 import Eselsohr.Store.SQLite.Open (CollectionDirectory, OpenError, mkCollectionDirectory, withExistingFile)
 import Eselsohr.Store.SQLite.Open qualified as Open
 import Eselsohr.Store.SQLite.Schema (initializeSchema)
@@ -47,7 +50,7 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (Assertion, assertBool, assertFailure, testCase, (@?=))
 
 runtimeTests :: TestTree
-runtimeTests = testGroup "Store runtime" [translationTests, runnerTests, applicationTests, cleanupTests]
+runtimeTests = testGroup "Store runtime" [translationTests, runnerTests, presentedTests, applicationTests, cleanupTests]
 
 ------------------------------------------------------------------------
 -- Result translation
@@ -190,6 +193,31 @@ runnerTests =
             observed <- readIORef samples
             length observed @?= 2
             assertBool "a clock sample occurred outside a transaction" (and observed)
+        ]
+
+------------------------------------------------------------------------
+-- Presented bearers
+------------------------------------------------------------------------
+
+presentedTests :: TestTree
+presentedTests =
+    testGroup
+        "Presented bearers"
+        [ testCase "a created owner bearer binds and reads its collection" . withSystemTempDirectory "eselsohr-bind" $ \path -> do
+            directory <- resolveDirectory path >>= maybe (assertFailure "the directory did not resolve") pure
+            owner <- requireRight =<< Create.createCollection directory
+            case bindPresented directory (renderBearer owner) of
+                Nothing -> assertFailure "the owner bearer did not bind"
+                Just binding -> runEff (runArticleReader binding (listArticles AllArticles)) >>= assertSame (Right [])
+        , testCase "malformed and oversized text does not bind" . withSystemTempDirectory "eselsohr-bind" $ \path -> do
+            directory <- resolveDirectory path >>= maybe (assertFailure "the directory did not resolve") pure
+            forM_ ["", "v2.", Text.dropEnd 1 goldenToken, goldenToken <> "A", Text.replicate 1000000 "A"] $ \presented ->
+                assertBool (show (Text.take 80 presented)) (isNothing (bindPresented directory presented))
+            listDirectory path >>= (@?= [])
+        , testCase "a missing path or regular file does not resolve" . withSystemTempDirectory "eselsohr-bind" $ \path -> do
+            writeFile (path </> "file") ""
+            forM_ [path </> "missing", path </> "file"] $ \candidate ->
+                resolveDirectory candidate >>= assertBool candidate . isNothing
         ]
 
 ------------------------------------------------------------------------

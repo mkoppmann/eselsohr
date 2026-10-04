@@ -120,8 +120,12 @@ This includes the server's own responses to malformed requests and uncaught exce
 - **WHEN** any page or error response is requested
 - **THEN** it carries no-store, no-referrer, nosniff, `X-Robots-Tag: noindex, nofollow`, and the content security policy above
 
-#### Scenario: Malformed HTTP request
-- **WHEN** a client sends a request with a malformed request line
+#### Scenario: Unsplittable request line
+- **WHEN** a client sends a request line that the server cannot split into method, path, and version
+- **THEN** the server closes the connection without a response and writes no operator message
+
+#### Scenario: Malformed or oversized headers
+- **WHEN** a client sends malformed headers or a header block larger than the server accepts
 - **THEN** the error response carries the same headers
 
 ### Requirement: Request body limit

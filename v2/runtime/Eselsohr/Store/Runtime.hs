@@ -7,6 +7,12 @@ The bearer names the collection, so a binding cannot pair a bearer with another 
 Only the runtime and tests construct bindings; the public library cannot depend on this private library, so application code cannot.
 The clock runs inside protected transactions, so it must be trusted code: the host clock in the runtime, or a controlled clock in tests.
 
+'resolveDirectory' resolves the collections directory once, and 'bindPresented' turns the bearer text that a request presents into a binding with the host clock.
+Text that is not a well-formed bearer yields 'Nothing' before any file is opened.
+These two and the opaque t'CollectionDirectory' are all the web server needs, so it never sees the bearer type, the bearer parser, or a function that opens files.
+
+> fmap (`bindPresented` "v2.Ej5FZ-ibQtOkVkJmFBdAAA.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8") (resolveDirectory "/srv/eselsohr/collections")
+
 'runArticleReader' and 'runArticleWriter' handle the effects of "Eselsohr.Store" from a binding.
 Each operation opens the collection the bearer names, runs one protected operation with the bound clock, and closes the connection before returning, so no connection outlives an operation.
 A binding holds the bearer but no checked authority: every operation reloads the bearer's grants in a fresh transaction, so revocation and expiry apply to the next call.
@@ -21,6 +27,9 @@ Every other opening or storage failure becomes a t'StoreFault', never a denial; 
 module Eselsohr.Store.Runtime
     ( -- * Bindings
       Binding (..)
+    , CollectionDirectory
+    , resolveDirectory
+    , bindPresented
 
       -- * Running effects
     , runArticleReader
@@ -32,7 +41,8 @@ module Eselsohr.Store.Runtime
     , revised
     ) where
 
-import Data.Time (UTCTime)
+import Data.Text (Text)
+import Data.Time (UTCTime, getCurrentTime)
 import Effectful (Eff, IOE, liftIO, (:>))
 import Effectful.Dispatch.Dynamic (interpret_)
 import Eselsohr.Article (Article, Title)
@@ -41,9 +51,9 @@ import Eselsohr.Id (ArticleId, CollectionId)
 import Eselsohr.Store
 import Eselsohr.Store.SQLite.Articles (StoreError (..))
 import Eselsohr.Store.SQLite.Articles qualified as SQLite
-import Eselsohr.Store.SQLite.Bearer (Bearer, bearerCollection)
+import Eselsohr.Store.SQLite.Bearer (Bearer, bearerCollection, parseBearer)
 import Eselsohr.Store.SQLite.Codec (StoredArticle (..))
-import Eselsohr.Store.SQLite.Open (CollectionDirectory, OpenError, withExistingCollection)
+import Eselsohr.Store.SQLite.Open (CollectionDirectory, OpenError, mkCollectionDirectory, withExistingCollection)
 import Eselsohr.Store.SQLite.Open qualified as Open
 
 ------------------------------------------------------------------------
@@ -55,6 +65,16 @@ data Binding = Binding
     , bindingBearer :: Bearer
     , bindingClock :: IO UTCTime
     }
+
+-- | Resolve an existing collections directory, or 'Nothing' when it cannot be used.
+resolveDirectory :: FilePath -> IO (Maybe CollectionDirectory)
+resolveDirectory = fmap (either (const Nothing) Just) . mkCollectionDirectory
+
+-- | Bind presented bearer text with the host clock, or 'Nothing' for text that is not a well-formed bearer.
+bindPresented :: CollectionDirectory -> Text -> Maybe Binding
+bindPresented directory presented = case parseBearer presented of
+    Left _ -> Nothing
+    Right bearer -> Just (Binding directory bearer getCurrentTime)
 
 ------------------------------------------------------------------------
 -- Running effects
