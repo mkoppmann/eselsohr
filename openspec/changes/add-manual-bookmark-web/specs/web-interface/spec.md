@@ -128,6 +128,19 @@ This includes the server's own responses to malformed requests and uncaught exce
 - **WHEN** a client sends malformed headers or a header block larger than the server accepts
 - **THEN** the error response carries the same headers
 
+### Requirement: Storage faults
+A denial from the Store SHALL produce the invalid-link response.
+Contention SHALL produce 503 with `Retry-After: 1` and a page asking the holder to try again, and corrupt or unavailable storage SHALL produce 500 with the error page.
+Corrupt or unavailable storage MUST produce an operator message that names the fault and the collection identifier and never contains the bearer.
+
+#### Scenario: Busy collection
+- **WHEN** another connection holds a collection's write lock while a holder opens its page
+- **THEN** the response is 503 with `Retry-After: 1`, and no operator message is written
+
+#### Scenario: Corrupt collection
+- **WHEN** a holder opens the page of a collection whose stored rows are corrupt
+- **THEN** the response is 500 with the error page, and the operator message names the collection identifier but not the bearer
+
 ### Requirement: Request body limit
 Request bodies larger than 160 KiB SHALL be rejected before their form fields are decoded.
 The rejection MUST change no stored state.

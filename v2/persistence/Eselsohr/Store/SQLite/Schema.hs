@@ -3,7 +3,8 @@ Module      : Eselsohr.Store.SQLite.Schema
 Description : Initial collection schema and initialization transactions
 
 'initializeSchema' installs schema version 1 and the collection identity into an already-open empty database.
-The tables, constraints, identity row, and version are installed in one transaction; no owner grant is created.
+The tables, constraints, indexes, identity row, and version are installed in one transaction; no owner grant is created.
+The indexes allow one root grant per collection and one article per stored URL, which is the canonical rendering of the article's URL.
 'installSchema' performs the same installation inside a transaction that the caller already began, so collection creation can add the owner grant to the same transaction.
 'checkSchemaVersion' checks whether a database has the supported version.
 
@@ -158,5 +159,6 @@ schema =
     , "CREATE TABLE article (id BLOB PRIMARY KEY CHECK (length(id) = 16), title TEXT NOT NULL CHECK (length(title) > 0), url TEXT NOT NULL CHECK (length(url) > 0), state TEXT NOT NULL CHECK (state IN ('unread', 'read')), created_at INTEGER NOT NULL, revision INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0)) STRICT"
     , "CREATE TABLE capability (id BLOB PRIMARY KEY CHECK (length(id) = 16), token_hash BLOB NOT NULL UNIQUE CHECK (length(token_hash) = 32), parent_id BLOB REFERENCES capability(id) ON DELETE CASCADE, scope_article_id BLOB REFERENCES article(id) ON DELETE CASCADE, expires_at INTEGER, depth INTEGER NOT NULL CHECK (depth BETWEEN 0 AND 4), petname TEXT, CHECK (parent_id IS NULL OR parent_id <> id), CHECK ((parent_id IS NULL AND depth = 0 AND expires_at IS NULL AND scope_article_id IS NULL) OR (parent_id IS NOT NULL AND depth > 0 AND expires_at IS NOT NULL))) STRICT"
     , "CREATE UNIQUE INDEX one_root ON capability((1)) WHERE parent_id IS NULL"
+    , "CREATE UNIQUE INDEX article_url ON article(url)"
     , "CREATE TABLE capability_permission (capability_id BLOB NOT NULL REFERENCES capability(id) ON DELETE CASCADE, permission TEXT NOT NULL CHECK (permission IN ('read', 'add', 'title', 'state', 'delete', 'delegate', 'inspect', 'revoke')), PRIMARY KEY (capability_id, permission)) STRICT"
     ]

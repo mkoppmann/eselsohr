@@ -7,6 +7,7 @@ This module also contains the collection opening, metadata validation, and conne
 -}
 module Main (main) where
 
+import AddTests (addTests)
 import BearerTests (bearerTests)
 import CodecTests (codecTests)
 import Control.Concurrent (forkFinally, killThread, newEmptyMVar, putMVar, takeMVar)
@@ -26,6 +27,7 @@ import Database.SQLite3 qualified as SQLite
 import Eselsohr.Id (CollectionId, parseCollectionId, renderCollectionId)
 import Eselsohr.Store.SQLite.Open hiding (collectionPath)
 import Eselsohr.Store.SQLite.Schema qualified as Schema
+import GrantTests (grantTests)
 import ReadTests (readTests)
 import RuntimeTests (runtimeTests)
 import SchemaTests (schemaTests)
@@ -50,7 +52,7 @@ main = do
             map fst version @?= ["3.45.0"]
         report @?= Right ()
 
-    defaultMain . localOption (mkTimeout 5000000) $ testGroup "SQLite" [openingTests, metadataTests, lifetimeTests, schemaTests, codecTests, bearerTests, createTests, readTests, titleTests, runtimeTests]
+    defaultMain . localOption (mkTimeout 5000000) $ testGroup "SQLite" [openingTests, metadataTests, lifetimeTests, schemaTests, codecTests, bearerTests, createTests, grantTests, readTests, addTests, titleTests, runtimeTests]
 
 ------------------------------------------------------------------------
 -- Restricted opening

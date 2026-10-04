@@ -5,6 +5,7 @@ Description : Operation policy for grants and their targets
 An t'Operation' identifies a requested action and its target.
 'decide' revalidates the acting grant chain at the supplied time and checks the permissions and scope required by that operation.
 
+Describing the acting grant to its holder requires only the revalidated chain and no permission.
 Issuing a child requires validation of the extended grant chain.
 Link inspection and revocation require the target's ancestry to agree with the acting grant and its ancestors, and permit management of structurally valid expired descendants.
 All decisions use the grants and time supplied by the caller.
@@ -25,7 +26,8 @@ import Eselsohr.Id (ArticleId, CapabilityId, CollectionId)
 
 -- | A requested operation with the inputs needed for its policy check.
 data Operation
-    = ReadArticlesIn Scope
+    = DescribeOwnGrant
+    | ReadArticlesIn Scope
     | AddArticle CollectionId
     | RenameArticle CollectionId ArticleId
     | ChangeArticleReadState CollectionId ArticleId
@@ -49,6 +51,7 @@ decide instant chain operation = do
     _ <- first ActorChainRejected $ validateChain instant collection (grantId actor) grants
 
     case operation of
+        DescribeOwnGrant -> Right ()
         ReadArticlesIn scope -> require [ReadArticles] scope
         AddArticle target -> require [AddArticles] (WholeCollection target)
         RenameArticle target article -> require [ReadArticles, ChangeTitles] (OneArticle target article)

@@ -31,6 +31,7 @@ import Eselsohr.Store.SQLite.Bearer (Bearer, parseBearer)
 import Eselsohr.Store.SQLite.Codec
 import Eselsohr.Store.SQLite.Open (withExistingFile)
 import Eselsohr.Store.SQLite.Schema (initializeSchema)
+import Eselsohr.WebUrl (WebUrl, parseWebUrl)
 import SqliteFixtures
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase, (@?=))
@@ -332,7 +333,7 @@ readChild :: StoredGrant
 readChild = childFixture{storedGrant = (storedGrant childFixture){grantExpiresAt = Just deadline}, storedTokenHash = zeroDigest}
 
 secondArticle :: StoredArticle
-secondArticle = articleFixture{storedArticle = (storedArticle articleFixture){articleId = identifier}, storedRevision = 7}
+secondArticle = articleFixture{storedArticle = (storedArticle articleFixture){articleId = identifier, articleUrl = secondUrl}, storedRevision = 7}
   where
     identifier = either (error . show) id (parseArticleId "123e4567-e89b-42d3-a456-426614174008")
 
@@ -387,3 +388,7 @@ loosenArticles connection = do
     SQL.execute_ connection "DROP TABLE article"
     SQL.execute_ connection "CREATE TABLE article AS SELECT * FROM copy"
     SQL.execute_ connection "PRAGMA foreign_keys = ON"
+
+-- | A URL distinct from the first article's, because a collection stores each URL once.
+secondUrl :: WebUrl
+secondUrl = either (error . show) id (parseWebUrl "https://example.com/second")

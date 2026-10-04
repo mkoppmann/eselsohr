@@ -13,16 +13,17 @@ These two and the opaque t'CollectionDirectory' are all the web server needs, so
 
 > fmap (`bindPresented` "v2.Ej5FZ-ibQtOkVkJmFBdAAA.AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8") (resolveDirectory "/srv/eselsohr/collections")
 
-'runArticleReader' and 'runArticleWriter' handle the effects of "Eselsohr.Store" from a binding.
+'runGrantReader', 'runArticleReader', and 'runArticleWriter' handle the effects of "Eselsohr.Store" from a binding, and 'bindingCollection' names the bound collection for operator messages without revealing the bearer.
 Each operation opens the collection the bearer names, runs one protected operation with the bound clock, and closes the connection before returning, so no connection outlives an operation.
 A binding holds the bearer but no checked authority: every operation reloads the bearer's grants in a fresh transaction, so revocation and expiry apply to the next call.
 The runners catch no exceptions; unexpected exceptions and cancellation propagate after the opening and transaction brackets roll back and close the connection.
 
 > runEff . runArticleReader binding $ listArticles AllArticles
 
-'readResult' and 'editResult' translate the result of opening a collection and running a protected operation into the application-facing results of "Eselsohr.Store".
+'describeResult', 'readResult', 'addResult', and 'editResult' translate the result of opening a collection and running a protected operation into the application-facing results of "Eselsohr.Store".
 A missing collection file and a denied bearer both become a denial, so an unknown collection cannot be told apart from an unknown secret by its result.
-Every other opening or storage failure becomes a t'StoreFault', never a denial; results a read cannot produce are faults as well.
+Every other opening or storage failure becomes a t'StoreFault', never a denial; results a read or an addition cannot produce are faults as well.
+The add runner passes 'randomArticleId' as the identifier generator.
 -}
 module Eselsohr.Store.Runtime
     ( -- * Bindings
@@ -30,13 +31,17 @@ module Eselsohr.Store.Runtime
     , CollectionDirectory
     , resolveDirectory
     , bindPresented
+    , bindingCollection
 
       -- * Running effects
+    , runGrantReader
     , runArticleReader
     , runArticleWriter
 
       -- * Result translation
+    , describeResult
     , readResult
+    , addResult
     , editResult
     , revised
     ) where
@@ -53,8 +58,10 @@ import Eselsohr.Store.SQLite.Articles (StoreError (..))
 import Eselsohr.Store.SQLite.Articles qualified as SQLite
 import Eselsohr.Store.SQLite.Bearer (Bearer, bearerCollection, parseBearer)
 import Eselsohr.Store.SQLite.Codec (StoredArticle (..))
+import Eselsohr.Store.SQLite.Grants qualified as Grants
 import Eselsohr.Store.SQLite.Open (CollectionDirectory, OpenError, mkCollectionDirectory, withExistingCollection)
 import Eselsohr.Store.SQLite.Open qualified as Open
+import Eselsohr.WebUrl (WebUrl)
 
 ------------------------------------------------------------------------
 -- Bindings
@@ -70,6 +77,10 @@ data Binding = Binding
 resolveDirectory :: FilePath -> IO (Maybe CollectionDirectory)
 resolveDirectory = fmap (either (const Nothing) Just) . mkCollectionDirectory
 
+-- | The collection the bound bearer names; its identifier is not a credential.
+bindingCollection :: Binding -> CollectionId
+bindingCollection = bearerCollection . bindingBearer
+
 -- | Bind presented bearer text with the host clock, or 'Nothing' for text that is not a well-formed bearer.
 bindPresented :: CollectionDirectory -> Text -> Maybe Binding
 bindPresented directory presented = case parseBearer presented of
@@ -80,13 +91,24 @@ bindPresented directory presented = case parseBearer presented of
 -- Running effects
 ------------------------------------------------------------------------
 
+runGrantReader :: (IOE :> es) => Binding -> Eff (GrantReader : es) a -> Eff es a
+runGrantReader binding = interpret_ $ \case
+    DescribeGrant -> liftIO (describeBound binding)
+
 runArticleReader :: (IOE :> es) => Binding -> Eff (ArticleReader : es) a -> Eff es a
 runArticleReader binding = interpret_ $ \case
     ListArticles selection -> liftIO (readSelection binding selection)
 
 runArticleWriter :: (IOE :> es) => Binding -> Eff (ArticleWriter : es) a -> Eff es a
 runArticleWriter binding = interpret_ $ \case
+    AddArticle url title -> liftIO (addStored binding url title)
     ChangeTitle identifier title (Revision expected) -> liftIO (changeStoredTitle binding identifier title expected)
+
+describeBound :: Binding -> IO (Either ReadFailure GrantView)
+describeBound (Binding directory bearer clock) = do
+    result <- withExistingCollection directory (bearerCollection bearer) $ \connection ->
+        Grants.describeGrant connection bearer clock
+    pure (describeResult result)
 
 readSelection :: Binding -> ArticleSelection -> IO (Either ReadFailure [Revised Article])
 readSelection (Binding directory bearer clock) selection = do
@@ -94,6 +116,12 @@ readSelection (Binding directory bearer clock) selection = do
     result <- withExistingCollection directory collection $ \connection ->
         SQLite.readArticles connection bearer clock (selectionScope collection selection)
     pure (readResult result)
+
+addStored :: Binding -> WebUrl -> Title -> IO (Either EditFailure ())
+addStored (Binding directory bearer clock) url title = do
+    result <- withExistingCollection directory (bearerCollection bearer) $ \connection ->
+        SQLite.addArticle connection bearer clock SQLite.randomArticleId url title
+    pure (addResult result)
 
 changeStoredTitle :: Binding -> ArticleId -> Title -> Integer -> IO (Either EditFailure (Revised Article))
 changeStoredTitle (Binding directory bearer clock) identifier title expected = do
@@ -111,12 +139,26 @@ selectionScope collection = \case
 -- Result translation
 ------------------------------------------------------------------------
 
+-- | Translate an opening failure or the result of a protected grant description.
+describeResult :: Either OpenError (Either StoreError GrantView) -> Either ReadFailure GrantView
+describeResult = readOutcome id
+
 -- | Translate an opening failure or the result of a protected read.
 readResult :: Either OpenError (Either StoreError [StoredArticle]) -> Either ReadFailure [Revised Article]
-readResult = \case
+readResult = readOutcome (map revised)
+
+readOutcome :: (a -> b) -> Either OpenError (Either StoreError a) -> Either ReadFailure b
+readOutcome convert = \case
     Left err -> Left (maybe ReadDenied ReadFault (openFault err))
     Right (Left err) -> Left (readFailure err)
-    Right (Right articles) -> Right (map revised articles)
+    Right (Right value) -> Right (convert value)
+
+-- | Translate an opening failure or the result of a protected addition.
+addResult :: Either OpenError (Either StoreError ()) -> Either EditFailure ()
+addResult = \case
+    Left err -> Left (maybe EditDenied EditFault (openFault err))
+    Right (Left err) -> Left (addFailure err)
+    Right (Right ()) -> Right ()
 
 -- | Translate an opening failure or the result of a protected edit.
 editResult :: Either OpenError (Either StoreError StoredArticle) -> Either EditFailure (Revised Article)
@@ -150,6 +192,19 @@ readFailure = \case
     StoreInvalidRevision -> ReadFault Unavailable
     StoreConflict -> ReadFault Unavailable
     StoreRevisionExhausted -> ReadFault Unavailable
+
+-- An addition takes no article identifier or revision, so those failures are faults.
+addFailure :: StoreError -> EditFailure
+addFailure = \case
+    StoreDenied -> EditDenied
+    StoreBusy -> EditFault Busy
+    StoreCorrupt -> EditFault Corrupt
+    StoreFault -> EditFault Unavailable
+    StoreTransactionActive -> EditFault Unavailable
+    StoreNotFound -> EditFault Unavailable
+    StoreInvalidRevision -> EditFault Unavailable
+    StoreConflict -> EditFault Unavailable
+    StoreRevisionExhausted -> EditFault Unavailable
 
 editFailure :: StoreError -> EditFailure
 editFailure = \case

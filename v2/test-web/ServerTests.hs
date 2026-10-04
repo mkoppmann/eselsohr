@@ -13,23 +13,21 @@ import Control.Exception (ErrorCall (..), throwIO)
 import Data.ByteString (ByteString)
 import Data.ByteString qualified as ByteString
 import Data.ByteString.Char8 qualified as Char8
-import Data.IORef (atomicModifyIORef', newIORef, readIORef, writeIORef)
+import Data.IORef (atomicModifyIORef', newIORef)
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Eselsohr.Config (Listener (..))
-import Eselsohr.Store.Runtime (CollectionDirectory, resolveDirectory)
+import Eselsohr.Store.Runtime (CollectionDirectory)
 import Eselsohr.Web.Server
-import Network.HTTP.Types (statusCode)
 import Network.Socket (PortNumber)
-import Network.Wai (Application, Request, RequestBodyLength (..), defaultRequest, pathInfo, requestBodyLength, requestMethod, responseStatus, setRequestBodyChunks)
+import Network.Wai (Application, Request, RequestBodyLength (..), defaultRequest, pathInfo, requestBodyLength, requestMethod, setRequestBodyChunks)
 import Network.Wai.Handler.Warp (testWithApplicationSettings, withApplicationSettings)
-import Network.Wai.Internal (ResponseReceived (..))
 import RawHttp
 import System.Directory (listDirectory)
-import System.IO.Temp (withSystemTempDirectory)
 import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (Assertion, assertBool, assertFailure, testCase, (@?=))
+import Test.Tasty.HUnit (Assertion, assertBool, testCase, (@?=))
 import Test.Tasty.QuickCheck (Gen, arbitrary, choose, elements, forAll, ioProperty, oneof, testProperty, vectorOf, (.&&.), (===))
+import WebFixtures (capturingMessages, exchangeStatus, ignoreMessages, runApplication, withCollections)
 
 serverTests :: TestTree
 serverTests = testGroup "Server" [pageTests, limitTests, boundaryTests, warpTests]
@@ -76,8 +74,8 @@ limitTests =
             rawStatus response @?= 413
             assertPageHeaders response
         , testCase "a declared body at the limit is routed, one byte more is not" . withCollections $ \_ directory -> do
-            statusOf (application directory) (declaring bodyLimit) >>= (@?= Just 200)
-            statusOf (application directory) (declaring (bodyLimit + 1)) >>= (@?= Just 413)
+            statusOf (application ignoreMessages directory) (declaring bodyLimit) >>= (@?= 200)
+            statusOf (application ignoreMessages directory) (declaring (bodyLimit + 1)) >>= (@?= 413)
         , testCase "reading undeclared bodies below, at, and above the limit" $ do
             readChunks [ByteString.replicate 1000 97, ByteString.replicate 1000 98] >>= (@?= Just (ByteString.replicate 1000 97 <> ByteString.replicate 1000 98))
             readChunks (replicate 160 (ByteString.replicate 1024 97)) >>= (@?= Just (ByteString.replicate bodyLimit 97))
@@ -99,12 +97,12 @@ boundaryTests =
         "Bearer boundary"
         [ testProperty "presented text on bearer routes gets the invalid-link page and creates no file" . forAll presentedText $ \presented ->
             ioProperty . withCollections $ \path directory -> do
-                statuses <- mapM (statusOf (application directory)) (bearerRequests presented)
+                statuses <- mapM (statusOf (application ignoreMessages directory)) (bearerRequests presented)
                 files <- listDirectory path
-                pure (statuses === [Just 404, Just 404] .&&. files === [])
+                pure (statuses === [404, 404] .&&. files === [])
         , testCase "a well-formed bearer for an unknown collection creates no file" . withCollections $ \path directory -> do
-            statuses <- mapM (statusOf (application directory)) (bearerRequests wellFormed)
-            statuses @?= [Just 404, Just 404]
+            statuses <- mapM (statusOf (application ignoreMessages directory)) (bearerRequests wellFormed)
+            statuses @?= [404, 404]
             listDirectory path >>= (@?= [])
         ]
   where
@@ -127,13 +125,8 @@ presentedText =
     alphabet = ['A' .. 'Z'] <> ['a' .. 'z'] <> ['0' .. '9'] <> "-_"
 
 -- | The status of the response that the application gives directly, without a listener.
-statusOf :: Application -> Request -> IO (Maybe Int)
-statusOf app request' = do
-    status <- newIORef Nothing
-    _ <- app request' $ \response -> do
-        writeIORef status (Just (statusCode (responseStatus response)))
-        pure ResponseReceived
-    readIORef status
+statusOf :: Application -> Request -> IO Int
+statusOf app = fmap exchangeStatus . runApplication app
 
 warpTests :: TestTree
 warpTests =
@@ -151,7 +144,7 @@ warpTests =
             assertPageHeaders response
             messages @?= []
         , testCase "an uncaught exception gets a 500 with the headers and a type-only log" $ do
-            (response, messages) <- serveLogged (const failing) $ \port ->
+            (response, messages) <- serveLogged (\_ _ -> failing) $ \port ->
                 exchange port (request "GET" ("/b/" <> bearerShaped) [] "")
             rawStatus response @?= 500
             assertPageHeaders response
@@ -166,24 +159,18 @@ warpTests =
 bearerShaped :: ByteString
 bearerShaped = "v2.AAAAAAAAAAAAAAAAAAAAAA.secretsecretsecretsecretsecretsecretsecr"
 
--- | Resolve a fresh empty collections directory for one test.
-withCollections :: (FilePath -> CollectionDirectory -> IO a) -> IO a
-withCollections use = withSystemTempDirectory "eselsohr-web" $ \path ->
-    resolveDirectory path >>= maybe (assertFailure "the temporary directory did not resolve") (use path)
-
 withServer :: ((ByteString -> IO RawResponse) -> IO a) -> IO a
 withServer action = withCollections $ \_ directory ->
-    testWithApplicationSettings (serverSettings loopback (const (pure ()))) (pure (application directory)) $ \port ->
+    testWithApplicationSettings (serverSettings loopback ignoreMessages) (pure (application ignoreMessages directory)) $ \port ->
         action (exchange (fromIntegral port))
 
 -- | Serve without rethrowing application exceptions, so Warp's hooks handle them, and capture operator messages.
-serveLogged :: (CollectionDirectory -> Application) -> (PortNumber -> IO a) -> IO (a, [Text])
+serveLogged :: ((Text -> IO ()) -> CollectionDirectory -> Application) -> (PortNumber -> IO a) -> IO (a, [Text])
 serveLogged app action = withCollections $ \_ directory -> do
-    messages <- newIORef []
-    let logMessage message = atomicModifyIORef' messages (\logged -> (logged <> [message], ()))
-    result <- withApplicationSettings (serverSettings loopback logMessage) (pure (app directory)) (action . fromIntegral)
-    logged <- readIORef messages
-    pure (result, logged)
+    (logMessage, logged) <- capturingMessages
+    result <- withApplicationSettings (serverSettings loopback logMessage) (pure (app logMessage directory)) (action . fromIntegral)
+    messages <- logged
+    pure (result, messages)
 
 loopback :: Listener
 loopback = Listener "127.0.0.1" 0

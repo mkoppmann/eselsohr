@@ -64,7 +64,8 @@ permissionTable f =
 -- The expected table uses membership and explicit target comparisons, not the production policy helpers.
 cases :: Fixtures -> NonEmpty GrantSnapshot -> [(Operation, Bool)]
 cases f path =
-    [ (ReadArticlesIn whole, has ReadArticles && wholeScope)
+    [ (DescribeOwnGrant, True)
+    , (ReadArticlesIn whole, has ReadArticles && wholeScope)
     , (ReadArticlesIn foreignWhole, False)
     , (AddArticle (collectionA f), has AddArticles && wholeScope)
     , (AddArticle (collectionB f), False)
@@ -108,7 +109,13 @@ examples :: Fixtures -> TestTree
 examples f =
     testGroup
         "Examples"
-        [ testCase "delete-only access deletes in scope but cannot read or edit" $ do
+        [ testCase "a grant without permissions may describe itself until it expires" $ do
+            let path = actorPath f Set.empty articleScope
+            policy now path DescribeOwnGrant @?= Right ()
+            case checked now path of
+                Left err -> assertFailure (show err)
+                Right checkedActor -> decide (at 1000) checkedActor DescribeOwnGrant @?= Left (ActorChainRejected (InvalidEdge ChildExpired))
+        , testCase "delete-only access deletes in scope but cannot read or edit" $ do
             let path = actorPath f (Set.singleton DeleteArticles) articleScope
             policy now path (DeleteArticle collection article) @?= Right ()
             forM_ [ReadArticlesIn articleScope, RenameArticle collection article, ChangeArticleReadState collection article, DeleteArticle collection (articleB f)] $ \operation ->
@@ -347,7 +354,7 @@ policy instant path operation = checked instant path >>= \chain -> decide instan
 fixtureOperations :: Fixtures -> [Operation]
 fixtureOperations f =
     concat
-        [ [ReadArticlesIn (WholeCollection collection), AddArticle collection, DeleteCollection collection]
+        [ [DescribeOwnGrant, ReadArticlesIn (WholeCollection collection), AddArticle collection, DeleteCollection collection]
             ++ concat
                 [ [ReadArticlesIn (OneArticle collection article), RenameArticle collection article, ChangeArticleReadState collection article, DeleteArticle collection article]
                 | article <- [articleA f, articleB f]

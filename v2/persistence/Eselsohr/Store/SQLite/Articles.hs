@@ -1,13 +1,18 @@
 {- |
 Module      : Eselsohr.Store.SQLite.Articles
-Description : Protected article reads and title changes
+Description : Protected article reads, additions, and title changes
 
-'readArticles' and 'changeTitle' operate on an existing collection connection, a presented bearer, and a trusted clock.
+'readArticles', 'addArticle', and 'changeTitle' operate on an existing collection connection, a presented bearer, and a trusted clock.
 Each operation loads current grants, samples the clock once, and checks permissions inside its transaction.
 The caller supplies the clock: the runtime passes the host clock, and tests pass fixed or controlled ones.
 
-The checks produce t'ReadRequest' and t'TitleChangeRequest' values whose private constructors retain the exact checked inputs.
+The checks produce t'ReadRequest', t'AddRequest', and t'TitleChangeRequest' values whose private constructors retain the exact checked inputs.
 Their transaction parameter prevents a request from being used in a different transaction.
+
+'addArticle' also takes a generator of article identifiers, which it samples once inside its transaction; the runtime passes 'randomArticleId', and tests pass fixed identifiers.
+It requires AddArticles on the whole collection and inserts a new unread article at revision zero, created at the instant of its authorization truncated to the whole microseconds that storage keeps.
+If the collection already stores the article's canonical URL, it inserts nothing and changes nothing, and it returns the same empty result either way, so the result cannot tell an add-only holder whether the URL was new.
+A generated identifier that already exists is a primary-key collision and fails the transaction.
 
 Results include stored revisions alongside article values.
 Title changes compare the submitted revision with storage; a changed title advances it once, while a matching no-op leaves it unchanged.
@@ -22,6 +27,13 @@ module Eselsohr.Store.SQLite.Articles
     , runReadTransaction
     , checkRead
     , selectArticles
+
+      -- * Adding articles
+    , addArticle
+    , AddRequest
+    , checkAdd
+    , writeArticle
+    , randomArticleId
 
       -- * Changing titles
     , changeTitle
@@ -38,17 +50,19 @@ import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Set qualified as Set
 import Data.Text (Text)
-import Data.Time (UTCTime)
+import Data.Time (UTCTime (..), diffTimeToPicoseconds, picosecondsToDiffTime)
 import Database.SQLite.Simple (Connection, Only (..))
 import Database.SQLite.Simple qualified as SQL
-import Eselsohr.Article (Title, articleId, rename)
+import Eselsohr.Article (Title, articleId, newArticle, rename)
 import Eselsohr.Authorization (Operation (..))
 import Eselsohr.Capability (Scope (..))
 import Eselsohr.Id (ArticleId)
 import Eselsohr.Store.SQLite.Bearer (Bearer, bearerCollection)
 import Eselsohr.Store.SQLite.Codec
-import Eselsohr.Store.SQLite.Internal.Authority (authorize)
+import Eselsohr.Store.SQLite.Internal.Authority (authorize, authorizeAt)
+import Eselsohr.Store.SQLite.Internal.Random (randomUuidBytes)
 import Eselsohr.Store.SQLite.Internal.Transaction
+import Eselsohr.WebUrl (WebUrl)
 
 ------------------------------------------------------------------------
 -- Reading articles
@@ -82,6 +96,41 @@ decodeArticles rows = do
     articles <- first (const StoreCorrupt) $ traverse fromArticleRow rows
     unless (Set.size (Set.fromList (map (articleId . storedArticle) articles)) == length articles) (Left StoreCorrupt)
     pure articles
+
+------------------------------------------------------------------------
+-- Adding articles
+------------------------------------------------------------------------
+
+type role AddRequest nominal
+data AddRequest tx = AddRequest WebUrl Title UTCTime
+
+addArticle :: Connection -> Bearer -> IO UTCTime -> IO ArticleId -> WebUrl -> Title -> IO (Either StoreError ())
+addArticle connection bearer clock generate url title =
+    runWriteTransaction connection bearer clock $ checkAdd url title >>= writeArticle generate
+
+checkAdd :: WebUrl -> Title -> WriteTx tx (AddRequest tx)
+checkAdd url title = do
+    TxContext _ bearer _ <- askContext
+    (_, instant) <- authorizeAt (AddArticle (bearerCollection bearer))
+    pure (AddRequest url title instant)
+
+-- | URL, title, and creation instant come only from this transaction's checked request.
+writeArticle :: IO ArticleId -> AddRequest tx -> WriteTx tx ()
+writeArticle generate (AddRequest url title instant) = do
+    TxContext connection _ _ <- askContext
+    identifier <- liftTxIO generate
+    row <- decoded . toArticleRow $ StoredArticle (newArticle identifier title url (wholeMicroseconds instant)) 0
+    liftTxIO (SQL.execute connection "INSERT INTO article (id, title, url, state, created_at, revision) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT (url) DO NOTHING" row)
+
+-- | Drop the fraction of a microsecond that storage cannot represent.
+wholeMicroseconds :: UTCTime -> UTCTime
+wholeMicroseconds (UTCTime day time) = UTCTime day (picosecondsToDiffTime (diffTimeToPicoseconds time `div` 1000000 * 1000000))
+
+-- | A fresh random UUIDv4 article identifier.
+randomArticleId :: IO ArticleId
+randomArticleId = do
+    bytes <- randomUuidBytes
+    either (const (fail "random bytes did not form a UUIDv4")) pure (fromArticleBytes bytes)
 
 ------------------------------------------------------------------------
 -- Changing titles

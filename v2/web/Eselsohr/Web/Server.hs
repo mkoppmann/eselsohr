@@ -2,9 +2,19 @@
 Module      : Eselsohr.Web.Server
 Description : The WAI application, response headers, body limit, and Warp settings
 
-'application' answers the routes of "Eselsohr.Web.Route" with the fixed pages of "Eselsohr.Web.Html" for a resolved collections directory.
-It serves the deletion notice.
-Bearer routes pass the presented text to 'bindPresented', which rejects text that is not a well-formed bearer before any file is opened; bearer pages and actions are not served yet, so every bearer route answers like an invalid link, with the same page as a request that matches no route.
+'application' answers the routes of "Eselsohr.Web.Route" for a resolved collections directory and an operator-message sink.
+It serves the deletion notice, the page of each bearer, and the add form's submissions.
+Bearer routes pass the presented text to 'bindPresented', which rejects text that is not a well-formed bearer before any file is opened.
+A bearer page runs 'showPage' with the grant and article readers bound to the presented bearer and renders it with "Eselsohr.Web.Page"; the @added@ query flag adds the fixed submission notice, and other query parameters are ignored.
+
+An addition reads the body within 'bodyLimit', decodes the @url@ and @title@ fields, and validates them before any Store call.
+Valid input runs 'submitArticle' with the article writer and redirects with 303 to @/b/\<bearer\>?added@, the same for a new and an already stored URL.
+Invalid input shows the page again with 422, the submitted values, and a message for each failed field, but only to a grant that may add; any other grant receives the invalid-link page, as a denied addition does.
+An undecodable body gives 400, and a body over the limit gives 413.
+The other bearer actions are not served yet, so they answer like an invalid link, with the same page as a request that matches no route.
+
+'pageResult', 'rejectedResult', and 'submitResult' decide the responses to outcomes without effects.
+A denial gives the invalid-link page; a busy collection gives 503 with @Retry-After: 1@; corrupt or unavailable storage gives the error page with 500 and an operator message naming the fault and the collection identifier, never the bearer.
 HEAD requests route like GET, and Warp sends their headers without a body.
 
 Every response carries 'securityHeaders'.
@@ -25,6 +35,9 @@ Its exception hook writes only a fixed message with the exception's type, never 
 module Eselsohr.Web.Server
     ( -- * Application
       application
+    , pageResult
+    , rejectedResult
+    , submitResult
 
       -- * Response headers
     , securityHeaders
@@ -49,11 +62,18 @@ import Data.ByteString.Lazy qualified as LazyByteString
 import Data.String (fromString)
 import Data.Text (Text)
 import Data.Text qualified as Text
+import Data.Text.Encoding (encodeUtf8)
 import Data.Typeable (typeOf)
+import Effectful (runEff)
 import Eselsohr.Config (Config (..), Listener (..), renderPublicOrigin)
-import Eselsohr.Store.Runtime (CollectionDirectory, bindPresented)
+import Eselsohr.Id (CollectionId, renderCollectionId)
+import Eselsohr.Store (StoreFault (..))
+import Eselsohr.Store.Runtime (Binding, CollectionDirectory, bindPresented, bindingCollection, runArticleReader, runArticleWriter, runGrantReader)
+import Eselsohr.Web.Form (AddInput (..), decodeAddForm, validateAdd)
+import Eselsohr.Web.Handler (PageOutcome (..), SubmitOutcome (..), showPage, submitArticle)
 import Eselsohr.Web.Html (Page (..), renderPage)
-import Eselsohr.Web.Route (Route (..), route)
+import Eselsohr.Web.Page (PageExtras (..), mayAddArticles, plainPage, renderBearerPage)
+import Eselsohr.Web.Route (Action (..), Route (..), route)
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp
@@ -62,30 +82,95 @@ import Network.Wai.Handler.Warp
 -- Application
 ------------------------------------------------------------------------
 
-application :: CollectionDirectory -> Application
-application directory = withSecurityHeaders $ \request respond ->
-    respond $
+application :: (Text -> IO ()) -> CollectionDirectory -> Application
+application logMessage directory = withSecurityHeaders $ \request respond -> do
+    response <-
         if declaredLength request > Just bodyLimit
-            then pageResponse status413 BodyTooLargePage
+            then pure (pageResponse status413 BodyTooLargePage)
             else case route (requestMethod request) (pathInfo request) of
-                Just DeletionNotice -> pageResponse status200 DeletionNoticePage
-                Just (BearerPage presented) -> bearerRoute presented
-                Just (BearerAction presented _) -> bearerRoute presented
-                Nothing -> invalidLink
+                Just DeletionNotice -> pure (pageResponse status200 DeletionNoticePage)
+                Just (BearerPage presented) -> withBinding presented (servePage logMessage presented (extrasFor request))
+                Just (BearerAction presented AddArticle) -> withBinding presented (serveAddition logMessage presented request)
+                Just (BearerAction presented _) -> withBinding presented (const (pure invalidLink))
+                Nothing -> pure invalidLink
+    respond response
   where
-    invalidLink = pageResponse status404 InvalidLinkPage
-    bearerRoute presented = case bindPresented directory presented of
-        Nothing -> invalidLink
-        Just _ -> invalidLink
+    withBinding presented use = maybe (pure invalidLink) use (bindPresented directory presented)
     declaredLength request = case requestBodyLength request of
         KnownLength size -> Just (fromIntegral size)
         ChunkedBody -> Nothing
 
+invalidLink :: Response
+invalidLink = pageResponse status404 InvalidLinkPage
+
+-- | The submission notice appears when the query names the @added@ flag.
+extrasFor :: Request -> PageExtras
+extrasFor request = plainPage{extrasSubmitted = any ((== "added") . fst) (queryString request)}
+
+-- | Run the page handler with readers bound to the bearer, then log and respond as 'pageResult' decides.
+servePage :: (Text -> IO ()) -> Text -> PageExtras -> Binding -> IO Response
+servePage logMessage presented extras binding = do
+    outcome <- runEff . runArticleReader binding . runGrantReader binding $ showPage
+    respondWith logMessage (pageResult (bindingCollection binding) presented extras outcome)
+
+-- | Read and validate the add form, then submit it or show the page again with its problems.
+serveAddition :: (Text -> IO ()) -> Text -> Request -> Binding -> IO Response
+serveAddition logMessage presented request binding = do
+    body <- readLimitedBody request
+    case body of
+        Nothing -> pure (pageResponse status413 BodyTooLargePage)
+        Just bytes -> case decodeAddForm bytes of
+            Nothing -> pure (pageResponse status400 BadRequestPage)
+            Just (urlText, titleText) -> case validateAdd urlText titleText of
+                Left problems -> do
+                    outcome <- runEff . runArticleReader binding . runGrantReader binding $ showPage
+                    respondWith logMessage (rejectedResult collection presented (AddInput urlText titleText problems) outcome)
+                Right (url, title) -> do
+                    outcome <- runEff . runArticleWriter binding $ submitArticle url title
+                    respondWith logMessage (submitResult collection presented outcome)
+  where
+    collection = bindingCollection binding
+
+respondWith :: (Text -> IO ()) -> (Maybe Text, Response) -> IO Response
+respondWith logMessage (message, response) = mapM_ logMessage message >> pure response
+
+-- | The operator message, if any, and the response for a page outcome.
+pageResult :: CollectionId -> Text -> PageExtras -> PageOutcome -> (Maybe Text, Response)
+pageResult collection presented extras = \case
+    PageShown view articles -> (Nothing, htmlResponse status200 (renderBearerPage presented extras view articles))
+    PageDenied -> (Nothing, invalidLink)
+    PageFault fault -> faultResult collection fault
+
+-- | The page with invalid input for a grant that may add, or the invalid-link page for any other grant.
+rejectedResult :: CollectionId -> Text -> AddInput -> PageOutcome -> (Maybe Text, Response)
+rejectedResult collection presented input = \case
+    PageShown view articles
+        | mayAddArticles view -> (Nothing, htmlResponse status422 (renderBearerPage presented plainPage{extrasInput = input} view articles))
+        | otherwise -> (Nothing, invalidLink)
+    outcome -> pageResult collection presented plainPage outcome
+
+-- | The redirect to the page with the submission notice, or the response to a denial or fault.
+submitResult :: CollectionId -> Text -> SubmitOutcome -> (Maybe Text, Response)
+submitResult collection presented = \case
+    Submitted -> (Nothing, responseLBS status303 [(hLocation, encodeUtf8 ("/b/" <> presented <> "?added")), (hContentLength, "0")] "")
+    SubmitDenied -> (Nothing, invalidLink)
+    SubmitFault fault -> faultResult collection fault
+
+faultResult :: CollectionId -> StoreFault -> (Maybe Text, Response)
+faultResult collection = \case
+    Busy -> (Nothing, mapResponseHeaders (("Retry-After", "1") :) (pageResponse status503 BusyPage))
+    Corrupt -> (Just (faultMessage "has corrupt data"), pageResponse status500 ServerErrorPage)
+    Unavailable -> (Just (faultMessage "is unavailable"), pageResponse status500 ServerErrorPage)
+  where
+    faultMessage problem = "Collection " <> renderCollectionId collection <> " " <> problem <> "."
+
 -- | A fixed page with its content type and length, without the security headers.
 pageResponse :: Status -> Page -> Response
-pageResponse status page = responseLBS status headers body
+pageResponse status = htmlResponse status . renderPage
+
+htmlResponse :: Status -> LazyByteString.LazyByteString -> Response
+htmlResponse status body = responseLBS status headers body
   where
-    body = renderPage page
     headers =
         [ (hContentType, "text/html; charset=utf-8")
         , (hContentLength, Char8.pack (show (LazyByteString.length body)))
@@ -138,7 +223,7 @@ readLimitedBody request = go 0 []
 
 -- | Serve until the process ends; failing to resolve or bind the listener throws an 'IOError'.
 serve :: Config -> CollectionDirectory -> (Text -> IO ()) -> IO ()
-serve config directory logMessage = runSettings (setBeforeMainLoop (logMessage started) settings) (application directory)
+serve config directory logMessage = runSettings (setBeforeMainLoop (logMessage started) settings) (application logMessage directory)
   where
     listener = configListener config
     settings = serverSettings listener logMessage

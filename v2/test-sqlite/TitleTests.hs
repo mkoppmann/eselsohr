@@ -31,6 +31,7 @@ import Eselsohr.Store.SQLite.Bearer (Bearer, parseBearer)
 import Eselsohr.Store.SQLite.Codec
 import Eselsohr.Store.SQLite.Open (withExistingFile)
 import Eselsohr.Store.SQLite.Schema (initializeSchema)
+import Eselsohr.WebUrl (WebUrl, parseWebUrl)
 import SqliteFixtures
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.HUnit (assertFailure, testCase, (@?=))
@@ -488,7 +489,7 @@ articleBytes :: ByteString
 articleBytes = either (error . show) id (toArticleBytes articleIdentifier)
 
 secondArticle :: StoredArticle
-secondArticle = articleFixture{storedArticle = (storedArticle articleFixture){articleId = secondIdentifier}, storedRevision = 7}
+secondArticle = articleFixture{storedArticle = (storedArticle articleFixture){articleId = secondIdentifier, articleUrl = secondUrl}, storedRevision = 7}
 
 titleChild :: StoredGrant
 titleChild = childFixture{storedGrant = (storedGrant childFixture){grantExpiresAt = Just deadline, grantPermissions = Set.fromList [ReadArticles, ChangeTitles]}, storedTokenHash = zeroDigest}
@@ -562,3 +563,7 @@ heldWrite connection bearer use = do
     bracket (forkFinally action (putMVar finished)) killThread $ \_ -> do
         await (takeMVar entered)
         use (putMVar resume ()) (await (takeMVar finished) >>= either throwIO pure)
+
+-- | A URL distinct from the first article's, because a collection stores each URL once.
+secondUrl :: WebUrl
+secondUrl = either (error . show) id (parseWebUrl "https://example.com/second")

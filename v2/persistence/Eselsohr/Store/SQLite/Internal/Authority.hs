@@ -4,19 +4,24 @@ Description : Stored grant validation inside protected transactions
 
 'authorize' resolves the transaction's bearer to a stored grant and loads that grant's ancestry within the delegation depth limit.
 It checks that the chain ends at the sole stored root, then samples the transaction's clock and checks expiration and operation policy.
+'authorizeActor' performs the same checks and also returns the acting grant, so an operation can describe the grant it has just authorized.
+'authorizeAt' returns the acting grant together with the sampled time, so an operation can record the instant at which it was authorized without sampling the clock again.
 
 The SQLite article operations use this helper before constructing their sealed requests.
 The connection, bearer, and clock come from the current transaction.
 -}
 module Eselsohr.Store.SQLite.Internal.Authority
     ( authorize
+    , authorizeActor
+    , authorizeAt
     ) where
 
-import Control.Monad (unless)
+import Control.Monad (unless, void)
 import Data.Bifunctor (first)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.List.NonEmpty qualified as NonEmpty
 import Data.Set qualified as Set
+import Data.Time (UTCTime)
 import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple qualified as SQL
 import Eselsohr.Authorization (Operation, decide)
@@ -28,7 +33,15 @@ import Eselsohr.Store.SQLite.Codec
 import Eselsohr.Store.SQLite.Internal.Transaction
 
 authorize :: Operation -> Tx mode tx ()
-authorize operation = do
+authorize = void . authorizeAt
+
+-- | Authorize the operation and return the acting grant at the start of the checked chain.
+authorizeActor :: Operation -> Tx mode tx GrantSnapshot
+authorizeActor = fmap fst . authorizeAt
+
+-- | Authorize the operation and return the acting grant and the one time sample of the check.
+authorizeAt :: Operation -> Tx mode tx (GrantSnapshot, UTCTime)
+authorizeAt operation = do
     TxContext connection bearer clock <- askContext
     matched <- liftTxIO (lookupBearer connection bearer) >>= checked . first lookupError
     leaf <- checked (maybe (Left StoreDenied) (Right . storedGrant) matched)
@@ -41,6 +54,7 @@ authorize operation = do
     instant <- liftTxIO clock
     chain <- checked . first (const StoreDenied) $ validateChain instant (bearerCollection bearer) (grantId leaf) (NonEmpty.toList grants)
     checked . first (const StoreDenied) $ decide instant chain operation
+    pure (leaf, instant)
 
 loadChain :: Set.Set CapabilityId -> Int -> GrantSnapshot -> Tx mode tx (NonEmpty GrantSnapshot)
 loadChain seen remaining grant = do

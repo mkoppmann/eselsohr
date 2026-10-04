@@ -6,6 +6,7 @@ Defines what holders see and can do with articles on their bearer page: listing 
 
 ### Requirement: Articles on the bearer page
 A holder whose grant has ReadArticles SHALL see the articles of the grant's scope on its page: every article of the collection for a whole-collection grant, and only the scoped article for a one-article grant.
+Articles SHALL appear newest first by creation time.
 A holder without ReadArticles MUST see no article title, URL, read state, or count.
 
 #### Scenario: Whole-collection reader
@@ -20,8 +21,13 @@ A holder without ReadArticles MUST see no article title, URL, read state, or cou
 - **WHEN** a holder without ReadArticles opens its page
 - **THEN** the page shows no article contents
 
+#### Scenario: Order
+- **WHEN** a reader opens a page whose collection has articles added at different times
+- **THEN** the most recently added article appears first
+
 ### Requirement: Manual article addition
-A holder with AddArticles on the whole collection SHALL be able to submit a manually entered URL and title, which are validated before the addition.
+A holder with AddArticles on the whole collection SHALL be able to submit a manually entered URL and title, both required and validated before the addition.
+When a value fails validation, the response SHALL be 422 with the holder's page, a message naming the field, and the submitted values filled back into the form as escaped text.
 A new article starts unread at revision zero.
 Adding requires no Read permission and never fetches the URL.
 
@@ -34,8 +40,8 @@ Adding requires no Read permission and never fetches the URL.
 - **THEN** the request is denied and nothing is inserted
 
 #### Scenario: Invalid input
-- **WHEN** the submitted URL or title fails validation
-- **THEN** nothing is inserted
+- **WHEN** the submitted URL or title fails validation or is empty
+- **THEN** nothing is inserted, and the 422 response names the field and shows the submitted values as text
 
 ### Requirement: Duplicate URLs
 Adding a URL whose canonical rendering matches an article already in the collection SHALL store no second article and leave the existing article unchanged, discarding the submitted title.

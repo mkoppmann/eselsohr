@@ -2,7 +2,7 @@
 Module      : SchemaTests
 Description : Schema installation and constraint tests
 
-'schemaTests' checks initial installation, collection identity, schema versions, and database constraints.
+'schemaTests' checks initial installation, collection identity, schema versions, and database constraints, including the uniqueness of article URLs.
 Transaction cases cover existing transactions, contention, failed initialization, rollback, cancellation, and the caller's exception masking state.
 -}
 module SchemaTests (schemaTests) where
@@ -18,6 +18,8 @@ import Database.SQLite.Simple (Connection (..), Only (..))
 import Database.SQLite.Simple qualified as SQL
 import Database.SQLite3 qualified as SQLite
 import Database.SQLite3.Direct qualified as Direct
+import Eselsohr.Article (Article (..))
+import Eselsohr.Id (parseArticleId)
 import Eselsohr.Store.SQLite.Codec
 import Eselsohr.Store.SQLite.Open
 import Eselsohr.Store.SQLite.Schema
@@ -190,6 +192,11 @@ constraintTests =
                 , "UPDATE article SET revision = 9223372036854775808"
                 ]
                 $ assertConstraint . SQL.execute_ connection
+        , testCase "the URL index allows one article per stored URL" . withDatabase $ \connection -> do
+            SQL.query_ connection "SELECT name FROM sqlite_schema WHERE type = 'index' AND sql IS NOT NULL ORDER BY name" >>= (@?= map Only (["article_url", "one_root"] :: [Text]))
+            insertArticle connection articleFixture
+            other <- requireRight (parseArticleId "123e4567-e89b-42d3-a456-426614174009")
+            assertConstraint (insertArticle connection articleFixture{storedArticle = (storedArticle articleFixture){articleId = other}})
         , testCase "grant keys, digests, roots, deadlines, depths, and parent relationships" . withDatabase $ \connection -> do
             insertArticle connection articleFixture
             insertGrant connection collection rootFixture

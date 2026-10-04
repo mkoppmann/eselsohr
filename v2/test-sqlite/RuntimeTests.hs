@@ -7,6 +7,7 @@ Missing collections and denied bearers must become denials, and every other stor
 
 Runner tests use real collection files in a temporary directory and bindings with controlled clocks.
 They check that each operation acts only on the bearer's collection, reloads authority on every call, samples the clock inside its transaction, and opens the collection anew each time.
+Runner tests also describe the bound grant and name its collection.
 Presented-bearer tests check that 'bindPresented' binds a created owner bearer and rejects malformed and oversized text, and that 'resolveDirectory' rejects paths that are not directories.
 'retitleArticle' is shaped like an application function: its type names only the read and write effects, and the tests run it through the production runners with a test binding.
 
@@ -38,9 +39,10 @@ import Eselsohr.Store.SQLite.Articles (StoreError (..))
 import Eselsohr.Store.SQLite.Bearer (parseBearer, renderBearer)
 import Eselsohr.Store.SQLite.Codec (StoredArticle (..), StoredGrant (..), fromTimestamp, toCapabilityBytes)
 import Eselsohr.Store.SQLite.Create qualified as Create
-import Eselsohr.Store.SQLite.Open (CollectionDirectory, OpenError, mkCollectionDirectory, withExistingFile)
+import Eselsohr.Store.SQLite.Open (OpenError, mkCollectionDirectory, withExistingFile)
 import Eselsohr.Store.SQLite.Open qualified as Open
 import Eselsohr.Store.SQLite.Schema (initializeSchema)
+import Eselsohr.WebUrl (WebUrl, parseWebUrl)
 import SqliteFixtures
 import System.Directory (listDirectory, renameFile)
 import System.FilePath ((</>))
@@ -62,10 +64,18 @@ translationTests =
         "Result translation"
         [ testCase "opening errors become denials or faults" . forM_ openingRows $ \(err, readExpected, editExpected) -> do
             assertLeft readExpected (readResult (Left err))
+            describeResult (Left err) @?= Left readExpected
             assertLeft editExpected (editResult (Left err))
         , testCase "operation errors become denials, edit failures, or faults" . forM_ operationRows $ \(err, readExpected, editExpected) -> do
             assertLeft readExpected (readResult (Right (Left err)))
+            describeResult (Right (Left err)) @?= Left readExpected
             assertLeft editExpected (editResult (Right (Left err)))
+        , testCase "addition errors become denials or faults" $ do
+            forM_ openingRows $ \(err, _, editExpected) -> addResult (Left err) @?= Left editExpected
+            forM_ additionRows $ \(err, expected) -> addResult (Right (Left err)) @?= Left expected
+            addResult (Right (Right ())) @?= Right ()
+        , testCase "a grant view passes through unchanged" $
+            describeResult (Right (Right ownerView)) @?= Right ownerView
         , testCase "stored articles keep their revisions" $ do
             let stored = articleFixture{storedRevision = 7}
                 expected = Revised (storedArticle stored) (Revision 7)
@@ -81,6 +91,20 @@ openingRows =
     , (Open.Unavailable, ReadFault Unavailable, EditFault Unavailable)
     , (Open.UnsupportedSchema, ReadFault Unavailable, EditFault Unavailable)
     , (Open.DatabaseFault, ReadFault Unavailable, EditFault Unavailable)
+    ]
+
+-- Additions take no article identifier or revision, so absence, revision, and conflict errors become faults.
+additionRows :: [(StoreError, EditFailure)]
+additionRows =
+    [ (StoreDenied, EditDenied)
+    , (StoreBusy, EditFault Busy)
+    , (StoreCorrupt, EditFault Corrupt)
+    , (StoreFault, EditFault Unavailable)
+    , (StoreTransactionActive, EditFault Unavailable)
+    , (StoreNotFound, EditFault Unavailable)
+    , (StoreInvalidRevision, EditFault Unavailable)
+    , (StoreConflict, EditFault Unavailable)
+    , (StoreRevisionExhausted, EditFault Unavailable)
     ]
 
 -- Reads cannot produce absence, revision, or conflict errors, so those become faults.
@@ -115,10 +139,22 @@ runnerTests =
             changeWith owner articleIdentifier newTitle (Revision 0) >>= assertSame (Right (revised (retitled newTitle 1 articleFixture)))
             readWith owner AllArticles >>= assertSame (Right [revised (retitled newTitle 1 articleFixture)])
             readWith other (SingleArticle articleIdentifier) >>= assertSame (Right [revised (retitled otherTitle 0 articleFixture)])
+        , testCase "an addition through the production runner is listed afterwards" . withCollections $ \_ root -> do
+            owner <- bindingFor root goldenToken
+            url <- requireRight (parseWebUrl "https://example.com/added")
+            title <- requireRight (mkTitle "Added through the runner")
+            runEff (runArticleWriter owner (addArticle url title)) >>= (@?= Right ())
+            listed <- requireRight =<< readWith owner AllArticles
+            map (articleUrl . revisedValue) listed `assertContainsUrl` url
+        , testCase "the bound grant is described through the production runner" . withCollections $ \_ root -> do
+            owner <- bindingFor root goldenToken
+            runEff (runGrantReader owner describeGrant) >>= (@?= Right ownerView)
+            bindingCollection owner @?= collection
         , testCase "a missing collection is denied without creating a file" . withCollections $ \directory root -> do
             other <- bindingFor root otherToken
             before <- listDirectory directory
 
+            runEff (runGrantReader other describeGrant) >>= (@?= Left ReadDenied)
             readWith other AllArticles >>= assertLeft ReadDenied
             changeWith other articleIdentifier (articleTitle (storedArticle articleFixture)) (Revision 0) >>= assertLeft EditDenied
             listDirectory directory >>= (@?= before)
@@ -370,6 +406,12 @@ sampleInsideTransaction probe samples = do
 
 retitled :: Title -> Integer -> StoredArticle -> StoredArticle
 retitled title number stored = StoredArticle (rename title (storedArticle stored)) number
+
+assertContainsUrl :: [WebUrl] -> WebUrl -> Assertion
+assertContainsUrl urls url = assertBool "the added URL is not listed" (url `elem` urls)
+
+ownerView :: GrantView
+ownerView = GrantView (Set.fromList [minBound .. maxBound]) (WholeCollection collection) Nothing
 
 instant, deadline, afterDeadline :: UTCTime
 instant = fromTimestamp 1000000

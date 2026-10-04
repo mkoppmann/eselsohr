@@ -23,9 +23,7 @@ module Eselsohr.Store.SQLite.Create
 import Control.Exception (IOException, catch, mask, onException)
 import Crypto.Random (getRandomBytes)
 import Data.Bifunctor (first)
-import Data.Bits ((.&.), (.|.))
 import Data.ByteString (ByteString)
-import Data.ByteString qualified as ByteString
 import Data.Set qualified as Set
 import Database.SQLite.Simple (Connection)
 import Database.SQLite.Simple qualified as SQL
@@ -33,6 +31,7 @@ import Eselsohr.Capability (GrantSnapshot (..), Scope (..))
 import Eselsohr.Id (CapabilityId, CollectionId)
 import Eselsohr.Store.SQLite.Bearer (Bearer, bearerHash, newBearer)
 import Eselsohr.Store.SQLite.Codec (StoredGrant (..), fromCapabilityBytes, fromCollectionBytes, toGrantRows)
+import Eselsohr.Store.SQLite.Internal.Random (randomUuidBytes)
 import Eselsohr.Store.SQLite.Open (CollectionDirectory, collectionPath, withExistingFile)
 import Eselsohr.Store.SQLite.Schema (SchemaError (..), installSchema, withSchemaTransaction)
 import System.Directory (removeFile)
@@ -71,16 +70,6 @@ ownerGrant collection identifier bearer =
         , storedTokenHash = bearerHash bearer
         , storedPetname = Nothing
         }
-
--- | 16 random bytes with the UUIDv4 version and variant bits set.
-randomUuidBytes :: IO ByteString
-randomUuidBytes = do
-    bytes <- getRandomBytes 16
-    pure . ByteString.pack . zipWith mark [0 :: Int ..] $ ByteString.unpack bytes
-  where
-    mark 6 byte = (byte .&. 0x0f) .|. 0x40
-    mark 8 byte = (byte .&. 0x3f) .|. 0x80
-    mark _ byte = byte
 
 ------------------------------------------------------------------------
 -- Creating the file

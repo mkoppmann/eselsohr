@@ -159,6 +159,12 @@ The page is a pure function of the grant description and, when the grant has Rea
 
 A page needs two Store calls: the grant description, then the article read when the grant has ReadArticles.
 The M5 design already accepts one or two operations per request; a revocation between them makes the read fail, and the page becomes the invalid-link page.
+The page function lists articles newest first by creation time; the Store keeps returning rows without a defined order.
+Each slice adds the forms of the operations it implements, so no page offers a form whose route still answers with the invalid-link page.
+
+The add form requires both the URL and the title; automatic titles belong to `add-restricted-metadata-fetch`.
+When a submitted value fails validation, the response is 422 with the holder's page again, a fixed message naming the field, and the submitted values filled back into the form as escaped text, so nothing typed is lost without JavaScript.
+The page shows the holder only their own input and what the grant already permits them to see.
 
 Redirects after a mutation are a pure function of the action and the grant's scope.
 An addition redirects to `/b/<bearer>?added`, whose page shows a fixed notice that is the same for new and stored URLs.
@@ -178,6 +184,10 @@ The page needs to know what the presented grant allows, so a new protected read 
 | Policy | a new operation that `decide` allows after revalidating the actor | the decision stays in the one policy function and its property tests |
 | Interface | a separate read-only grant interface beside `ArticleReader` and `ArticleWriter` | the spec keeps article reads and writes separate, and M9's link inspection extends this interface |
 | Transaction | its own deferred read transaction | a describe-then-read page needs no combined operation |
+
+The interface is the effect `GrantReader` in `Eselsohr.Store`, whose `describeGrant` returns a `GrantView` of permissions, scope, and expiration, or `ReadDenied` or `ReadFault`.
+A separate module `Eselsohr.Store.Grants` and an operation inside `ArticleReader` were considered; the first splits a small interface across modules, and the second would give every article reader a description operation outside the article interface.
+The protected read reuses the authorization step through a variant that also returns the acting grant, from which the view is taken.
 
 ### Methods, redirects, origin, and bearers
 
@@ -200,6 +210,10 @@ In `warp-3.4.15`, the default exception logger hides `InvalidRequest`, whose `Ba
 Minimize assets; embedding small CSS may remove the runtime static directory, with a matching CSP.
 Do not put bearer URLs in logs, analytics, or exception messages; proxy access logs need the same redaction contract.
 The application keeps no access log, and operator messages, such as startup and storage faults with the collection identifier, go to standard error at one level.
+
+A denial from any Store call becomes the invalid-link page.
+`Busy` becomes 503 with `Retry-After: 1` and a fixed page asking the holder to try again; `Corrupt` and `Unavailable` become 500 with the error page and an operator message naming the fault and the collection identifier.
+The runtime exposes the collection identifier of a binding for this message, never the bearer; the identifier is half of a bearer URL but grants nothing alone.
 
 Request bodies are read with a limit of 160 KiB and rejected beyond it before decoding.
 The limit covers the domain limits in the worst case: 4096 title characters and 8192 URL characters, each up to 4 bytes in UTF-8 and each byte percent-encoded as 3 characters.
@@ -241,6 +255,13 @@ The UNIQUE index on `article(url)` is added to schema version 1 in place, becaus
 Stored URLs are already canonical, so the index compares canonical renderings.
 A successful add returns no stored data, so its result cannot reveal whether the URL was new.
 ID generation stays within the trusted add operation rather than becoming a global Random effect: a UUIDv4 article identifier comes from 16 random bytes with the version and variant bits set.
+
+| Choice | Alternatives | Recommendation and cost |
+| --- | --- | --- |
+| Add in the interface | `addArticle` in `ArticleWriter`; a separate `ArticleAdder` effect | `ArticleWriter`, as the M5 design planned. The bearer already decides what a holder may do; a separate effect would add a runner and interface without adding a check. |
+| Identifier source | a generator parameter like the clock; drawn inside the operation | A parameter. The named SQLite operation takes an `IO ArticleId` and samples it inside the transaction, like the clock; the runtime runner passes a `crypton` generator, and SQLite tests pass fixed identifiers, so a primary-key collision can be tested. |
+
+The article's creation time is the clock sample of the add transaction.
 
 ### Operator collection creation
 
